@@ -18,6 +18,39 @@ The browser Origin (e.g. `http://localhost:5173` or `https://jsdevtesting.thehiv
 - `npm run dev` — Vite dev server (default port 5173).
 - `npm run build` — production bundle to `dist/`.
 
+## Lane A — local API (SQLite) + Vite (optional)
+
+Use this for fast UI work without touching production. The API defaults to **SQLite** when Postgres-style `DB_*` variables are not set (see `finance_manager_api` settings).
+
+**1. API (from `../finance_manager_api` in the ecosystem clone):**
+
+```bash
+cd ../finance_manager_api   # or your path to the API repo
+test -f .env || cp .env.example .env   # set SECRET_KEY; keep DEBUG=True for local
+uv sync --group dev
+python manage.py migrate
+python manage.py createsuperuser   # one-time; use the username/password you will enter in the web UI
+python manage.py runserver 0.0.0.0:8000
+```
+
+**2. Web — point the browser at the local API**
+
+Create `.env.local` in this directory:
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+**3. Run Vite**
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:5173` and sign in. Default API `CORS_ALLOWED_ORIGINS` includes that Origin; if you still see CORS or network errors, confirm the API process is bound to `8000` and that `VITE_API_BASE_URL` has no trailing slash.
+
+**Runtime:** If another agent needs the same local ports, coordinate via `design_docs/30_Releases/Runtime_Signup_Sheet.md` in the design-docs submodule.
+
 ---
 
 ## React + TypeScript + Vite (template)
