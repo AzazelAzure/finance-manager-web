@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
@@ -19,8 +20,28 @@ export function LoginPage() {
       const data = await login(username, password);
       setToken(data.access);
       navigate("/dashboard", { replace: true });
-    } catch {
-      setError("Login failed. Check credentials or API connectivity.");
+    } catch (err) {
+      if (import.meta.env.DEV && axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        const code = err.code;
+        const body =
+          typeof err.response?.data === "object" && err.response?.data !== null
+            ? JSON.stringify(err.response.data).slice(0, 200)
+            : String(err.response?.data ?? "");
+        const bits = [
+          status != null ? `HTTP ${status}` : null,
+          code ? `code ${code}` : null,
+          err.message ? err.message : null,
+          body ? `body ${body}` : null,
+        ].filter(Boolean);
+        setError(
+          bits.length
+            ? `Login failed (${bits.join("; ")}). If there is no HTTP status, check CORS, API base URL, and network.`
+            : "Login failed. Check credentials, CORS, and API base URL.",
+        );
+      } else {
+        setError("Login failed. Check credentials or API connectivity.");
+      }
     } finally {
       setSubmitting(false);
     }
