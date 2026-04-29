@@ -445,11 +445,11 @@ export function TransactionsPage(): ReactNode {
 
   return (
     <div className="stack">
-      <div className="row-between">
+      <div className="app-toolbar app-surface">
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
           Transactions
         </h2>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className="app-toolbar__actions">
           <Link to="/app/transactions/calendar" className="ui-btn ui-btn--secondary">
             Calendar
           </Link>

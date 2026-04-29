@@ -2,6 +2,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  max-width: 1920px;
+  margin: 0 auto;
 }
 
 .dashboard-header {
@@ -10,6 +12,11 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  border-radius: var(--radius-lg);
+  background: var(--gradient-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .dashboard-section {
@@ -19,8 +26,9 @@
 .filter-row {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--surface);
+  background: var(--gradient-surface);
   padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
 }
 
 .filter-row__label {
@@ -86,6 +94,19 @@
   min-width: 0;
 }
 
+.dashboard-root__main,
+.dashboard-root__side > * {
+  transition:
+    transform var(--dur-fast) var(--ease-emphasis),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.dashboard-root__main > *:hover,
+.dashboard-root__side > *:hover {
+  transform: translateY(var(--lift-y));
+  box-shadow: var(--shadow-card-hover);
+}
+
 .recharts-host {
   min-width: 0;
   flex-shrink: 0;
@@ -102,6 +123,10 @@
 .recent-tx-table {
   max-height: 600px;
   overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface) 94%, var(--surface-2));
+  box-shadow: var(--shadow-sm);
 }
 
 .recent-tx-table .num {
@@ -181,6 +206,27 @@
   text-align: center;
   font-size: var(--font-sm);
   padding: 0.4rem 0.6rem;
+}
+
+.dashboard-title {
+  margin: 0;
+  font-size: var(--font-xl);
+}
+
+.dashboard-subtitle {
+  margin: 0.25rem 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-root__main,
+  .dashboard-root__side > * {
+    transition: none;
+  }
+
+  .dashboard-root__main > *:hover,
+  .dashboard-root__side > *:hover {
+    transform: none;
+  }
 }
 
 .ui-input {

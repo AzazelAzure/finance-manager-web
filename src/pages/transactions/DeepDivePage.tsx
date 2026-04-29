@@ -91,7 +91,7 @@ export function DeepDivePage(): ReactNode {
 
   return (
     <div className="stack">
-      <div className="row-between">
+      <div className="app-toolbar app-surface">
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
           Transaction insights
         </h2>

@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- **BP7 app-wide polish rollout (shell + data surfaces)** — extended the bold landing design language into authenticated areas: protected shell/navigation now has branded depth, stronger active/focus affordances, and improved motion hierarchy; dashboard and core data pages (transactions, calendar/deep-dive, data hub, upcoming/deep-dive) now use elevated toolbar/surface treatment for consistent visual rhythm across the app.
 - **BP7 phase 1 public polish** — upgraded public visual depth and interactivity for landing/login/signup with richer tokenized elevation, gradient surfaces, hover/focus/press states, and motion-safe transitions. Public shell now uses layered background + glass-like top bar, auth cards have stronger hierarchy, and landing sections include improved hero/showcase/CTA treatment for less flat presentation.
 - **Removed user-facing `unknown` source traces** — source lookups now filter out the backend fallback `unknown` entry before rendering selectors/cards, dashboard spend-account balances hide that fallback row, and Data Hub source actions no longer expose special-case reserved-source messaging.
 - **Transaction currency QoL + logout confirmation** — transaction editor currency fields now use a deduped dropdown derived from source currencies and always include the profile base currency as default for new transaction/transfer drafts. Logout now asks for confirmation before clearing session and returning to public pages.

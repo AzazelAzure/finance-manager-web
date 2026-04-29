@@ -131,7 +131,7 @@ export function UpcomingDeepDivePage(): ReactNode {
 
   return (
     <div className="stack">
-      <div className="row-between">
+      <div className="app-toolbar app-surface">
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
           Upcoming insights
         </h2>

@@ -96,6 +96,32 @@ a:hover {
   margin-top: 0.5rem;
 }
 
+.app-surface {
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--border));
+  border-radius: var(--radius-lg);
+  background: var(--gradient-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.app-surface--data {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+}
+
+.app-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.app-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .app-root {
   min-height: 100vh;
   display: flex;

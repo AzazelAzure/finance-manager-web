@@ -183,13 +183,13 @@ export function DashboardPage(): ReactNode {
   }
 
   return (
-    <div className="stack dashboard-page" style={{ maxWidth: 1920, margin: "0 auto" }}>
+    <div className="stack dashboard-page">
       <div className="dashboard-header">
         <div>
-          <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
+          <h2 className="muted dashboard-title">
             Dashboard
           </h2>
-          <p className="muted-text" style={{ margin: "0.25rem 0 0" }}>
+          <p className="muted-text dashboard-subtitle">
             Account snapshot. Adjust filters, then <strong>Apply</strong> to refetch. Filters are stored in the URL.
           </p>
         </div>
