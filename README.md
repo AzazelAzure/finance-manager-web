@@ -79,6 +79,10 @@ VITE_API_BASE_URL=https://api.thehivemanager.com
 
 **4. CORS** — the API must allow `https://jsdevtesting.thehivemanager.com` in `CORS_ALLOWED_ORIGINS` (default in this repo’s API settings includes it on the feature branch; prod must match after deploy). Same for **`https://jsdevprodtest.thehivemanager.com`** when using the preview port tunnel.
 
+**5. Internal proxy (optional)** — If you route tunnel traffic through an **on-box proxy** (e.g. connector or split tunnel uses **`https://127.0.0.1:[port]`** toward the next hop), you may run **Vite with TLS off** on the final hop: the **browser** still loads the site as **`https://`** on the public hostname (TLS at Cloudflare), so you avoid mixed-content issues while the loopback path stays plain HTTP or a local TLS forward with `noTLSVerify`, per your standard.
+
+**6. Plan gates B2 + B3 together (recommended here)** — With the public URL in HTTPS, one manual run is enough: open **`https://<your-tunnel-hostname>/`**, sign in (JWT from **`https://api.thehivemanager.com`**), confirm dashboard / snapshot. That satisfies **auth + CORS (B2)** and **HTTPS smoke from “outside” (B3)** in a single check.
+
 ## VPS: `dev@159.198.75.194` (Cloudflare → localhost)
 
 The beta host can run **Vite on the VPS** (no Docker) so tunnel private URLs stay **`http://127.0.0.1:5173`** and **`http://127.0.0.1:4173`** without touching the Reflex `docker compose` stack.
