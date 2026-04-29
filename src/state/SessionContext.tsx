@@ -1,17 +1,9 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useSyncExternalStore,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ACCESS_TOKEN_KEY,
   AUTH_CHANGED_EVENT,
   clearSession,
-  getAccessToken,
   getEffectiveAccessTokenForSession,
 } from "./auth";
 
@@ -40,8 +32,6 @@ function getAccessSnapshot(): string {
   return getEffectiveAccessTokenForSession();
 }
 
-const serverAccess = "";
-
 type SessionValue = {
   isAuthenticated: boolean;
   accessToken: string;
@@ -68,21 +58,10 @@ function CrossTabLogoutHandler(): null {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }): ReactNode {
-  const accessToken = useSyncExternalStore(subscribeAccess, getAccessSnapshot, () => serverAccess);
+  /** Same snapshot on server and client avoids useSyncExternalStore consistency issues in CSR. */
+  const accessToken = useSyncExternalStore(subscribeAccess, getAccessSnapshot, getAccessSnapshot);
   const isAuthenticated = Boolean(accessToken);
   const queryClient = useQueryClient();
-
-  /** Remove expired JWT from storage so API client and UI stay aligned. */
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const raw = getAccessToken();
-    if (raw && getEffectiveAccessTokenForSession() === "") {
-      clearSession();
-      void queryClient.clear();
-    }
-  }, [accessToken, queryClient]);
 
   const logout = useCallback((): void => {
     clearSession();
