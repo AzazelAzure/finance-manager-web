@@ -147,15 +147,9 @@ function typeBadge(t: string): string {
   return t;
 }
 
-function fallbackCategoryForType(txType: string): string {
-  if (txType === "INCOME") return "Income";
-  if (txType === "XFER_IN" || txType === "XFER_OUT") return "Transfer";
-  return "Expense";
-}
-
-function withCategoryFallback(category: string, txType: string): string {
+function normalizedCategory(category: string): string {
   const trimmed = category.trim();
-  return trimmed || fallbackCategoryForType(txType);
+  return trimmed;
 }
 
 export function TransactionsPage(): ReactNode {
@@ -207,13 +201,14 @@ export function TransactionsPage(): ReactNode {
     mutationFn: async (): Promise<void> => {
       if (editingTxId) {
         const txType = singleDraft.tx_type;
+        const category = normalizedCategory(singleDraft.category);
         await updateTransaction(editingTxId, {
           date: singleDraft.date,
           amount: singleDraft.amount,
           source: singleDraft.source,
           currency: singleDraft.currency,
           tx_type: txType,
-          category: withCategoryFallback(singleDraft.category, txType),
+          ...(category ? { category } : {}),
           description: singleDraft.description,
           bill: singleDraft.bill,
           tags: selectedTags,
@@ -222,6 +217,7 @@ export function TransactionsPage(): ReactNode {
       }
       if (editorMode === "single") {
         const txType = singleDraft.tx_type;
+        const category = normalizedCategory(singleDraft.category);
         const result = await createTransactions([
           {
             date: singleDraft.date,
@@ -229,7 +225,7 @@ export function TransactionsPage(): ReactNode {
             source: singleDraft.source,
             currency: singleDraft.currency,
             tx_type: txType,
-            category: withCategoryFallback(singleDraft.category, txType),
+            ...(category ? { category } : {}),
             description: singleDraft.description,
             bill: singleDraft.bill,
             tags: selectedTags,
@@ -241,6 +237,7 @@ export function TransactionsPage(): ReactNode {
         }
         return;
       }
+      const transferCategory = normalizedCategory(transferDraft.category);
       const result = await createTransactions([
         {
           date: transferDraft.date,
@@ -248,7 +245,7 @@ export function TransactionsPage(): ReactNode {
           source: transferDraft.from_source,
           currency: transferDraft.sent_currency,
           tx_type: "XFER_OUT",
-          category: withCategoryFallback(transferDraft.category, "XFER_OUT"),
+          ...(transferCategory ? { category: transferCategory } : {}),
           description: transferDraft.description,
           bill: transferDraft.bill,
           tags: selectedTags,
@@ -259,7 +256,7 @@ export function TransactionsPage(): ReactNode {
           source: transferDraft.to_source,
           currency: transferDraft.received_currency,
           tx_type: "XFER_IN",
-          category: withCategoryFallback(transferDraft.category, "XFER_IN"),
+          ...(transferCategory ? { category: transferCategory } : {}),
           description: transferDraft.description,
           bill: transferDraft.bill,
           tags: selectedTags,
