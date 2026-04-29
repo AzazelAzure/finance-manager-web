@@ -1,0 +1,232 @@
+/* Public shell */
+.public-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.public-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.public-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  font-size: var(--font-lg);
+  color: var(--fg);
+}
+
+.public-footer {
+  margin-top: auto;
+  padding: var(--space-3) var(--space-4);
+  color: var(--muted);
+  font-size: var(--font-sm);
+  text-align: center;
+  border-top: 1px solid var(--border);
+}
+
+/* Protected */
+.protected-root {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: var(--bg);
+  align-items: stretch;
+}
+
+/* Sidebar: desktop */
+.protected-sidebar {
+  display: none;
+  flex-direction: column;
+  width: 4.5rem;
+  min-height: 100vh;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  padding: var(--space-3) 0;
+  transition: width 0.15s ease;
+  overflow: hidden;
+  z-index: 2;
+  position: sticky;
+  top: 0;
+  max-height: 100vh;
+}
+
+.protected-sidebar:hover,
+.protected-sidebar.is-expanded {
+  width: 15rem;
+}
+
+.protected-side-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  flex: 1;
+  overflow: auto;
+}
+
+/* Horizontal strip: mobile / tablet */
+.protected-top-strip {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+  z-index: 30;
+  -webkit-overflow-scrolling: touch;
+  justify-content: flex-start;
+  align-items: center;
+  min-height: 3.5rem;
+}
+
+/* Show sidebar from md+ */
+@media (min-width: 900px) {
+  .protected-sidebar {
+    display: flex;
+  }
+
+  .protected-top-strip {
+    display: none;
+  }
+}
+
+/* Hide bottom padding when strip visible */
+.protected-top-strip ~ * .protected-main-inner {
+  padding-bottom: 4.5rem;
+}
+
+@media (min-width: 900px) {
+  .protected-top-strip ~ * .protected-main-inner,
+  .protected-main-inner {
+    padding-bottom: var(--space-4);
+  }
+}
+
+.protected-content-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+.protected-sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.protected-sticky-top h1 {
+  margin: 0;
+  font-size: var(--font-xl);
+}
+
+.protected-main-inner {
+  padding: var(--space-4);
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding-bottom: 5rem;
+}
+
+.protected-bottom-bar {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding: var(--space-2);
+  gap: var(--space-2);
+}
+
+.protected-bottom-bar button {
+  justify-content: flex-start;
+}
+
+/* Nav link */
+.shell-nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--fg);
+  font-size: var(--font-md);
+  text-decoration: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  min-height: 2.5rem;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+}
+
+.shell-nav-link:hover,
+.shell-nav-link[aria-current="page"] {
+  background: var(--surface-2);
+  text-decoration: none;
+}
+
+.shell-nav-link[aria-current="page"] {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.protected-top-strip .shell-nav-link {
+  width: auto;
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  white-space: nowrap;
+}
+
+/* Cookie banner (also used near root) */
+.cookie-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-md);
+}
+
+/* Push content when only cookie shows on mobile */
+@media (max-width: 899px) {
+  .app-root.has-cookie {
+    padding-bottom: 0;
+  }
+}

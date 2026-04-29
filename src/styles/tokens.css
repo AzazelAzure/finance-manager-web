@@ -1,0 +1,80 @@
+/* Self-hosted Inter — files in /public/fonts (variable Latin). */
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/Inter-Variable.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  /* Breakpoints (match `src/lib/breakpoints.ts`) */
+  --bp-sm: 640px;
+  --bp-md: 900px;
+  --bp-lg: 1200px;
+  --bp-xl: 1440px;
+
+  /* Core colors */
+  --bg: #f5f7fb;
+  --fg: #171923;
+  --surface: #fff;
+  --surface-2: #f0f2f7;
+  --border: #e4e7ee;
+  --muted: #6b7280;
+  --accent: #4f46e5;
+  --accent-fg: #f8fafc;
+  --success: #16a34a;
+  --warn: #d97706;
+  --danger: #b91c1c;
+  --focus-ring: rgba(79, 70, 229, 0.45);
+  /* Charts (dashboard) */
+  --chart-incoming: #16a34a;
+  --chart-outgoing: #7c3aed;
+  --chart-leak: #f59e0b;
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 6px 16px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 20px 40px rgba(15, 23, 42, 0.12);
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 1.75rem;
+  --space-8: 2rem;
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  /* Type scale */
+  --font-sm: 0.8rem;
+  --font-md: 0.95rem;
+  --font-lg: 1.1rem;
+  --font-xl: 1.35rem;
+  --font-2xl: 1.6rem;
+}
+
+html[data-theme="dark"] {
+  --bg: #0b0f1a;
+  --fg: #e8ecf4;
+  --surface: #111827;
+  --surface-2: #0f172a;
+  --border: #1f2a3d;
+  --muted: #9ca3af;
+  --accent: #818cf8;
+  --accent-fg: #0f0f0f;
+  --success: #4ade80;
+  --warn: #facc15;
+  --danger: #f87171;
+  --focus-ring: rgba(129, 140, 248, 0.5);
+  --chart-incoming: #4ade80;
+  --chart-outgoing: #a78bfa;
+  --chart-leak: #fbbf24;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
