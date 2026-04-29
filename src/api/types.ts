@@ -65,3 +65,89 @@ export type SourceRow = {
   currency: string;
   amount: string;
 };
+
+export type TxType = "INCOME" | "EXPENSE" | "XFER_IN" | "XFER_OUT" | string;
+
+export type TransactionRecord = {
+  tx_id: string;
+  entry_id?: string;
+  date: string;
+  description: string;
+  amount: string;
+  source: string;
+  currency: string;
+  tags: string[];
+  tx_type: TxType;
+  category: string;
+  bill?: string;
+};
+
+export type TransactionsListResponse = {
+  transactions?: TransactionRecord[];
+};
+
+export type TransactionMutationResult = {
+  accepted?: Array<Record<string, unknown>>;
+  rejected?: Array<Record<string, unknown>>;
+  updated?: Array<Record<string, unknown>>;
+  snapshot?: Record<string, unknown>;
+};
+
+export type TransactionCreateRequest = {
+  date: string;
+  description?: string;
+  amount: string | number;
+  source: string;
+  currency: string;
+  tags?: string[];
+  tx_type: TxType;
+  category?: string;
+  bill?: string;
+};
+
+export type TransactionPatchRequest = {
+  date: string;
+  description?: string;
+  amount?: string | number;
+  source?: string;
+  currency?: string;
+  tags?: string[];
+  tx_type?: TxType;
+  category?: string;
+  bill?: string;
+};
+
+export type CalendarDailyRow = {
+  date: string;
+  tx_count?: number;
+  net?: number;
+  expense_only?: number;
+  count?: number;
+  [key: string]: string | number | undefined;
+};
+
+export type CalendarDueEventRow = {
+  date: string;
+  expense_name: string;
+  amount: string | number;
+  amount_base?: string | number;
+  currency: string;
+  paid_flag?: boolean;
+  is_recurring?: boolean;
+};
+
+export type CalendarResponse = {
+  daily?: CalendarDailyRow[];
+  weekly?: Array<Record<string, unknown>>;
+  monthly?: Array<Record<string, unknown>>;
+  day_drill?: TransactionRecord[];
+  due_events?: CalendarDueEventRow[];
+  base_currency?: string;
+  heat_max?: string | number;
+};
+
+export type VisualizationResponse = {
+  flow_daily?: Array<{ date: string; income: number; expense: number }>;
+  tx_type_totals?: Array<{ tx_type: string; amount: number }>;
+  top_expense_categories?: Array<{ category: string; amount: number }>;
+};

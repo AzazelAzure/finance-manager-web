@@ -12,6 +12,7 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- **Transactions suite scaffold (P4 / T08–T10 in progress)** — Replaced transactions placeholders with live routes and API wiring: `/app/transactions` (URL-driven filters, table/cards, dashboard drillthrough callout + clear), `/app/transactions/new` (opens editor), `/app/transactions/calendar` (range controls, due events, day drill), and `/app/transactions/deep-dive` (flow/type/category charts). Ledger editor now supports single create/edit, transfer pair create with delta preview, tag picker, optional unpaid bill link, category create-confirm, and two-step delete.
 - **Dashboard parity (P3 / T05–T07, BP3 prep)** — `/app/dashboard` uses API-driven filters (URL is the source of truth; **Apply** refetches; same signature dedupes via React Query), flow / daily spend (with income line toggle) / category + tag pies (tag totals from `transactions_for_month`), KPI row (eight metrics including N/A for safe-to-spend), source balances, recent transactions (desktop table + mobile cards), profile strip from `GET /finance/appprofile/`, quick-add links. Chart slice / tag drillthrough navigates to `/app/transactions?fromDashboard=1&…` (placeholder shows URL hints). New API helpers: `fetchAppSnapshot`, profile + tag/category/source lookups. `GET /app/transactions/new?type=` placeholder route.
 
 ### Fixed

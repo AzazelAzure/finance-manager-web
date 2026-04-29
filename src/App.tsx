@@ -7,6 +7,9 @@ import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PhasePlaceholderPage } from "./pages/PhasePlaceholderPage";
 import { SignupPage } from "./pages/SignupPage";
+import { TransactionsPage } from "./pages/transactions/TransactionsPage";
+import { CalendarPage } from "./pages/transactions/CalendarPage";
+import { DeepDivePage } from "./pages/transactions/DeepDivePage";
 import { RequireAuth } from "./routes/RequireAuth";
 import { useSession } from "./state/SessionContext";
 import type { ReactNode } from "react";
@@ -31,41 +34,11 @@ export default function App(): ReactNode {
             <Route path="dashboard" element={<DashboardPage />} />
             <Route
               path="transactions"
-              element={
-                <PhasePlaceholderPage
-                  title="Transactions"
-                  blurb="Quick entry, filters, and CRUD are implemented in a later task."
-                  showDashboardDrillHint
-                />
-              }
+              element={<TransactionsPage />}
             />
-            <Route
-              path="transactions/new"
-              element={
-                <PhasePlaceholderPage
-                  title="New transaction"
-                  blurb="The transaction editor modal ships in the transactions workstream. Link opened from the dashboard with ?type=."
-                />
-              }
-            />
-            <Route
-              path="transactions/calendar"
-              element={
-                <PhasePlaceholderPage
-                  title="Transaction calendar"
-                  blurb="Calendar and heat map views ship in a later task."
-                />
-              }
-            />
-            <Route
-              path="transactions/deep-dive"
-              element={
-                <PhasePlaceholderPage
-                  title="Transaction insights"
-                  blurb="Flow and category deep-dive ships in a later task."
-                />
-              }
-            />
+            <Route path="transactions/new" element={<TransactionsPage />} />
+            <Route path="transactions/calendar" element={<CalendarPage />} />
+            <Route path="transactions/deep-dive" element={<DeepDivePage />} />
             <Route
               path="upcoming-expenses"
               element={
