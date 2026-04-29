@@ -77,7 +77,18 @@ VITE_API_BASE_URL=https://api.thehivemanager.com
 
 `http://localhost:...` and `http://127.0.0.1:...` are equivalent for `cloudflared` on the same host; `127.0.0.1` avoids a few IPv6/localhost gotchas on Linux.
 
-**4. CORS** — the API must allow `https://jsdevtesting.thehivemanager.com` in `CORS_ALLOWED_ORIGINS` (default in this repo’s API settings includes it on the feature branch; prod must match after deploy).
+**4. CORS** — the API must allow `https://jsdevtesting.thehivemanager.com` in `CORS_ALLOWED_ORIGINS` (default in this repo’s API settings includes it on the feature branch; prod must match after deploy). Same for **`https://jsdevprodtest.thehivemanager.com`** when using the preview port tunnel.
+
+## VPS: `dev@159.198.75.194` (Cloudflare → localhost)
+
+The beta host can run **Vite on the VPS** (no Docker) so tunnel private URLs stay **`http://127.0.0.1:5173`** and **`http://127.0.0.1:4173`** without touching the Reflex `docker compose` stack.
+
+1. **One-time:** Node via [nvm](https://github.com/nvm-sh/nvm) in `dev`’s home; `git pull` or rsync this repo to e.g. `/home/dev/finance_manager_web`.
+2. **Env:** `/home/dev/finance_manager_web/.env.local` with `VITE_API_BASE_URL=https://api.thehivemanager.com`.
+3. **Install + build:** `npm ci && npm run build`.
+4. **Run (background):** `./scripts/vps-serve.sh start` — dev on `127.0.0.1:5173`, preview on `127.0.0.1:4173`. `stop` / `status` are supported. Logs under `logs/vite-*.log`.
+
+If the full ecosystem is cloned, coordinate with `design_docs/30_Releases/Runtime_Signup_Sheet.md` when another agent owns `fm_docker.sh` on the same host.
 
 ---
 
