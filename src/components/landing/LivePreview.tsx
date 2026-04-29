@@ -1,13 +1,15 @@
 import { livePreviewData } from "./livePreviewData";
 import { KPI } from "../ui/KPI";
+import { tr, useLocale } from "../../lib/i18n";
 import type { ReactNode } from "react";
 
 export function LivePreview(): ReactNode {
+  const locale = useLocale();
   return (
     <section className="landing-section" aria-labelledby="live-preview-title">
-      <h2 id="live-preview-title">Product preview</h2>
+      <h2 id="live-preview-title">{tr("preview.title", locale)}</h2>
       <p className="landing-note muted">
-        Numbers below are <strong>demo data</strong> showing how dashboard + ledger surfaces look in the current web app.
+        {tr("preview.note", locale)}
       </p>
       <div
         className="live-preview"
@@ -25,10 +27,10 @@ export function LivePreview(): ReactNode {
             <table>
               <thead>
                 <tr>
-                  <th>When</th>
-                  <th>Description</th>
-                  <th>Source</th>
-                  <th>Amount</th>
+                  <th>{tr("preview.table.when", locale)}</th>
+                  <th>{tr("preview.table.description", locale)}</th>
+                  <th>{tr("preview.table.source", locale)}</th>
+                  <th>{tr("preview.table.amount", locale)}</th>
                 </tr>
               </thead>
               <tbody>
@@ -44,7 +46,7 @@ export function LivePreview(): ReactNode {
             </table>
           </div>
           <aside className="live-preview__aside" aria-label="Sample source balances">
-            <h4>Source balances</h4>
+            <h4>{tr("preview.sourceBalances", locale)}</h4>
             <ul>
               {livePreviewData.balances.map((b) => (
                 <li key={b.source}>

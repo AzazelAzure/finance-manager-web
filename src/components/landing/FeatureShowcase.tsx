@@ -1,17 +1,19 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { tr, useLocale } from "../../lib/i18n";
 
-type Tab = { id: string; label: string; blurb: string };
+type Tab = { id: string; labelKey: string; blurbKey: string };
 
 const TABS: Tab[] = [
-  { id: "dash", label: "Dashboard", blurb: "KPIs, flow charts, and source balances in one view." },
-  { id: "tx", label: "Transactions", blurb: "Filter, tag, and drill in without leaving the table." },
-  { id: "bills", label: "Bills", blurb: "Recurring, paid, and upcoming in a pipeline you can scan in seconds." },
-  { id: "data", label: "Data hub", blurb: "Sources, categories, and tags stay tidy as your life changes." },
+  { id: "dash", labelKey: "showcase.tabs.dashboard", blurbKey: "showcase.dashboard.blurb" },
+  { id: "tx", labelKey: "showcase.tabs.transactions", blurbKey: "showcase.transactions.blurb" },
+  { id: "bills", labelKey: "showcase.tabs.bills", blurbKey: "showcase.bills.blurb" },
+  { id: "data", labelKey: "showcase.tabs.dataHub", blurbKey: "showcase.dataHub.blurb" },
 ];
 
 const ROTATE_MS = 6000;
 
 export function FeatureShowcase(): ReactNode {
+  const locale = useLocale();
   const base = useId();
   const [i, setI] = useState(0);
   const [pause, setPause] = useState(false);
@@ -103,7 +105,7 @@ export function FeatureShowcase(): ReactNode {
 
   return (
     <section className="landing-section" aria-labelledby="showcase-title" onMouseEnter={() => setPause(true)} onMouseLeave={() => setPause(false)}>
-      <h2 id="showcase-title">In the app</h2>
+      <h2 id="showcase-title">{tr("showcase.title", locale)}</h2>
       <div
         className="showcase__tabs"
         role="tablist"
@@ -123,7 +125,7 @@ export function FeatureShowcase(): ReactNode {
             onClick={() => setI(idx)}
             aria-controls={`${base}-panel-${t.id}`}
           >
-            {t.label}
+            {tr(t.labelKey, locale)}
           </button>
         ))}
       </div>
@@ -142,7 +144,7 @@ export function FeatureShowcase(): ReactNode {
           >
             {renderPreview(t)}
             <p className="showcase__panel-copy muted">
-              {t.blurb}
+              {tr(t.blurbKey, locale)}
             </p>
           </div>
         ))}
