@@ -1,13 +1,13 @@
 /** Recharts / pie fill cycle (theme-friendly). */
 export const CHART_SLICE_COLORS = [
-  "var(--accent)",
-  "var(--success)",
-  "var(--chart-outgoing)",
-  "var(--chart-leak)",
-  "var(--warn)",
-  "var(--danger)",
-  "#0ea5e9",
-  "#c026d3",
+  "#2563eb",
+  "#16a34a",
+  "#d97706",
+  "#dc2626",
+  "#9333ea",
+  "#0f766e",
+  "#db2777",
+  "#475569",
 ] as const;
 
 export function pieColorAt(i: number): string {

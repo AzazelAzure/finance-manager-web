@@ -2,20 +2,21 @@ import { clsx } from "clsx";
 import { type ReactNode, useId, useState } from "react";
 import { Button } from "../ui/Button";
 import type { DashboardFilterDraft, PeriodPreset, TxTypeFilter } from "../../lib/dashboardQueryParams";
+import { tr, useLocale } from "../../lib/i18n";
 
-const periods: { id: PeriodPreset; label: string }[] = [
-  { id: "current", label: "Current month" },
-  { id: "last", label: "Last month" },
-  { id: "week", label: "Previous week" },
-  { id: "custom", label: "Custom range" },
+const periods: { id: PeriodPreset }[] = [
+  { id: "current" },
+  { id: "last" },
+  { id: "week" },
+  { id: "custom" },
 ];
 
-const txOptions: { id: TxTypeFilter; label: string }[] = [
-  { id: "", label: "All" },
-  { id: "INCOME", label: "Income" },
-  { id: "EXPENSE", label: "Expense" },
-  { id: "XFER_IN", label: "Transfer in" },
-  { id: "XFER_OUT", label: "Transfer out" },
+const txOptions: { id: TxTypeFilter }[] = [
+  { id: "" },
+  { id: "INCOME" },
+  { id: "EXPENSE" },
+  { id: "XFER_IN" },
+  { id: "XFER_OUT" },
 ];
 
 type Props = {
@@ -43,14 +44,15 @@ export function FilterRow({
   currencyOptions,
   isRefetching,
 }: Props): ReactNode {
+  const locale = useLocale();
   const [draft, setDraft] = useState(() => initialDraft);
   const baseId = useId();
   const customValid = draft.period !== "custom" || (Boolean(draft.startDate) && Boolean(draft.endDate));
   return (
-    <div className="filter-row" role="region" aria-label="Dashboard filters (apply to reload data)">
+    <div className="filter-row" role="region" aria-label={tr("dashboard.filters.aria", locale)}>
       <div className="filter-row__group">
         <p className="filter-row__label" id={baseId + "p"}>
-          Period
+          {tr("dashboard.filters.period", locale)}
         </p>
         <div className="filter-chips" role="group" aria-labelledby={baseId + "p"}>
           {periods.map((p) => (
@@ -64,7 +66,16 @@ export function FilterRow({
               aria-pressed={draft.period === p.id}
               className={clsx("filter-chip", draft.period !== p.id && "filter-chip--off")}
             >
-              {p.label}
+              {tr(
+                p.id === "current"
+                  ? "dashboard.filters.period.current"
+                  : p.id === "last"
+                    ? "dashboard.filters.period.last"
+                    : p.id === "week"
+                      ? "dashboard.filters.period.week"
+                      : "dashboard.filters.period.custom",
+                locale,
+              )}
             </Button>
           ))}
         </div>
@@ -72,7 +83,7 @@ export function FilterRow({
           <div className="filter-row__dates" style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
             <div className="ui-field">
               <label className="ui-label" htmlFor={baseId + "sd"}>
-                Start
+                {tr("dashboard.filters.start", locale)}
               </label>
               <input
                 id={baseId + "sd"}
@@ -86,7 +97,7 @@ export function FilterRow({
             </div>
             <div className="ui-field">
               <label className="ui-label" htmlFor={baseId + "ed"}>
-                End
+                {tr("dashboard.filters.end", locale)}
               </label>
               <input
                 id={baseId + "ed"}
@@ -104,7 +115,7 @@ export function FilterRow({
 
       <div className="filter-row__group" style={{ marginTop: 12 }}>
         <p className="filter-row__label" id={baseId + "t"}>
-          Type
+          {tr("dashboard.filters.type", locale)}
         </p>
         <div className="filter-chips" role="group" aria-labelledby={baseId + "t"}>
           {txOptions.map((o) => (
@@ -118,7 +129,18 @@ export function FilterRow({
               aria-pressed={draft.txType === o.id}
               className={clsx("filter-chip", draft.txType !== o.id && o.id && "filter-chip--off")}
             >
-              {o.label}
+              {tr(
+                o.id === ""
+                  ? "dashboard.filters.type.all"
+                  : o.id === "INCOME"
+                    ? "dashboard.filters.type.income"
+                    : o.id === "EXPENSE"
+                      ? "dashboard.filters.type.expense"
+                      : o.id === "XFER_IN"
+                        ? "dashboard.filters.type.xferIn"
+                        : "dashboard.filters.type.xferOut",
+                locale,
+              )}
             </Button>
           ))}
         </div>
@@ -127,7 +149,7 @@ export function FilterRow({
       {topTagNames.length > 0 ? (
         <div className="filter-row__group" style={{ marginTop: 12 }}>
           <p className="filter-row__label" id={baseId + "g"}>
-            Top tags
+            {tr("dashboard.filters.topTags", locale)}
           </p>
           <div className="filter-chips" role="group" aria-labelledby={baseId + "g"}>
             {topTagNames.map((t) => (
@@ -149,14 +171,14 @@ export function FilterRow({
       ) : null}
 
       <details className="filter-advanced" style={{ marginTop: 12 }}>
-        <summary className="filter-advanced__summary">Advanced filters</summary>
+        <summary className="filter-advanced__summary">{tr("dashboard.filters.advanced", locale)}</summary>
         <div
           className="filter-advanced__grid"
           style={{ display: "grid", gap: 8, marginTop: 8, maxWidth: 480 }}
         >
           <div className="ui-field">
             <label className="ui-label" htmlFor={baseId + "tag"}>
-              Tag
+              {tr("dashboard.filters.tag", locale)}
             </label>
             <input
               id={baseId + "tag"}
@@ -176,7 +198,7 @@ export function FilterRow({
           </div>
           <div className="ui-field">
             <label className="ui-label" htmlFor={baseId + "cat"}>
-              Category
+              {tr("dashboard.filters.category", locale)}
             </label>
             <select
               id={baseId + "cat"}
@@ -186,7 +208,7 @@ export function FilterRow({
                 setDraft((d) => ({ ...d, category: e.target.value }));
               }}
             >
-              <option value="">Any</option>
+              <option value="">{tr("dashboard.filters.any", locale)}</option>
               {categoryNames.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -196,7 +218,7 @@ export function FilterRow({
           </div>
           <div className="ui-field">
             <label className="ui-label" htmlFor={baseId + "src"}>
-              Source
+              {tr("dashboard.filters.source", locale)}
             </label>
             <select
               id={baseId + "src"}
@@ -206,7 +228,7 @@ export function FilterRow({
                 setDraft((d) => ({ ...d, source: e.target.value }));
               }}
             >
-              <option value="">Any</option>
+              <option value="">{tr("dashboard.filters.any", locale)}</option>
               {sourceNames.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -216,7 +238,7 @@ export function FilterRow({
           </div>
           <div className="ui-field">
             <label className="ui-label" htmlFor={baseId + "ccy"}>
-              Currency
+              {tr("dashboard.filters.currency", locale)}
             </label>
             <select
               id={baseId + "ccy"}
@@ -226,7 +248,7 @@ export function FilterRow({
                 setDraft((d) => ({ ...d, currency: e.target.value }));
               }}
             >
-              <option value="">Any</option>
+              <option value="">{tr("dashboard.filters.any", locale)}</option>
               {currencyOptions.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -245,7 +267,7 @@ export function FilterRow({
           }}
           disabled={!customValid}
         >
-          Apply
+          {tr("dashboard.filters.apply", locale)}
         </Button>
         <Button
           type="button"
@@ -253,14 +275,14 @@ export function FilterRow({
           onClick={onRefresh}
           disabled={isRefetching}
         >
-          {isRefetching ? "Refreshing…" : "Refresh"}
+          {isRefetching ? tr("dashboard.filters.refreshing", locale) : tr("dashboard.filters.refresh", locale)}
         </Button>
         <Button
           type="button"
           variant="ghost"
           onClick={onReset}
         >
-          Reset
+          {tr("dashboard.filters.reset", locale)}
         </Button>
       </div>
     </div>

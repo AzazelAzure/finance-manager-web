@@ -9,6 +9,7 @@ import { DataTable } from "../../components/ui/DataTable";
 import { formatMoney } from "../../lib/money";
 import { ChartFrame } from "../../components/dashboard/ChartFrame";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { tr, useLocale } from "../../lib/i18n";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -38,6 +39,7 @@ function monthGridAnchor(startIso: string): Date {
 }
 
 export function CalendarPage(): ReactNode {
+  const locale = useLocale();
   const [startDate, setStartDate] = useState(monthStartIso());
   const [endDate, setEndDate] = useState(todayIso());
   const [displayCurrencyMode, setDisplayCurrencyMode] = useState<"base" | "original">("base");
@@ -163,14 +165,14 @@ export function CalendarPage(): ReactNode {
     <div className="stack">
       <div className="app-toolbar app-surface">
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-          Transactions calendar
+          {tr("txCalendar.title", locale)}
         </h2>
         <div style={{ display: "flex", gap: 8 }}>
           <Link to="/app/transactions" className="ui-btn ui-btn--secondary">
-            Ledger
+            {tr("txCalendar.ledger", locale)}
           </Link>
           <Link to="/app/transactions/deep-dive" className="ui-btn ui-btn--secondary">
-            Deep dive
+            {tr("txCalendar.deepDive", locale)}
           </Link>
         </div>
       </div>
@@ -178,39 +180,39 @@ export function CalendarPage(): ReactNode {
       <Card>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
           <label className="ui-field">
-            <span className="ui-label">Start</span>
+            <span className="ui-label">{tr("common.start", locale)}</span>
             <input className="ui-input" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </label>
           <label className="ui-field">
-            <span className="ui-label">End</span>
+            <span className="ui-label">{tr("common.end", locale)}</span>
             <input className="ui-input" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </label>
           <label className="ui-field">
-            <span className="ui-label">Display currency</span>
+            <span className="ui-label">{tr("txCalendar.displayCurrency", locale)}</span>
             <select className="ui-input" value={displayCurrencyMode} onChange={(e) => setDisplayCurrencyMode(e.target.value as "base" | "original")}>
-              <option value="base">Base</option>
-              <option value="original">Original</option>
+              <option value="base">{tr("common.base", locale)}</option>
+              <option value="original">{tr("common.original", locale)}</option>
             </select>
           </label>
           <label className="ui-field">
-            <span className="ui-label">Heat metric</span>
+            <span className="ui-label">{tr("txCalendar.heatMetric", locale)}</span>
             <select className="ui-input" value={heatMetricMode} onChange={(e) => setHeatMetricMode(e.target.value as "net" | "expense_only" | "count")}>
-              <option value="net">Net</option>
-              <option value="expense_only">Expense only</option>
-              <option value="count">Count</option>
+              <option value="net">{tr("common.net", locale)}</option>
+              <option value="expense_only">{tr("txCalendar.expenseOnly", locale)}</option>
+              <option value="count">{tr("common.count", locale)}</option>
             </select>
           </label>
         </div>
       </Card>
 
-      {query.isLoading ? <LoadingState label="Loading calendar..." /> : null}
-      {query.isError ? <ErrorState title="Calendar load failed" onRetry={() => void query.refetch()} /> : null}
+      {query.isLoading ? <LoadingState label={tr("txCalendar.loading", locale)} /> : null}
+      {query.isError ? <ErrorState title={tr("txCalendar.loadFailed", locale)} onRetry={() => void query.refetch()} /> : null}
 
       {query.data ? (
         <>
           <ChartFrame
-            title="Daily activity"
-            ariaLabel="Daily transactions metric chart"
+            title={tr("txCalendar.dailyActivity", locale)}
+            ariaLabel={tr("txCalendar.dailyActivityAria", locale)}
             isLoading={query.isLoading}
             isError={Boolean(query.isError)}
             onRetry={() => void query.refetch()}
@@ -240,7 +242,7 @@ export function CalendarPage(): ReactNode {
             </h3>
             <div
               role="grid"
-              aria-label="Calendar month grid"
+              aria-label={tr("txCalendar.monthGridAria", locale)}
               style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0,1fr))", gap: 6 }}
             >
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
@@ -284,8 +286,8 @@ export function CalendarPage(): ReactNode {
           </Card>
 
           <ChartFrame
-            title="Monthly totals"
-            ariaLabel="Monthly totals chart"
+            title={tr("txCalendar.monthlyTotals", locale)}
+            ariaLabel={tr("txCalendar.monthlyTotalsAria", locale)}
             isLoading={query.isLoading}
             isError={Boolean(query.isError)}
             onRetry={() => void query.refetch()}
@@ -307,36 +309,36 @@ export function CalendarPage(): ReactNode {
 
           <Card>
             <h3 className="muted" style={{ margin: "0 0 0.5rem" }}>
-              Due events
+              {tr("txCalendar.dueEvents", locale)}
             </h3>
             <DataTable
               keyField="date"
               data={query.data.due_events ?? []}
               columns={[
-                { id: "date", header: "Date", cell: (r) => r.date },
-                { id: "name", header: "Name", cell: (r) => r.expense_name },
-                { id: "amount", header: "Amount", cell: (r) => formatMoney(r.amount, r.currency) },
-                { id: "paid", header: "Paid", cell: (r) => (r.paid_flag ? "Yes" : "No") },
+                { id: "date", header: tr("common.date", locale), cell: (r) => r.date },
+                { id: "name", header: tr("common.name", locale), cell: (r) => r.expense_name },
+                { id: "amount", header: tr("common.amount", locale), cell: (r) => formatMoney(r.amount, r.currency) },
+                { id: "paid", header: tr("common.paid", locale), cell: (r) => (r.paid_flag ? tr("common.yes", locale) : tr("common.no", locale)) },
               ]}
-              emptyTitle="No due events in range"
+              emptyTitle={tr("txCalendar.noDueEvents", locale)}
             />
           </Card>
 
           <Card>
             <h3 className="muted" style={{ margin: "0 0 0.5rem" }}>
-              Day drill {selectedDay ? `(${selectedDay})` : ""}
+              {tr("txCalendar.dayDrill", locale)} {selectedDay ? `(${selectedDay})` : ""}
             </h3>
             <DataTable
               keyField="tx_id"
               data={dayDrillRows}
               columns={[
-                { id: "date", header: "Date", cell: (r) => r.date },
-                { id: "type", header: "Type", cell: (r) => r.tx_type },
-                { id: "desc", header: "Description", cell: (r) => r.description || "—" },
-                { id: "amt", header: "Amount", cell: (r) => formatMoney(r.amount, r.currency) },
-                { id: "src", header: "Source", cell: (r) => r.source || "—" },
+                { id: "date", header: tr("common.date", locale), cell: (r) => r.date },
+                { id: "type", header: tr("common.type", locale), cell: (r) => r.tx_type },
+                { id: "desc", header: tr("common.description", locale), cell: (r) => r.description || "—" },
+                { id: "amt", header: tr("common.amount", locale), cell: (r) => formatMoney(r.amount, r.currency) },
+                { id: "src", header: tr("common.source", locale), cell: (r) => r.source || "—" },
               ]}
-              emptyTitle="No day drill rows"
+              emptyTitle={tr("txCalendar.noDayDrill", locale)}
             />
           </Card>
         </>

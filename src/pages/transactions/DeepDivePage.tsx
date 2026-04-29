@@ -9,6 +9,7 @@ import { ChartFrame } from "../../components/dashboard/ChartFrame";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { LoadingState } from "../../components/ui/LoadingState";
 import { formatMoney } from "../../lib/money";
+import { tr, useLocale } from "../../lib/i18n";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -74,6 +75,7 @@ function normalizeCategoryRows(input: unknown): Array<{ category: string; amount
 }
 
 export function DeepDivePage(): ReactNode {
+  const locale = useLocale();
   const [startDate, setStartDate] = useState(monthStartIso());
   const [endDate, setEndDate] = useState(todayIso());
   const query = useQuery({
@@ -93,14 +95,14 @@ export function DeepDivePage(): ReactNode {
     <div className="stack">
       <div className="app-toolbar app-surface">
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-          Transaction insights
+          {tr("txDive.title", locale)}
         </h2>
         <div style={{ display: "flex", gap: 8 }}>
           <Link to="/app/transactions" className="ui-btn ui-btn--secondary">
-            Ledger
+            {tr("txCalendar.ledger", locale)}
           </Link>
           <Link to="/app/transactions/calendar" className="ui-btn ui-btn--secondary">
-            Calendar
+            {tr("txCalendar.deepDive", locale)}
           </Link>
         </div>
       </div>
@@ -108,27 +110,27 @@ export function DeepDivePage(): ReactNode {
       <Card>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
           <label className="ui-field">
-            <span className="ui-label">Start</span>
+            <span className="ui-label">{tr("common.start", locale)}</span>
             <input className="ui-input" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </label>
           <label className="ui-field">
-            <span className="ui-label">End</span>
+            <span className="ui-label">{tr("common.end", locale)}</span>
             <input className="ui-input" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </label>
           <div style={{ display: "flex", alignItems: "end" }}>
             <Button variant="secondary" onClick={() => void query.refetch()}>
-              Reload visualization
+              {tr("txDive.reload", locale)}
             </Button>
           </div>
         </div>
       </Card>
 
-      {query.isLoading ? <LoadingState label="Loading visualization..." /> : null}
-      {query.isError ? <ErrorState title="Visualization failed" onRetry={() => void query.refetch()} /> : null}
+      {query.isLoading ? <LoadingState label={tr("txDive.loading", locale)} /> : null}
+      {query.isError ? <ErrorState title={tr("txDive.failed", locale)} onRetry={() => void query.refetch()} /> : null}
 
       <ChartFrame
-        title="Daily flow"
-        ariaLabel="Flow daily chart"
+        title={tr("txDive.dailyFlow", locale)}
+        ariaLabel={tr("txDive.dailyFlowAria", locale)}
         isLoading={query.isLoading}
         isError={Boolean(query.isError)}
         onRetry={() => void query.refetch()}
@@ -150,8 +152,8 @@ export function DeepDivePage(): ReactNode {
 
       <div style={{ display: "grid", gap: "var(--space-4)", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
         <ChartFrame
-          title="Transaction type mix"
-          ariaLabel="Transaction type pie"
+          title={tr("txDive.typeMix", locale)}
+          ariaLabel={tr("txDive.typeMixAria", locale)}
           isLoading={query.isLoading}
           isError={Boolean(query.isError)}
           onRetry={() => void query.refetch()}
@@ -172,8 +174,8 @@ export function DeepDivePage(): ReactNode {
         </ChartFrame>
 
         <ChartFrame
-          title="Top expense categories"
-          ariaLabel="Top expense categories bar"
+          title={tr("txDive.topCategories", locale)}
+          ariaLabel={tr("txDive.topCategoriesAria", locale)}
           isLoading={query.isLoading}
           isError={Boolean(query.isError)}
           onRetry={() => void query.refetch()}
@@ -195,7 +197,7 @@ export function DeepDivePage(): ReactNode {
 
       <Card>
         <Link className="ui-btn ui-btn--secondary" to={`/app/transactions${txLinkSearch}`}>
-          View transactions in this range
+          {tr("txDive.viewRange", locale)}
         </Link>
       </Card>
     </div>

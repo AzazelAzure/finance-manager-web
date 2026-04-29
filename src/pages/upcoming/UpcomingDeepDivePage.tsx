@@ -12,6 +12,7 @@ import { ErrorState } from "../../components/ui/ErrorState";
 import { KPI } from "../../components/ui/KPI";
 import { LoadingState } from "../../components/ui/LoadingState";
 import { formatMoney } from "../../lib/money";
+import { tr, useLocale } from "../../lib/i18n";
 
 type TimelineRow = {
   due_date: string;
@@ -69,6 +70,7 @@ function normalizeTimeline(input: unknown): TimelineRow[] {
 }
 
 export function UpcomingDeepDivePage(): ReactNode {
+  const locale = useLocale();
   const [startDate, setStartDate] = useState(monthStartIso());
   const [endDate, setEndDate] = useState(todayIso());
 
@@ -133,11 +135,11 @@ export function UpcomingDeepDivePage(): ReactNode {
     <div className="stack">
       <div className="app-toolbar app-surface">
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-          Upcoming insights
+          {tr("upcomingDive.title", locale)}
         </h2>
         <div style={{ display: "flex", gap: 8 }}>
           <Link to="/app/upcoming-expenses" className="ui-btn ui-btn--secondary">
-            Upcoming list
+            {tr("upcomingDive.list", locale)}
           </Link>
         </div>
       </div>
@@ -145,34 +147,34 @@ export function UpcomingDeepDivePage(): ReactNode {
       <Card>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
           <label className="ui-field">
-            <span className="ui-label">Start</span>
+            <span className="ui-label">{tr("common.start", locale)}</span>
             <input className="ui-input" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </label>
           <label className="ui-field">
-            <span className="ui-label">End</span>
+            <span className="ui-label">{tr("common.end", locale)}</span>
             <input className="ui-input" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </label>
           <div style={{ display: "flex", alignItems: "end" }}>
             <Button variant="secondary" onClick={() => void vizQuery.refetch()}>
-              Reload insights
+              {tr("upcomingDive.reload", locale)}
             </Button>
           </div>
         </div>
       </Card>
 
-      {isLoading ? <LoadingState label="Loading upcoming insights..." /> : null}
-      {isError ? <ErrorState title="Upcoming insights failed" onRetry={() => void vizQuery.refetch()} /> : null}
+      {isLoading ? <LoadingState label={tr("upcomingDive.loading", locale)} /> : null}
+      {isError ? <ErrorState title={tr("upcomingDive.failed", locale)} onRetry={() => void vizQuery.refetch()} /> : null}
 
       <div style={{ display: "grid", gap: "var(--space-4)", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-        <KPI label="Upcoming this month" value={formatMoney(totalThisMonth, "USD")} />
-        <KPI label="Upcoming next month" value={formatMoney(totalNextMonth, "USD")} />
-        <KPI label="Recurring share" value={`${recurringPct}%`} />
-        <KPI label="Overdue amount" value={formatMoney(overdueAmount, "USD")} />
+        <KPI label={tr("upcomingDive.kpi.thisMonth", locale)} value={formatMoney(totalThisMonth, "USD")} />
+        <KPI label={tr("upcomingDive.kpi.nextMonth", locale)} value={formatMoney(totalNextMonth, "USD")} />
+        <KPI label={tr("upcomingDive.kpi.recurring", locale)} value={`${recurringPct}%`} />
+        <KPI label={tr("upcomingDive.kpi.overdue", locale)} value={formatMoney(overdueAmount, "USD")} />
       </div>
 
       <ChartFrame
-        title="Monthly upcoming totals"
-        ariaLabel="Monthly upcoming bar chart"
+        title={tr("upcomingDive.monthlyTotals", locale)}
+        ariaLabel={tr("upcomingDive.monthlyTotalsAria", locale)}
         isLoading={isLoading}
         isError={isError}
         onRetry={() => void vizQuery.refetch()}
@@ -193,9 +195,9 @@ export function UpcomingDeepDivePage(): ReactNode {
 
       <Card>
         <h3 className="muted" style={{ marginTop: 0 }}>
-          Upcoming timeline
+          {tr("upcomingDive.timeline", locale)}
         </h3>
-        <DataTable columns={columns} data={timelineData} keyField="name" emptyTitle="No timeline entries for this range" />
+        <DataTable columns={columns} data={timelineData} keyField="name" emptyTitle={tr("upcomingDive.empty", locale)} />
       </Card>
     </div>
   );

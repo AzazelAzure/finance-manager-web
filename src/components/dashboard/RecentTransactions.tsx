@@ -5,6 +5,7 @@ import { EmptyState } from "../ui/EmptyState";
 import { formatMoney } from "../../lib/money";
 import type { SnapshotTransactionRow } from "../../api/types";
 import { useBreakpoint } from "../../lib/breakpoints";
+import { tr, useLocale } from "../../lib/i18n";
 
 type Props = { rows: SnapshotTransactionRow[]; baseCurrency: string };
 
@@ -22,18 +23,19 @@ function typeBadge(t: string): string {
 }
 
 export function RecentTransactions({ rows, baseCurrency }: Props): ReactNode {
+  const locale = useLocale();
   const { atOrAboveMd: desktop } = useBreakpoint();
   if (rows.length === 0) {
     return (
       <Card>
         <h3 className="muted" style={{ margin: "0 0 0.75rem" }}>
-          Recent transactions
+          {tr("dashboard.recent.title", locale)}
         </h3>
         <EmptyState
-          title="No transactions in this period"
+          title={tr("dashboard.recent.emptyTitle", locale)}
           action={
             <Link to="/app/transactions/new" className="ui-btn">
-              Add transaction
+              {tr("dashboard.recent.add", locale)}
             </Link>
           }
         />
@@ -45,18 +47,18 @@ export function RecentTransactions({ rows, baseCurrency }: Props): ReactNode {
     return (
       <Card>
         <h3 className="muted" style={{ margin: "0 0 0.75rem" }}>
-          Recent transactions
+          {tr("dashboard.recent.title", locale)}
         </h3>
         <div className="table-wrap recent-tx-table">
           <table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Description</th>
-                <th className="num">Amount</th>
-                <th>Source</th>
-                <th>Category</th>
+                <th>{tr("dashboard.recent.col.date", locale)}</th>
+                <th>{tr("dashboard.recent.col.type", locale)}</th>
+                <th>{tr("dashboard.recent.col.description", locale)}</th>
+                <th className="num">{tr("dashboard.recent.col.amount", locale)}</th>
+                <th>{tr("dashboard.recent.col.source", locale)}</th>
+                <th>{tr("dashboard.recent.col.category", locale)}</th>
               </tr>
             </thead>
             <tbody>
@@ -82,7 +84,7 @@ export function RecentTransactions({ rows, baseCurrency }: Props): ReactNode {
   return (
     <Card>
       <h3 className="muted" style={{ margin: "0 0 0.75rem" }}>
-        Recent transactions
+        {tr("dashboard.recent.title", locale)}
       </h3>
       <ul className="recent-tx-cards">
         {rows.map((r) => (

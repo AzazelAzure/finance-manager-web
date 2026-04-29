@@ -29,6 +29,7 @@ import {
   urlSearchParamsToFilterDraft,
 } from "../../lib/dashboardQueryParams";
 import { firstCurrency } from "./dashboardUtil";
+import { tr, useLocale } from "../../lib/i18n";
 
 function balanceCurrency(data: SnapshotResponse | undefined, profile: { base_currency: string } | undefined): string {
   if (data && data.source_balances.length > 0) {
@@ -54,6 +55,7 @@ function appendDrill(
 }
 
 export function DashboardPage(): ReactNode {
+  const locale = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
   const nav = useNavigate();
   const searchString = searchParams.toString();
@@ -162,8 +164,8 @@ export function DashboardPage(): ReactNode {
     return (
       <div className="stack dashboard-page">
         <ErrorState
-          title="Dashboard data failed"
-          description={`Unable to load snapshot: ${errMsg}. Check API, proxy, or try again.`}
+          title={tr("dashboard.error.title", locale)}
+          description={`${tr("dashboard.error.description", locale)}: ${errMsg}.`}
           onRetry={() => void refetch()}
         />
       </div>
@@ -173,13 +175,13 @@ export function DashboardPage(): ReactNode {
   if (!data && (isLoading || isFetching)) {
     return (
       <Card>
-        <LoadingState label="Loading dashboard data…" />
+        <LoadingState label={tr("dashboard.loading", locale)} />
       </Card>
     );
   }
 
   if (!data) {
-    return <ErrorState title="No data" onRetry={() => void refetch()} description="No snapshot was returned." />;
+    return <ErrorState title={tr("dashboard.noData.title", locale)} onRetry={() => void refetch()} description={tr("dashboard.noData.description", locale)} />;
   }
 
   return (
@@ -187,18 +189,18 @@ export function DashboardPage(): ReactNode {
       <div className="dashboard-header">
         <div>
           <h2 className="muted dashboard-title">
-            Dashboard
+            {tr("dashboard.title", locale)}
           </h2>
           <p className="muted-text dashboard-subtitle">
-            Account snapshot. Adjust filters, then <strong>Apply</strong> to refetch. Filters are stored in the URL.
+            {tr("dashboard.subtitle", locale)}
           </p>
         </div>
         <Button type="button" variant="secondary" onClick={() => void refetch()}>
-          Refresh
+          {tr("dashboard.refresh", locale)}
         </Button>
       </div>
 
-      <section className="dashboard-section" aria-label="KPIs">
+      <section className="dashboard-section" aria-label={tr("dashboard.section.kpis", locale)}>
         <KPIRow
           currency={currency}
           summary={summary}
@@ -209,7 +211,7 @@ export function DashboardPage(): ReactNode {
         />
       </section>
 
-      <section className="dashboard-section" aria-label="Filters">
+      <section className="dashboard-section" aria-label={tr("dashboard.section.filters", locale)}>
         <FilterRow
           key={appliedKey}
           initialDraft={initialFilterDraft}
@@ -227,7 +229,7 @@ export function DashboardPage(): ReactNode {
 
       <div className="dashboard-root">
         <div className="dashboard-root__row">
-          <div className="dashboard-root__main" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div className="dashboard-root__main dashboard-col">
             <FlowChart
               data={data.flow_series}
               baseCurrency={currency}
@@ -260,7 +262,7 @@ export function DashboardPage(): ReactNode {
               onSelectTag={onDrillTag}
             />
           </div>
-          <aside className="dashboard-root__side" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <aside className="dashboard-root__side dashboard-col">
             <SourceBalances rows={data.source_balances} />
             <ProfileOverview profile={profileQuery.data} isError={profileQuery.isError} />
             <QuickActions />

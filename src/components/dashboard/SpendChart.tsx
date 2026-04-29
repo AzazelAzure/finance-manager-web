@@ -13,6 +13,7 @@ import {
 import { formatMoney } from "../../lib/money";
 import { ChartFrame } from "./ChartFrame";
 import { Button } from "../ui/Button";
+import { tr, useLocale } from "../../lib/i18n";
 
 type DayPoint = { date: string; spend: number; income: number };
 
@@ -45,18 +46,19 @@ function mergeSeries(
 }
 
 export function SpendChart({ dailySpend, dailyIncome, baseCurrency, isLoading, isError, onRetry }: Props): ReactNode {
+  const locale = useLocale();
   const [showIncome, setShowIncome] = useState(false);
   const data = mergeSeries(dailySpend, dailyIncome);
   const empty = !isLoading && !isError && data.length === 0;
   return (
     <ChartFrame
-      title="Daily spend"
-      ariaLabel="Bar chart: daily spending with optional daily income overlay"
+      title={tr("dashboard.chart.dailySpend.title", locale)}
+      ariaLabel={tr("dashboard.chart.dailySpend.aria", locale)}
       isLoading={isLoading}
       isError={isError}
       onRetry={onRetry}
       isEmpty={empty}
-      emptyDescription="No daily activity in this range."
+      emptyDescription={tr("dashboard.chart.dailySpend.empty", locale)}
       actions={
         <Button
           type="button"
@@ -67,7 +69,7 @@ export function SpendChart({ dailySpend, dailyIncome, baseCurrency, isLoading, i
           aria-pressed={showIncome}
           className={!showIncome ? "dashboard-toggle--off" : undefined}
         >
-          Show income line
+          {tr("dashboard.chart.dailySpend.toggleIncome", locale)}
         </Button>
       }
     >
@@ -86,12 +88,12 @@ export function SpendChart({ dailySpend, dailyIncome, baseCurrency, isLoading, i
               }}
             />
             <Legend />
-            <Bar dataKey="spend" name="Spend" fill="var(--chart-outgoing, var(--accent))" maxBarSize={28} />
+            <Bar dataKey="spend" name={tr("dashboard.chart.dailySpend.spend", locale)} fill="var(--chart-outgoing, var(--accent))" maxBarSize={28} />
             {showIncome ? (
               <Line
                 type="monotone"
                 dataKey="income"
-                name="Income"
+                name={tr("dashboard.chart.dailySpend.income", locale)}
                 stroke="var(--chart-incoming, var(--success))"
                 strokeWidth={2}
                 dot={false}

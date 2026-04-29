@@ -23,6 +23,7 @@ import {
   updateSource,
 } from "../../api/lookups";
 import type { SourceRow, TransactionRecord } from "../../api/types";
+import { tr, useLocale } from "../../lib/i18n";
 
 type EntityType = "source" | "category" | "tag";
 
@@ -105,6 +106,7 @@ function toTagFrequency(rows: TransactionRecord[]): Record<string, number> {
 }
 
 export function DataHubPage(): ReactNode {
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [textDraft, setTextDraft] = useState("");
@@ -252,13 +254,13 @@ export function DataHubPage(): ReactNode {
     <div className="stack">
       <div className="app-surface app-surface--data">
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-          Data hub
+          {tr("dataHub.title", locale)}
         </h2>
       </div>
       {anyError ? (
         <ErrorState
-          title="Failed to load data hub"
-          description="One or more lookup datasets did not load."
+          title={tr("dataHub.failed", locale)}
+          description={tr("dataHub.failedDesc", locale)}
           onRetry={() => {
             void categoriesQuery.refetch();
             void tagsQuery.refetch();
@@ -267,20 +269,20 @@ export function DataHubPage(): ReactNode {
           }}
         />
       ) : anyLoading && !categoriesQuery.data && !tagsQuery.data && !sourcesQuery.data ? (
-        <LoadingState label="Loading data hub..." />
+        <LoadingState label={tr("dataHub.loading", locale)} />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
           <Card>
             <div className="stack" style={{ gap: 10 }}>
               <div className="row-between">
-                <h3 style={{ margin: 0 }}>Sources</h3>
+                <h3 style={{ margin: 0 }}>{tr("common.sources", locale)}</h3>
                 <Button variant="secondary" onClick={() => openCreate("source")}>
-                  Add
+                  {tr("common.add", locale)}
                 </Button>
               </div>
               {(sourcesQuery.data ?? []).length === 0 ? (
                 <p className="muted-text" style={{ margin: 0 }}>
-                  No sources yet.
+                  {tr("dataHub.noSources", locale)}
                 </p>
               ) : (
                 (sourcesQuery.data ?? []).map((row) => (
@@ -316,14 +318,14 @@ export function DataHubPage(): ReactNode {
           <Card>
             <div className="stack" style={{ gap: 10 }}>
               <div className="row-between">
-                <h3 style={{ margin: 0 }}>Categories</h3>
+                <h3 style={{ margin: 0 }}>{tr("common.categories", locale)}</h3>
                 <Button variant="secondary" onClick={() => openCreate("category")}>
-                  Add
+                  {tr("common.add", locale)}
                 </Button>
               </div>
               {(categoriesQuery.data ?? []).length === 0 ? (
                 <p className="muted-text" style={{ margin: 0 }}>
-                  No categories yet.
+                  {tr("dataHub.noCategories", locale)}
                 </p>
               ) : (
                 (categoriesQuery.data ?? []).map((name) => {
@@ -356,14 +358,14 @@ export function DataHubPage(): ReactNode {
           <Card>
             <div className="stack" style={{ gap: 10 }}>
               <div className="row-between">
-                <h3 style={{ margin: 0 }}>Tags</h3>
+                <h3 style={{ margin: 0 }}>{tr("common.tags", locale)}</h3>
                 <Button variant="secondary" onClick={() => openCreate("tag")}>
-                  Add
+                  {tr("common.add", locale)}
                 </Button>
               </div>
               {(tagsQuery.data ?? []).length === 0 ? (
                 <p className="muted-text" style={{ margin: 0 }}>
-                  No tags yet.
+                  {tr("dataHub.noTags", locale)}
                 </p>
               ) : (
                 (tagsQuery.data ?? []).map((name) => (

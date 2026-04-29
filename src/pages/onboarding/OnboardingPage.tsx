@@ -21,6 +21,7 @@ import {
   getOnboardingProgress,
   setOnboardingProgress,
 } from "../../state/onboarding";
+import { tr, useLocale } from "../../lib/i18n";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -82,6 +83,7 @@ function timezoneOptions(): Array<{ value: string; label: string }> {
 }
 
 export function OnboardingPage({ step }: { step: Step }): ReactNode {
+  const locale = useLocale();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [error, setError] = useState("");
@@ -219,7 +221,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
     <div className="stack">
       <div className="stack" style={{ gap: 6 }}>
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-          Onboarding
+          {tr("onboarding.title", locale)}
         </h2>
         <span className="muted-text">{progressLabel}</span>
         <div style={{ height: 8, borderRadius: 999, background: "var(--border)" }}>
@@ -227,7 +229,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
         </div>
       </div>
 
-      {error ? <ErrorState title="Onboarding step failed" description={error} /> : null}
+      {error ? <ErrorState title={tr("onboarding.stepFailed", locale)} description={error} /> : null}
 
       {step === 1 ? (
         <Card>
@@ -250,7 +252,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
               ]}
             />
             <Button type="submit" disabled={step1Mutation.isPending}>
-              {step1Mutation.isPending ? "Saving..." : "Continue"}
+              {step1Mutation.isPending ? tr("common.saving", locale) : tr("common.continue", locale)}
             </Button>
           </AppForm>
         </Card>
@@ -281,7 +283,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
             <TextField name="amount" label="Starting balance" />
             <TextField name="currency" label="Currency" />
             <Button type="submit" disabled={step2Mutation.isPending}>
-              {step2Mutation.isPending ? "Saving..." : "Continue"}
+              {step2Mutation.isPending ? tr("common.saving", locale) : tr("common.continue", locale)}
             </Button>
           </AppForm>
         </Card>
@@ -299,7 +301,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
           >
             <TextField name="category" label="Category name" />
             <Button type="submit" disabled={step3Mutation.isPending}>
-              {step3Mutation.isPending ? "Saving..." : "Continue"}
+              {step3Mutation.isPending ? tr("common.saving", locale) : tr("common.continue", locale)}
             </Button>
           </AppForm>
         </Card>
@@ -321,7 +323,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
               style={{ width: "100%", minHeight: 46 }}
               onClick={() => step4Form.setValue("create_first_tx", !createFirstTx)}
             >
-              {createFirstTx ? "Create first transaction enabled" : "Create first transaction"}
+              {createFirstTx ? tr("onboarding.createFirst.enabled", locale) : tr("onboarding.createFirst", locale)}
             </Button>
             {createFirstTx ? (
               <>
@@ -349,7 +351,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
               </>
             ) : null}
             <Button type="submit" disabled={step4Mutation.isPending}>
-              {step4Mutation.isPending ? "Finishing..." : "Finish onboarding"}
+              {step4Mutation.isPending ? tr("onboarding.finishing", locale) : tr("onboarding.finish", locale)}
             </Button>
           </AppForm>
         </Card>
@@ -368,7 +370,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
             });
           }}
         >
-          Skip onboarding
+          {tr("onboarding.skip", locale)}
         </Link>
       </p>
     </div>

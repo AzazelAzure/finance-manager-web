@@ -3,6 +3,7 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { formatMoney } from "../../lib/money";
 import { ChartFrame } from "./ChartFrame";
 import { Button } from "../ui/Button";
+import { tr, useLocale } from "../../lib/i18n";
 
 const IN = "var(--chart-incoming, var(--success))";
 const OUT = "var(--chart-outgoing, var(--accent))";
@@ -19,21 +20,22 @@ type Props = {
 };
 
 export function FlowChart({ data, baseCurrency, isLoading, isError, onRetry }: Props): ReactNode {
+  const locale = useLocale();
   const [showIn, setShowIn] = useState(true);
   const [showOut, setShowOut] = useState(true);
   const [showLeak, setShowLeak] = useState(true);
   const empty = !isLoading && !isError && data.length === 0;
   return (
     <ChartFrame
-      title="Incoming vs outgoing flow"
-      ariaLabel="Bar chart: daily flow of income, outgoing, and transfer leak amounts"
+      title={tr("dashboard.chart.flow.title", locale)}
+      ariaLabel={tr("dashboard.chart.flow.aria", locale)}
       isLoading={isLoading}
       isError={isError}
       onRetry={onRetry}
       isEmpty={empty}
-      emptyDescription="No transactions in this range."
+      emptyDescription={tr("dashboard.chart.flow.empty", locale)}
       actions={
-        <div className="dashboard-toggle-row" role="group" aria-label="Flow series">
+        <div className="dashboard-toggle-row" role="group" aria-label={tr("dashboard.chart.flow.series", locale)}>
           <Button
             type="button"
             variant="secondary"
@@ -43,7 +45,7 @@ export function FlowChart({ data, baseCurrency, isLoading, isError, onRetry }: P
             aria-pressed={showIn}
             className={!showIn ? "dashboard-toggle--off" : undefined}
           >
-            Income
+            {tr("dashboard.chart.flow.income", locale)}
           </Button>
           <Button
             type="button"
@@ -54,7 +56,7 @@ export function FlowChart({ data, baseCurrency, isLoading, isError, onRetry }: P
             aria-pressed={showOut}
             className={!showOut ? "dashboard-toggle--off" : undefined}
           >
-            Outgoing
+            {tr("dashboard.chart.flow.outgoing", locale)}
           </Button>
           <Button
             type="button"
@@ -65,7 +67,7 @@ export function FlowChart({ data, baseCurrency, isLoading, isError, onRetry }: P
             aria-pressed={showLeak}
             className={!showLeak ? "dashboard-toggle--off" : undefined}
           >
-            Leaks
+            {tr("dashboard.chart.flow.leaks", locale)}
           </Button>
         </div>
       }
@@ -85,9 +87,9 @@ export function FlowChart({ data, baseCurrency, isLoading, isError, onRetry }: P
               }}
             />
             <Legend />
-            {showIn ? <Bar dataKey="incoming" name="Incoming" fill={IN} maxBarSize={32} /> : null}
-            {showOut ? <Bar dataKey="outgoing" name="Outgoing" fill={OUT} maxBarSize={32} /> : null}
-            {showLeak ? <Bar dataKey="leaks" name="Leaks" fill={LEAK} maxBarSize={32} /> : null}
+            {showIn ? <Bar dataKey="incoming" name={tr("dashboard.chart.flow.income", locale)} fill={IN} maxBarSize={32} /> : null}
+            {showOut ? <Bar dataKey="outgoing" name={tr("dashboard.chart.flow.outgoing", locale)} fill={OUT} maxBarSize={32} /> : null}
+            {showLeak ? <Bar dataKey="leaks" name={tr("dashboard.chart.flow.leaks", locale)} fill={LEAK} maxBarSize={32} /> : null}
           </BarChart>
         </ResponsiveContainer>
       </div>

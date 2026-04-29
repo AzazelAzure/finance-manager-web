@@ -17,6 +17,7 @@ import {
 import type { UpcomingExpenseMutationPayload, UpcomingExpenseRecord } from "../../api/types";
 import { formatMoney } from "../../lib/money";
 import { useBreakpoint } from "../../lib/breakpoints";
+import { tr, useLocale } from "../../lib/i18n";
 
 type RecurringFilter = "both" | "yes" | "no";
 type PaidFilter = "both" | "yes" | "no";
@@ -98,6 +99,7 @@ function monthRange(offsetMonths: number): { start: string; end: string } {
 }
 
 export function UpcomingExpensesPage(): ReactNode {
+  const locale = useLocale();
   const { atOrAboveMd } = useBreakpoint();
   const queryClient = useQueryClient();
   const [recurring, setRecurring] = useState<RecurringFilter>("both");
@@ -249,11 +251,11 @@ export function UpcomingExpensesPage(): ReactNode {
     <div className="stack">
       <div className="app-toolbar app-surface">
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-          Upcoming expenses
+          {tr("upcoming.title", locale)}
         </h2>
         <div className="app-toolbar__actions">
           <Link className="ui-btn ui-btn--secondary" to="/app/upcoming-expenses/deep-dive">
-            Deep dive
+            {tr("txCalendar.deepDive", locale)}
           </Link>
           <Button
             onClick={() => {
@@ -263,7 +265,7 @@ export function UpcomingExpensesPage(): ReactNode {
               setEditorOpen(true);
             }}
           >
-            Add bill
+            {tr("upcoming.addBill", locale)}
           </Button>
         </div>
       </div>
@@ -271,47 +273,47 @@ export function UpcomingExpensesPage(): ReactNode {
       <Card>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
           <label className="ui-field">
-            <span className="ui-label">Recurring</span>
+            <span className="ui-label">{tr("upcoming.recurring", locale)}</span>
             <select className="ui-input" value={recurring} onChange={(e) => setRecurring(e.target.value as RecurringFilter)}>
-              <option value="both">Both</option>
-              <option value="yes">Recurring only</option>
-              <option value="no">One-time only</option>
+              <option value="both">{tr("common.both", locale)}</option>
+              <option value="yes">{tr("upcoming.recurringOnly", locale)}</option>
+              <option value="no">{tr("upcoming.oneTimeOnly", locale)}</option>
             </select>
           </label>
           <label className="ui-field">
-            <span className="ui-label">Paid</span>
+            <span className="ui-label">{tr("common.paid", locale)}</span>
             <select className="ui-input" value={paid} onChange={(e) => setPaid(e.target.value as PaidFilter)}>
-              <option value="both">Both</option>
-              <option value="yes">Paid</option>
-              <option value="no">Unpaid</option>
+              <option value="both">{tr("common.both", locale)}</option>
+              <option value="yes">{tr("common.paid", locale)}</option>
+              <option value="no">{tr("common.unpaid", locale)}</option>
             </select>
           </label>
           <label className="ui-field">
-            <span className="ui-label">Date quick filter</span>
+            <span className="ui-label">{tr("upcoming.dateQuick", locale)}</span>
             <select className="ui-input" value={dateQuick} onChange={(e) => setDateQuick(e.target.value as DateQuickFilter)}>
-              <option value="all">All</option>
-              <option value="this_month">This month</option>
-              <option value="next_month">Next month</option>
-              <option value="overdue">Overdue</option>
+              <option value="all">{tr("common.all", locale)}</option>
+              <option value="this_month">{tr("upcoming.thisMonth", locale)}</option>
+              <option value="next_month">{tr("upcoming.nextMonth", locale)}</option>
+              <option value="overdue">{tr("upcoming.overdue", locale)}</option>
             </select>
           </label>
         </div>
       </Card>
 
       {upcomingQuery.isError ? (
-        <ErrorState title="Upcoming expenses failed to load" onRetry={() => void upcomingQuery.refetch()} />
+        <ErrorState title={tr("upcoming.failedLoad", locale)} onRetry={() => void upcomingQuery.refetch()} />
       ) : upcomingQuery.isLoading && !upcomingQuery.data ? (
-        <LoadingState label="Loading upcoming expenses..." />
+        <LoadingState label={tr("upcoming.loading", locale)} />
       ) : atOrAboveMd ? (
         <Card>
-          <DataTable columns={columns} data={filteredRows} keyField="name" emptyTitle="No upcoming expenses in this view" />
+          <DataTable columns={columns} data={filteredRows} keyField="name" emptyTitle={tr("upcoming.empty", locale)} />
         </Card>
       ) : (
         <div className="stack">
           {filteredRows.length === 0 ? (
             <Card>
               <p className="muted-text" style={{ margin: 0 }}>
-                No upcoming expenses in this view.
+                {tr("upcoming.empty", locale)}
               </p>
             </Card>
           ) : (
@@ -325,12 +327,12 @@ export function UpcomingExpensesPage(): ReactNode {
                       <span>{formatMoney(row.amount, row.currency)}</span>
                     </div>
                     <div className="row-between">
-                      <span className="muted-text">Due {row.due_date}</span>
-                      <span className="tx-badge">{row.paid_flag ? "Paid" : "Unpaid"}</span>
+                      <span className="muted-text">{tr("upcoming.due", locale)} {row.due_date}</span>
+                      <span className="tx-badge">{row.paid_flag ? tr("common.paid", locale) : tr("common.unpaid", locale)}</span>
                     </div>
                     <div className="row-between">
-                      <span className="tx-badge">{row.recurring_flag ? "Recurring" : "One-time"}</span>
-                      <span className="muted-text">{row.source || "No source"}</span>
+                      <span className="tx-badge">{row.recurring_flag ? tr("upcoming.recurring", locale) : tr("upcoming.oneTime", locale)}</span>
+                      <span className="muted-text">{row.source || tr("upcoming.noSource", locale)}</span>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
@@ -384,16 +386,16 @@ export function UpcomingExpensesPage(): ReactNode {
           setEditorOpen(false);
           setEditorError("");
         }}
-        title={editingName ? "Edit upcoming expense" : "Add upcoming expense"}
+        title={editingName ? tr("upcoming.editExpense", locale) : tr("upcoming.addExpense", locale)}
       >
         <div className="stack" style={{ marginTop: 12 }}>
-          {editorError ? <ErrorState title="Save failed" description={editorError} /> : null}
+          {editorError ? <ErrorState title={tr("common.saveFailed", locale)} description={editorError} /> : null}
           {(invalidAmount || invalidWindow) && !saveMutation.isPending ? (
             <div className="ui-state" role="status">
               <p className="muted-text" style={{ margin: 0 }}>
                 {invalidWindow
-                  ? "End date cannot be before start date."
-                  : "Amount must be a positive number greater than zero."}
+                  ? tr("upcoming.invalidWindow", locale)
+                  : tr("upcoming.invalidAmount", locale)}
               </p>
             </div>
           ) : null}

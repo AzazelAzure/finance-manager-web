@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { KPI } from "../ui/KPI";
 import { formatMoney, toNumber } from "../../lib/money";
 import type { FinancialSnapshotFields } from "../../api/types";
+import { tr, useLocale } from "../../lib/i18n";
 
 type Props = {
   currency: string;
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export function KPIRow(p: Props): ReactNode {
+  const locale = useLocale();
   const c = p.currency;
   const snap = p.summary;
   const incomeN = toNumber(p.totalIncome);
@@ -37,14 +39,14 @@ export function KPIRow(p: Props): ReactNode {
 
   return (
     <div className="kpi-row">
-      <KPI label="Income (period)" value={formatMoney(p.totalIncome, c, { naLabel: "0.00" })} />
-      <KPI label="Outgoing (period)" value={formatMoney(p.totalExpenses, c, { naLabel: "0.00" })} />
-      <KPI label="Total assets" value={formatMoney(assets, c, { naLabel: "0.00" })} />
-      <KPI label="Remaining expenses" value={formatMoney(rem, c, { naLabel: "0.00" })} />
-      <KPI label="Safe to spend" value={safe == null ? "N/A" : formatMoney(safe, c)} />
-      <KPI label="Total leaks" value={formatMoney(leakN, c, { naLabel: "0.00" })} />
-      <KPI label="Net" value={netValue} />
-      <KPI label="Transaction count" value={String(p.transactionCount)} />
+      <KPI label={tr("dashboard.kpi.income", locale)} value={formatMoney(p.totalIncome, c, { naLabel: "0.00" })} />
+      <KPI label={tr("dashboard.kpi.outgoing", locale)} value={formatMoney(p.totalExpenses, c, { naLabel: "0.00" })} />
+      <KPI label={tr("dashboard.kpi.assets", locale)} value={formatMoney(assets, c, { naLabel: "0.00" })} />
+      <KPI label={tr("dashboard.kpi.remaining", locale)} value={formatMoney(rem, c, { naLabel: "0.00" })} />
+      <KPI label={tr("dashboard.kpi.safe", locale)} value={safe == null ? tr("dashboard.na", locale) : formatMoney(safe, c)} />
+      <KPI label={tr("dashboard.kpi.leaks", locale)} value={formatMoney(leakN, c, { naLabel: "0.00" })} />
+      <KPI label={tr("dashboard.kpi.net", locale)} value={netValue} />
+      <KPI label={tr("dashboard.kpi.count", locale)} value={String(p.transactionCount)} />
     </div>
   );
 }
