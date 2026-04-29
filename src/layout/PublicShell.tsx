@@ -1,8 +1,10 @@
 import { Link, Outlet } from "react-router-dom";
 import { LocalePicker } from "../components/landing/LocalePicker";
+import { tr, useLocale } from "../lib/i18n";
 import type { ReactNode } from "react";
 
 export function PublicShell(): ReactNode {
+  const locale = useLocale();
   return (
     <div className="public-root">
       <header className="public-header">
@@ -17,13 +19,13 @@ export function PublicShell(): ReactNode {
           </span>
         </Link>
         <nav className="public-top-nav" aria-label="Public header actions">
-          <LocalePicker />
           <Link to="/login" className="public-link-pill">
-            Log in
+            {tr("header.login", locale)}
           </Link>
           <Link to="/signup" className="public-link-pill public-link-pill--primary">
-            Get started
+            {tr("header.getStarted", locale)}
           </Link>
+          <LocalePicker />
         </nav>
       </header>
       <div className="app-main app-main--public">

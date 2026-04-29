@@ -9,6 +9,7 @@ import { AppForm } from "../components/Form/FormProvider";
 import { TextField } from "../components/Form/TextField";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { tr, useLocale } from "../lib/i18n";
 import { setSession } from "../state/auth";
 import { consumeForceOnboardingNextLogin } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
@@ -22,6 +23,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export function LoginPage(): ReactNode {
+  const locale = useLocale();
   const { isAuthenticated } = useSession();
   const location = useLocation();
   const rawFrom = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
@@ -72,10 +74,9 @@ export function LoginPage(): ReactNode {
 
   return (
     <section className="stack auth-shell auth-shell--login">
-      <h1 className="auth-shell__title">Log in</h1>
+      <h1 className="auth-shell__title">{tr("login.title", locale)}</h1>
       <p className="muted-text auth-shell__subtitle">
-        Access your dashboard. Fields stay empty until you focus them, so the app does not pre-fill credentials; your
-        browser may still offer saved passwords after you click in a field.
+        {tr("login.helper", locale)}
       </p>
       <Card className="auth-card">
         <AppForm form={form} onSubmit={onValid} className="stack" id="login-form" autoComplete="off">
@@ -87,13 +88,13 @@ export function LoginPage(): ReactNode {
             </p>
           ) : null}
           <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
+            {form.formState.isSubmitting ? tr("login.submitting", locale) : tr("login.submit", locale)}
           </Button>
         </AppForm>
         <p className="muted auth-shell__links">
           <Link to="/">Home</Link>
           {" · "}
-          <Link to="/signup">Sign up</Link>
+          <Link to="/signup">{tr("hero.getStarted", locale)}</Link>
         </p>
       </Card>
     </section>

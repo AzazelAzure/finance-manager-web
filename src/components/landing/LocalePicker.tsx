@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { getLocale, setLocale, type AppLocale } from "../../lib/i18n";
+import { getLocale, setLocale, tr, type AppLocale } from "../../lib/i18n";
 
-const OPTIONS: Array<{ value: AppLocale; label: string }> = [
-  { value: "en-US", label: "English" },
-  { value: "tl-PH", label: "Tagalog" },
+const OPTIONS: Array<{ value: AppLocale; code: string; flag: string }> = [
+  { value: "en-US", code: "EN", flag: "🇺🇸" },
+  { value: "tl-PH", code: "TL", flag: "🇵🇭" },
 ];
 
 export function LocalePicker(): ReactNode {
@@ -16,24 +16,22 @@ export function LocalePicker(): ReactNode {
   }, []);
 
   return (
-    <label className="locale-wrap">
-      <span className="sr-only">Language</span>
-      <select
-        className="ui-select"
-        value={v}
-        onChange={(e) => {
-          const n = e.target.value as AppLocale;
-          setLocale(n);
-          setV(n);
-        }}
-        aria-label="Interface language (stub: English only copy this sweep)"
-      >
-        {OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="locale-wrap" role="group" aria-label={tr("locale.aria", v)}>
+      {OPTIONS.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          className={v === o.value ? "locale-chip locale-chip--active" : "locale-chip"}
+          onClick={() => {
+            setLocale(o.value);
+            setV(o.value);
+          }}
+          aria-pressed={v === o.value}
+        >
+          <span className="locale-chip__flag" aria-hidden>{o.flag}</span>
+          <span className="locale-chip__code">{o.code}</span>
+        </button>
+      ))}
+    </div>
   );
 }

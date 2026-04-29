@@ -10,6 +10,7 @@ import { AppForm } from "../components/Form/FormProvider";
 import { TextField } from "../components/Form/TextField";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { tr, useLocale } from "../lib/i18n";
 import { setSession } from "../state/auth";
 import { markForceOnboardingNextLogin } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
@@ -30,6 +31,7 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 export function SignupPage(): ReactNode {
+  const locale = useLocale();
   const { isAuthenticated } = useSession();
   const [formError, setFormError] = useState("");
   const [postSignupPath, setPostSignupPath] = useState<string | null>(null);
@@ -80,10 +82,9 @@ export function SignupPage(): ReactNode {
 
   return (
     <section className="stack auth-shell auth-shell--signup">
-      <h1 className="auth-shell__title">Create account</h1>
+      <h1 className="auth-shell__title">{tr("signup.title", locale)}</h1>
       <p className="muted-text auth-shell__subtitle">
-        Create your Hive account, then you will be signed in and sent to the dashboard. Onboarding preferences ship in
-        a later task.
+        {tr("signup.helper", locale)}
       </p>
       <Card className="auth-card">
         <AppForm form={form} onSubmit={onValid} className="stack" id="signup-form" autoComplete="off">
@@ -103,14 +104,14 @@ export function SignupPage(): ReactNode {
             </p>
           ) : null}
           <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Creating account…" : "Create account"}
+            {form.formState.isSubmitting ? tr("signup.submitting", locale) : tr("signup.submit", locale)}
           </Button>
         </AppForm>
         <p className="muted auth-shell__links">
-          Already have an account? <Link to="/login">Sign in</Link>
+          {tr("signup.haveAccount", locale)} <Link to="/login">{tr("login.submit", locale)}</Link>
         </p>
         <p className="muted auth-shell__links auth-shell__links--compact">
-          <Link to="/">Back home</Link>
+          <Link to="/">{tr("signup.backHome", locale)}</Link>
         </p>
       </Card>
     </section>
