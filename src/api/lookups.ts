@@ -21,7 +21,7 @@ export async function listCategories(): Promise<string[]> {
 
 export async function listSourceNames(): Promise<SourceRow[]> {
   const { data } = await api.get<SourceRow[]>("/finance/sources/");
-  return data ?? [];
+  return (data ?? []).filter((row) => String(row.source ?? "").trim().toLowerCase() !== "unknown");
 }
 
 export async function createCategory(name: string): Promise<CategoryRow> {

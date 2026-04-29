@@ -294,8 +294,6 @@ export function DataHubPage(): ReactNode {
                         type="button"
                         className="ui-btn ui-btn--secondary"
                         onClick={() => openSourceEdit(row)}
-                        disabled={row.source.toLowerCase() === "unknown"}
-                        title={row.source.toLowerCase() === "unknown" ? "Reserved source cannot be edited." : undefined}
                       >
                         Edit
                       </button>
@@ -303,8 +301,6 @@ export function DataHubPage(): ReactNode {
                         type="button"
                         className="ui-btn ui-btn--ghost"
                         onClick={() => requestDelete("source", row.source)}
-                        disabled={row.source.toLowerCase() === "unknown"}
-                        title={row.source.toLowerCase() === "unknown" ? "Reserved source cannot be deleted." : undefined}
                       >
                         {isDeletePending("source", row.source) ? "Confirm delete?" : "Delete"}
                       </button>

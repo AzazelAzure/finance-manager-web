@@ -8,6 +8,7 @@ type Row = { source: string; acc_type: string; amount: string; currency: string 
 type Props = { rows: Row[] };
 
 export function SourceBalances({ rows }: Props): ReactNode {
+  const visibleRows = rows.filter((row) => String(row.source ?? "").trim().toLowerCase() !== "unknown");
   return (
     <Card>
       <h3 className="muted" style={{ margin: "0 0 0.75rem" }}>
@@ -23,7 +24,7 @@ export function SourceBalances({ rows }: Props): ReactNode {
             </tr>
           </thead>
           <tbody>
-            {rows.map((src) => {
+            {visibleRows.map((src) => {
               const n = toNumber(src.amount);
               const neg = n != null && n < 0;
               return (
