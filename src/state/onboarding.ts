@@ -2,6 +2,7 @@ export type OnboardingProgress = {
   profile_preferences_saved: boolean;
   source_added: boolean;
   category_added: boolean;
+  onboarding_completed: boolean;
 };
 
 const ONBOARDING_KEY = "fm_onboarding_progress_v1";
@@ -11,6 +12,7 @@ const DEFAULT_PROGRESS: OnboardingProgress = {
   profile_preferences_saved: false,
   source_added: false,
   category_added: false,
+  onboarding_completed: false,
 };
 
 function safeParse(raw: string | null): Partial<OnboardingProgress> | null {
@@ -34,6 +36,7 @@ export function getOnboardingProgress(): OnboardingProgress {
     profile_preferences_saved: Boolean(parsed.profile_preferences_saved),
     source_added: Boolean(parsed.source_added),
     category_added: Boolean(parsed.category_added),
+    onboarding_completed: Boolean(parsed.onboarding_completed),
   };
 }
 
@@ -53,6 +56,7 @@ export function clearOnboardingProgress(): void {
 }
 
 export function earliestIncompleteOnboardingPath(progress = getOnboardingProgress()): string {
+  if (progress.onboarding_completed) return "/app/dashboard";
   if (!progress.profile_preferences_saved) return "/app/onboarding";
   if (!progress.source_added) return "/app/onboarding/sources";
   if (!progress.category_added) return "/app/onboarding/categories";
@@ -75,4 +79,11 @@ export function consumeForceOnboardingNextLogin(): boolean {
     localStorage.removeItem(FORCE_ONBOARDING_KEY);
   }
   return shouldForce;
+}
+
+export function clearForceOnboardingNextLogin(): void {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+  localStorage.removeItem(FORCE_ONBOARDING_KEY);
 }

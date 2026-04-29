@@ -16,7 +16,7 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { ErrorState } from "../../components/ui/ErrorState";
 import {
-  clearOnboardingProgress,
+  clearForceOnboardingNextLogin,
   earliestIncompleteOnboardingPath,
   getOnboardingProgress,
   setOnboardingProgress,
@@ -192,7 +192,13 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
       await createTransactions(payload);
     },
     onSuccess: () => {
-      clearOnboardingProgress();
+      clearForceOnboardingNextLogin();
+      setOnboardingProgress({
+        profile_preferences_saved: true,
+        source_added: true,
+        category_added: true,
+        onboarding_completed: true,
+      });
       navigate("/app/dashboard");
     },
     onError: (err) => setError(parseApiError(err)),
@@ -202,6 +208,9 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
   const barWidth = `${step * 25}%`;
   const timezoneSelectOptions = timezoneOptions();
 
+  if (expectedPath === "/app/dashboard") {
+    return <Navigate to="/app/dashboard" replace />;
+  }
   if (step > 1 && expectedPath !== currentPath) {
     return <Navigate to={expectedPath} replace />;
   }
@@ -312,7 +321,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
               style={{ width: "100%", minHeight: 46 }}
               onClick={() => step4Form.setValue("create_first_tx", !createFirstTx)}
             >
-              {createFirstTx ? "On — Create first transaction" : "Off — Create first transaction"}
+              {createFirstTx ? "Create first transaction enabled" : "Create first transaction"}
             </Button>
             {createFirstTx ? (
               <>
@@ -350,7 +359,13 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
         <Link
           to="/app/dashboard"
           onClick={() => {
-            clearOnboardingProgress();
+            clearForceOnboardingNextLogin();
+            setOnboardingProgress({
+              profile_preferences_saved: true,
+              source_added: true,
+              category_added: true,
+              onboarding_completed: true,
+            });
           }}
         >
           Skip onboarding
