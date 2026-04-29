@@ -10,6 +10,7 @@ import { SignupPage } from "./pages/SignupPage";
 import { TransactionsPage } from "./pages/transactions/TransactionsPage";
 import { CalendarPage } from "./pages/transactions/CalendarPage";
 import { DeepDivePage } from "./pages/transactions/DeepDivePage";
+import { UpcomingExpensesPage } from "./pages/upcoming/UpcomingExpensesPage";
 import { RequireAuth } from "./routes/RequireAuth";
 import { useSession } from "./state/SessionContext";
 import type { ReactNode } from "react";
@@ -41,9 +42,7 @@ export default function App(): ReactNode {
             <Route path="transactions/deep-dive" element={<DeepDivePage />} />
             <Route
               path="upcoming-expenses"
-              element={
-                <PhasePlaceholderPage title="Upcoming expenses" blurb="Bills pipeline comes in a later task." />
-              }
+              element={<UpcomingExpensesPage />}
             />
             <Route
               path="upcoming-expenses/deep-dive"

@@ -147,6 +147,17 @@ function typeBadge(t: string): string {
   return t;
 }
 
+function fallbackCategoryForType(txType: string): string {
+  if (txType === "INCOME") return "Income";
+  if (txType === "XFER_IN" || txType === "XFER_OUT") return "Transfer";
+  return "Expense";
+}
+
+function withCategoryFallback(category: string, txType: string): string {
+  const trimmed = category.trim();
+  return trimmed || fallbackCategoryForType(txType);
+}
+
 export function TransactionsPage(): ReactNode {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
@@ -195,13 +206,14 @@ export function TransactionsPage(): ReactNode {
   const saveMutation = useMutation({
     mutationFn: async (): Promise<void> => {
       if (editingTxId) {
+        const txType = singleDraft.tx_type;
         await updateTransaction(editingTxId, {
           date: singleDraft.date,
           amount: singleDraft.amount,
           source: singleDraft.source,
           currency: singleDraft.currency,
-          tx_type: singleDraft.tx_type,
-          category: singleDraft.category,
+          tx_type: txType,
+          category: withCategoryFallback(singleDraft.category, txType),
           description: singleDraft.description,
           bill: singleDraft.bill,
           tags: selectedTags,
@@ -209,14 +221,15 @@ export function TransactionsPage(): ReactNode {
         return;
       }
       if (editorMode === "single") {
+        const txType = singleDraft.tx_type;
         const result = await createTransactions([
           {
             date: singleDraft.date,
             amount: singleDraft.amount,
             source: singleDraft.source,
             currency: singleDraft.currency,
-            tx_type: singleDraft.tx_type,
-            category: singleDraft.category,
+            tx_type: txType,
+            category: withCategoryFallback(singleDraft.category, txType),
             description: singleDraft.description,
             bill: singleDraft.bill,
             tags: selectedTags,
@@ -235,7 +248,7 @@ export function TransactionsPage(): ReactNode {
           source: transferDraft.from_source,
           currency: transferDraft.sent_currency,
           tx_type: "XFER_OUT",
-          category: transferDraft.category,
+          category: withCategoryFallback(transferDraft.category, "XFER_OUT"),
           description: transferDraft.description,
           bill: transferDraft.bill,
           tags: selectedTags,
@@ -246,7 +259,7 @@ export function TransactionsPage(): ReactNode {
           source: transferDraft.to_source,
           currency: transferDraft.received_currency,
           tx_type: "XFER_IN",
-          category: transferDraft.category,
+          category: withCategoryFallback(transferDraft.category, "XFER_IN"),
           description: transferDraft.description,
           bill: transferDraft.bill,
           tags: selectedTags,

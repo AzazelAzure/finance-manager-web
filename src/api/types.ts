@@ -151,3 +151,27 @@ export type VisualizationResponse = {
   tx_type_totals?: Array<{ tx_type: string; amount: number }>;
   top_expense_categories?: Array<{ category: string; amount: number }>;
 };
+
+export type UpcomingExpenseRecord = {
+  name: string;
+  amount: string;
+  currency: string;
+  due_date: string;
+  paid_flag: boolean;
+  recurring_flag: boolean;
+  source?: string;
+  start_date?: string;
+  end_date?: string;
+};
+
+export type UpcomingExpenseMutationPayload = {
+  name: string;
+  amount: string | number;
+  currency: string;
+  due_date: string;
+  paid_flag?: boolean;
+  recurring_flag?: boolean;
+  source?: string;
+  start_date?: string;
+  end_date?: string;
+};
