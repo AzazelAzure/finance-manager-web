@@ -10,13 +10,14 @@ type UpcomingExpenseListResponse =
     };
 
 function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpenseRecord {
+  const isRecur = (row as { is_recurring?: boolean }).is_recurring;
   return {
     name: String(row.name ?? "").trim(),
     amount: String(row.amount ?? "0"),
     currency: String(row.currency ?? "USD").toUpperCase(),
     due_date: String(row.due_date ?? ""),
     paid_flag: Boolean(row.paid_flag),
-    recurring_flag: Boolean(row.recurring_flag),
+    recurring_flag: Boolean(row.recurring_flag ?? isRecur),
     source: row.source ? String(row.source) : "",
     start_date: row.start_date ? String(row.start_date) : "",
     end_date: row.end_date ? String(row.end_date) : "",
