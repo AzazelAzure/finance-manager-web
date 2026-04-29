@@ -32,6 +32,9 @@ start() {
   free_port 5173
   free_port 4173
   sleep 1
+  # Vite 6+ enforces server.allowedHosts on HTTP; tunnel points Cloudflare at :5173 with Host=jsdevtesting…
+  # FM_VITE_ALLOW_ALL_HOSTS=1 is safe here: Vite only listens on 127.0.0.1 (not LAN).
+  export FM_VITE_ALLOW_ALL_HOSTS=1
   nohup npx vite --host 127.0.0.1 --port 5173 >>"$DEV_LOG" 2>&1 &
   nohup npx vite preview --host 127.0.0.1 --port 4173 >>"$PRV_LOG" 2>&1 &
   sleep 1
