@@ -35,6 +35,53 @@
   transition: color var(--dur-fast) var(--ease-standard);
 }
 
+.public-brand strong {
+  display: block;
+  font-size: var(--font-lg);
+  line-height: 1.1;
+}
+
+.public-brand small {
+  display: block;
+  margin-top: 0.08rem;
+  color: var(--muted);
+  font-size: var(--font-sm);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.public-brand__mark {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.6rem;
+  display: grid;
+  place-items: center;
+  background: var(--gradient-accent);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.public-brand__mark i {
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.public-brand__mark i:first-child {
+  width: 0.74rem;
+  height: 0.74rem;
+  left: 0.42rem;
+  top: 0.38rem;
+}
+
+.public-brand__mark i:last-child {
+  width: 0.54rem;
+  height: 0.54rem;
+  right: 0.42rem;
+  bottom: 0.42rem;
+}
+
 .public-brand:hover {
   color: var(--accent);
 }
@@ -43,6 +90,53 @@
   display: flex;
   gap: var(--space-3);
   align-items: center;
+}
+
+.public-link-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  padding: 0 0.82rem;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--fg);
+  background: color-mix(in srgb, var(--surface) 92%, var(--surface-2));
+  text-decoration: none;
+  transition:
+    transform var(--dur-fast) var(--ease-emphasis),
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.public-link-pill:hover {
+  text-decoration: none;
+  transform: translateY(var(--lift-y));
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+  box-shadow: var(--shadow-sm);
+}
+
+.public-link-pill--primary {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  color: var(--accent-fg);
+  background: var(--gradient-accent);
+}
+
+@media (max-width: 640px) {
+  .public-header {
+    padding-inline: var(--space-3);
+  }
+
+  .public-top-nav {
+    gap: var(--space-2);
+  }
+
+  .public-link-pill {
+    min-height: 2rem;
+    padding: 0 0.68rem;
+  }
 }
 
 .app-main--public {

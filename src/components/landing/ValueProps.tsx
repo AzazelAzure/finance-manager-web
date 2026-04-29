@@ -5,6 +5,7 @@ const PROPS: Array<{ title: string; text: string }> = [
   { title: "Clarity in one place", text: "Income, spend, and balances roll up to a single snapshot you can trust." },
   { title: "Bills, not surprises", text: "Track upcoming expenses and stay ahead of due dates and renewals." },
   { title: "Your data, your rules", text: "Tag, filter, and dig into sources and categories without the clutter." },
+  { title: "Quick daily check-ins", text: "Open your dashboard, spot changes fast, and take action in a few clicks." },
 ];
 
 export function ValueProps(): ReactNode {
