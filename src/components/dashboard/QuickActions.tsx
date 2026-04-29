@@ -17,7 +17,7 @@ const items = [
   { type: "INCOME" as QuickActionType },
   { type: "EXPENSE" as QuickActionType },
   { type: "XFER" as QuickActionType },
-  { type: "BILL" as QuickActionType },
+  { type: "BILL" as QuickActionType, disabled: true },
 ];
 
 type Props = {
@@ -161,6 +161,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
             key={i.type}
             type="button"
             className="ui-btn ui-btn--secondary quick-actions__btn"
+            disabled={Boolean(i.disabled)}
             onClick={() => setActiveType(i.type)}
           >
             {labels[i.type]}
