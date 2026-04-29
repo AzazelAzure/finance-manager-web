@@ -14,7 +14,7 @@ PRV_LOG="$ROOT/logs/vite-preview.log"
 free_port() {
   local p="$1"
   if command -v fuser >/dev/null 2>&1; then
-    fuser -k "127.0.0.1:${p}/tcp" 2>/dev/null || true
+    fuser -k "${p}/tcp" 2>/dev/null || true
   elif command -v lsof >/dev/null 2>&1; then
     lsof -ti "tcp:${p}" 2>/dev/null | xargs -r kill 2>/dev/null || true
   fi
