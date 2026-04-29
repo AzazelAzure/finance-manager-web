@@ -18,6 +18,14 @@ The browser Origin (e.g. `http://localhost:5173` or `https://jsdevtesting.thehiv
 - `npm run dev` — Vite dev server (default port 5173).
 - `npm run build` — production bundle to `dist/`.
 
+## Docker (ecosystem / proxy verification)
+
+The parent **finance_manager** monorepo wires this app into `docker-compose.yml` and `docker-compose.bluegreen.yml` as **`web`** (single stack) or **`web-blue` / `web-green`** (blue/green). The **proxy** service exposes `https` on the host (e.g. `8443:443`) and routes `jsdevtesting.thehivemanager.com` / `jsdevprodtest.thehivemanager.com` to the **active** color’s static container, alongside API and Reflex.
+
+- **Build-time API URL:** set `VITE_API_BASE_URL` in the parent `.env` or pass a compose `build.args` value (default `https://api.thehivemanager.com`).
+- **Build:** from the monorepo root, e.g. `podman compose build web` (or `web-blue` / `web-green` in blue/green). Do not rely on `npm run dev` / Vite for this path — the image serves `dist/` with nginx.
+- For smoke checks on the host, `scripts/fm_server_beta.sh` `deploy` / `smoke` include the `web-$color` service.
+
 ## Lane A — local API (SQLite) + Vite (optional)
 
 Use this for fast UI work without touching production. The API defaults to **SQLite** when Postgres-style `DB_*` variables are not set (see `finance_manager_api` settings).
@@ -94,7 +102,9 @@ If you set **`https://127.0.0.1:…`**, `cloudflared` attempts a **TLS** handsha
 
 ## VPS: `dev@159.198.75.194` (Cloudflare → localhost)
 
-The beta host can run **Vite on the VPS** (no Docker) so tunnel private URLs stay **`http://127.0.0.1:5173`** and **`http://127.0.0.1:4173`** without touching the Reflex `docker compose` stack.
+When the **full compose / blue–green** stack (including `web-*`) is up on the host, prefer **HTTPS via the proxy** to `https://jsdev…` and avoid running **both** the host `vps-serve.sh` ports and the proxy on the same host without coordinating ports.
+
+The beta host can otherwise run **Vite on the VPS** (no Docker) so tunnel private URLs stay **`http://127.0.0.1:5173`** and **`http://127.0.0.1:4173`** without touching the Reflex `docker compose` stack.
 
 1. **One-time:** Node via [nvm](https://github.com/nvm-sh/nvm) in `dev`’s home; `git pull` or rsync this repo to e.g. `/home/dev/finance_manager_web`.
 2. **Env:** `/home/dev/finance_manager_web/.env.local` with `VITE_API_BASE_URL=https://api.thehivemanager.com`.
