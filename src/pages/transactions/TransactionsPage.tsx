@@ -79,6 +79,20 @@ const DEFAULT_TRANSFER: TransferDraft = {
   bill: "",
 };
 
+function mutationFailureMessage(result: {
+  rejected?: Array<Record<string, unknown>>;
+}): string {
+  const first = result.rejected?.[0];
+  if (!first) {
+    return "Transaction was not accepted by the API.";
+  }
+  const raw =
+    (typeof first.reason === "string" ? first.reason : "") ||
+    (typeof first.error === "string" ? first.error : "") ||
+    (typeof first.message === "string" ? first.message : "");
+  return raw ?? "Transaction was rejected by the API.";
+}
+
 function typeBadge(t: string): string {
   if (t === "EXPENSE") return "Exp";
   if (t === "INCOME") return "Inc";
@@ -115,6 +129,7 @@ export function TransactionsPage(): ReactNode {
   const [pendingTagInput, setPendingTagInput] = useState("");
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [isLoadingEditor, setIsLoadingEditor] = useState(false);
+  const [editorError, setEditorError] = useState("");
 
   const txQuery = useQuery({
     queryKey: ["transactions", signature] as const,
@@ -147,20 +162,26 @@ export function TransactionsPage(): ReactNode {
         return;
       }
       if (editorMode === "single") {
-        await createTransactions({
-          date: singleDraft.date,
-          amount: singleDraft.amount,
-          source: singleDraft.source,
-          currency: singleDraft.currency,
-          tx_type: singleDraft.tx_type,
-          category: singleDraft.category,
-          description: singleDraft.description,
-          bill: singleDraft.bill,
-          tags: selectedTags,
-        });
+        const result = await createTransactions([
+          {
+            date: singleDraft.date,
+            amount: singleDraft.amount,
+            source: singleDraft.source,
+            currency: singleDraft.currency,
+            tx_type: singleDraft.tx_type,
+            category: singleDraft.category,
+            description: singleDraft.description,
+            bill: singleDraft.bill,
+            tags: selectedTags,
+          },
+        ]);
+        const accepted = (result.accepted?.length ?? 0) + (result.updated?.length ?? 0);
+        if (accepted < 1) {
+          throw new Error(mutationFailureMessage(result));
+        }
         return;
       }
-      await createTransactions([
+      const result = await createTransactions([
         {
           date: transferDraft.date,
           amount: transferDraft.sent_amount,
@@ -184,6 +205,13 @@ export function TransactionsPage(): ReactNode {
           tags: selectedTags,
         },
       ]);
+      const accepted = (result.accepted?.length ?? 0) + (result.updated?.length ?? 0);
+      if (accepted < 2) {
+        throw new Error(mutationFailureMessage(result));
+      }
+    },
+    onMutate: () => {
+      setEditorError("");
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -197,6 +225,9 @@ export function TransactionsPage(): ReactNode {
       if (location.pathname.endsWith("/new")) {
         navigate("/app/transactions", { replace: true });
       }
+    },
+    onError: (err) => {
+      setEditorError(err instanceof Error ? err.message : "Could not save transaction.");
     },
   });
 
@@ -246,6 +277,7 @@ export function TransactionsPage(): ReactNode {
 
   async function openEditorForEdit(txId: string): Promise<void> {
     setIsLoadingEditor(true);
+    setEditorError("");
     try {
       const tx = await getTransaction(txId);
       setEditingTxId(txId);
@@ -274,6 +306,7 @@ export function TransactionsPage(): ReactNode {
     setTransferDraft(DEFAULT_TRANSFER);
     setSelectedTags([]);
     setPendingTagInput("");
+    setEditorError("");
     setEditorOpen(true);
   }
 
@@ -463,6 +496,7 @@ export function TransactionsPage(): ReactNode {
         open={editorOpen}
         onClose={() => {
           setEditorOpen(false);
+          setEditorError("");
           if (location.pathname.endsWith("/new")) {
             navigate("/app/transactions", { replace: true });
           }
@@ -470,6 +504,9 @@ export function TransactionsPage(): ReactNode {
         title={editingTxId ? "Edit transaction" : editorMode === "single" ? "Add transaction" : "Add transfer pair"}
       >
         <div className="stack" style={{ marginTop: 12 }}>
+          {editorError ? (
+            <ErrorState title="Save failed" description={editorError} />
+          ) : null}
           {!editingTxId ? (
             <label className="ui-field">
               <span className="ui-label">Mode</span>
