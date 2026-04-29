@@ -14,6 +14,7 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- **Data hub page (P5 / T13 start)** — replaced `/app/data` placeholder with live Sources / Categories / Tags cards, each with modal CRUD (create/rename/delete), two-step delete confirmation, unknown-source delete guard, category totals computed from transaction flow rules (income/xfer_in positive, expense/xfer_out negative), and tag frequency counters.
 - **Upcoming expenses page (P5 / T11 start)** — replaced `/app/upcoming-expenses` placeholder with live list + CRUD modal, quick filters (recurring/paid/date), two-step delete, and mobile stacked cards; adds `src/api/upcomingExpenses.ts` for upcoming expenses API operations.
 - **Upcoming expenses deep-dive (P5 / T12 start)** — replaced `/app/upcoming-expenses/deep-dive` placeholder with KPI row (this month / next month / recurring share / overdue), monthly upcoming totals bar chart, and due-date timeline table backed by visualization payloads.
 - **Transactions suite scaffold (P4 / T08–T10 in progress)** — Replaced transactions placeholders with live routes and API wiring: `/app/transactions` (URL-driven filters, table/cards, dashboard drillthrough callout + clear), `/app/transactions/new` (opens editor), `/app/transactions/calendar` (range controls, due events, day drill), and `/app/transactions/deep-dive` (flow/type/category charts). Ledger editor now supports single create/edit, transfer pair create with delta preview, tag picker, optional unpaid bill link, category create-confirm, and two-step delete.

@@ -12,6 +12,7 @@ import { CalendarPage } from "./pages/transactions/CalendarPage";
 import { DeepDivePage } from "./pages/transactions/DeepDivePage";
 import { UpcomingExpensesPage } from "./pages/upcoming/UpcomingExpensesPage";
 import { UpcomingDeepDivePage } from "./pages/upcoming/UpcomingDeepDivePage";
+import { DataHubPage } from "./pages/data/DataHubPage";
 import { RequireAuth } from "./routes/RequireAuth";
 import { useSession } from "./state/SessionContext";
 import type { ReactNode } from "react";
@@ -49,15 +50,7 @@ export default function App(): ReactNode {
               path="upcoming-expenses/deep-dive"
               element={<UpcomingDeepDivePage />}
             />
-            <Route
-              path="data"
-              element={
-                <PhasePlaceholderPage
-                  title="Data hub"
-                  blurb="Sources, categories, and tags management ships in a later task."
-                />
-              }
-            />
+            <Route path="data" element={<DataHubPage />} />
             <Route
               path="settings/profile"
               element={
