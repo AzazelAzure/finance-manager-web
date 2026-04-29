@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { z } from "zod";
 import { createUser } from "../api/user";
 import { login } from "../api/auth";
@@ -11,6 +11,7 @@ import { TextField } from "../components/Form/TextField";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { setSession } from "../state/auth";
+import { markForceOnboardingNextLogin } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
 import type { ReactNode } from "react";
 
@@ -30,8 +31,8 @@ type FormValues = z.infer<typeof schema>;
 
 export function SignupPage(): ReactNode {
   const { isAuthenticated } = useSession();
-  const navigate = useNavigate();
   const [formError, setFormError] = useState("");
+  const [postSignupPath, setPostSignupPath] = useState<string | null>(null);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -43,7 +44,7 @@ export function SignupPage(): ReactNode {
   });
 
   if (isAuthenticated) {
-    return <Navigate to="/app/dashboard" replace />;
+    return <Navigate to={postSignupPath ?? "/app/dashboard"} replace />;
   }
 
   async function onValid(values: FormValues): Promise<void> {
@@ -69,8 +70,9 @@ export function SignupPage(): ReactNode {
     }
     try {
       const data = await login(values.username.trim(), values.password);
+      setPostSignupPath("/app/onboarding");
       setSession({ access: data.access, refresh: data.refresh });
-      navigate("/app/dashboard", { replace: true });
+      markForceOnboardingNextLogin();
     } catch {
       setFormError("Account was created but sign-in failed. Try logging in manually.");
     }
