@@ -111,7 +111,14 @@
 
 .showcase-fade {
   position: relative;
-  min-height: 6rem;
+  min-height: 14.5rem;
+  margin-bottom: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .showcase-fade {
+    min-height: 16.5rem;
+  }
 }
 
 .showcase__panel-absolute {
