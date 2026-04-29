@@ -86,12 +86,18 @@
 .dashboard-root__row {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 
 .dashboard-root__main,
 .dashboard-root__side {
   min-width: 0;
+}
+
+.dashboard-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 .dashboard-root__main,
@@ -112,6 +118,66 @@
   flex-shrink: 0;
 }
 
+.pie-host {
+  width: 100%;
+  min-width: 0;
+  min-height: 280px;
+}
+
+.pie-callout__title {
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.pie-callout__value {
+  font-size: 0.69rem;
+  fill: var(--muted);
+}
+
+.pie-legend {
+  margin-top: var(--space-2);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.pie-legend__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+}
+
+.pie-legend__dot {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 999px;
+}
+
+.pie-legend__name {
+  color: var(--fg);
+}
+
+.pie-legend__amount {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pie-legend__pct {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.pie-legend__other-note {
+  margin: 0.2rem 0 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed color-mix(in srgb, var(--border) 70%, var(--accent));
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
 @media (min-width: 1200px) {
   .dashboard-root__row {
     display: grid;
@@ -127,6 +193,10 @@
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--surface) 94%, var(--surface-2));
   box-shadow: var(--shadow-sm);
+}
+
+.dashboard-root > .ui-card:last-child {
+  margin-top: var(--space-5);
 }
 
 .recent-tx-table .num {

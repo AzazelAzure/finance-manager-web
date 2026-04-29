@@ -1,19 +1,27 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 import { Card } from "../ui/Card";
+import { tr, useLocale } from "../../lib/i18n";
 
 const items = [
-  { label: "+ Income", type: "INCOME" as const },
-  { label: "+ Expense", type: "EXPENSE" as const },
-  { label: "+ Transfer", type: "XFER" as const },
-  { label: "+ Bill", type: "BILL" as const },
+  { type: "INCOME" as const },
+  { type: "EXPENSE" as const },
+  { type: "XFER" as const },
+  { type: "BILL" as const },
 ];
 
 export function QuickActions(): ReactNode {
+  const locale = useLocale();
+  const labels: Record<string, string> = {
+    INCOME: tr("dashboard.quick.income", locale),
+    EXPENSE: tr("dashboard.quick.expense", locale),
+    XFER: tr("dashboard.quick.transfer", locale),
+    BILL: tr("dashboard.quick.bill", locale),
+  };
   return (
     <Card>
       <h3 className="muted" style={{ margin: "0 0 0.75rem" }}>
-        Quick add
+        {tr("dashboard.quick.title", locale)}
       </h3>
       <div className="quick-actions">
         {items.map((i) => (
@@ -26,7 +34,7 @@ export function QuickActions(): ReactNode {
             }
             className="ui-btn ui-btn--secondary quick-actions__btn"
           >
-            {i.label}
+            {labels[i.type]}
           </Link>
         ))}
       </div>

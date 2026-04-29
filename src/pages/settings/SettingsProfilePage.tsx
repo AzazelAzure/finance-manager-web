@@ -23,6 +23,7 @@ import { deleteCurrentUser, getCurrentUserEmail, patchCurrentUserPassword } from
 import { formatMoney } from "../../lib/money";
 import { getThemePreference, setThemePreference, type ThemePreference } from "../../lib/theme";
 import { useSession } from "../../state/SessionContext";
+import { tr, useLocale } from "../../lib/i18n";
 
 const settingsSchema = z.object({
   spend_accounts_csv: z.string(),
@@ -88,6 +89,7 @@ function timezoneOptions(current: string): Array<{ value: string; label: string 
 }
 
 export function SettingsProfilePage(): ReactNode {
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { logout } = useSession();
@@ -168,7 +170,7 @@ export function SettingsProfilePage(): ReactNode {
       setThemePreference(values.theme as ThemePreference);
     },
     onSuccess: () => {
-      setSettingsMessage("Settings saved.");
+      setSettingsMessage(tr("settings.saved", locale));
       void queryClient.invalidateQueries({ queryKey: ["profile"] });
       void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
     },
@@ -178,7 +180,7 @@ export function SettingsProfilePage(): ReactNode {
   const passwordMutation = useMutation({
     mutationFn: (values: PasswordForm) => patchCurrentUserPassword(values.old_password, values.new_password),
     onSuccess: () => {
-      setSecurityMessage("Password updated.");
+      setSecurityMessage(tr("settings.passwordUpdated", locale));
       passwordForm.reset();
     },
     onError: (error) => setSecurityMessage(parseApiError(error)),
@@ -209,24 +211,24 @@ export function SettingsProfilePage(): ReactNode {
       return formatMoney(raw, currency);
     };
     return [
-      { label: "Total assets", value: val("total_assets") },
+      { label: tr("dashboard.kpi.assets", locale), value: val("total_assets") },
       { label: "Savings", value: val("total_savings") },
       { label: "Checking", value: val("total_checking") },
       { label: "Investment", value: val("total_investment") },
       { label: "Cash", value: val("total_cash") },
       { label: "E-wallet", value: val("total_ewallet") },
       { label: "Monthly spending", value: val("total_monthly_spending") },
-      { label: "Remaining expenses", value: val("total_remaining_expenses") },
-      { label: "Leaks", value: val("total_leaks") },
+      { label: tr("dashboard.kpi.remaining", locale), value: val("total_remaining_expenses") },
+      { label: tr("dashboard.kpi.leaks", locale), value: val("total_leaks") },
     ];
-  }, [profileQuery.data?.base_currency, snapshotQuery.data?.snapshot]);
+  }, [locale, profileQuery.data?.base_currency, snapshotQuery.data?.snapshot]);
 
   const anyLoading = profileQuery.isLoading || snapshotQuery.isLoading || userEmailQuery.isLoading;
   if (anyLoading && !profileQuery.data) {
-    return <LoadingState label="Loading profile settings..." />;
+    return <LoadingState label={tr("settings.loading", locale)} />;
   }
   if (profileQuery.isError) {
-    return <ErrorState title="Failed to load profile settings" onRetry={() => void profileQuery.refetch()} />;
+    return <ErrorState title={tr("settings.failed", locale)} onRetry={() => void profileQuery.refetch()} />;
   }
 
   const timezoneSelect = timezoneOptions(profileQuery.data?.timezone ?? "UTC");
@@ -235,19 +237,19 @@ export function SettingsProfilePage(): ReactNode {
   return (
     <div className="stack">
       <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-        Profile and settings
+        {tr("settings.title", locale)}
       </h2>
 
       <Tabs
         tabs={[
           {
             id: "overview",
-            label: "Overview",
+            label: tr("settings.tab.overview", locale),
             content: (
               <TabPanel className="stack">
                 <div style={{ marginTop: 12 }} />
                 {snapshotQuery.isError ? (
-                  <ErrorState title="Snapshot unavailable" onRetry={() => void snapshotQuery.refetch()} />
+                  <ErrorState title={tr("settings.snapshotUnavailable", locale)} onRetry={() => void snapshotQuery.refetch()} />
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                     {overviewKpis.map((kpi) => (
@@ -260,14 +262,14 @@ export function SettingsProfilePage(): ReactNode {
           },
           {
             id: "settings",
-            label: "Settings",
+            label: tr("settings.tab.settings", locale),
             content: (
               <TabPanel className="stack">
                 <div style={{ marginTop: 12 }} />
                 {settingsMessage
-                  ? settingsMessage === "Settings saved."
+                  ? settingsMessage === tr("settings.saved", locale)
                     ? <SuccessState message={settingsMessage} />
-                    : <ErrorState title="Could not save settings" description={settingsMessage} />
+                    : <ErrorState title={tr("settings.couldNotSave", locale)} description={settingsMessage} />
                   : null}
                 <Card>
                   <AppForm
@@ -311,14 +313,14 @@ export function SettingsProfilePage(): ReactNode {
           },
           {
             id: "security",
-            label: "Security",
+            label: tr("settings.tab.security", locale),
             content: (
               <TabPanel className="stack">
                 <div style={{ marginTop: 12 }} />
                 {securityMessage
-                  ? securityMessage === "Password updated."
+                  ? securityMessage === tr("settings.passwordUpdated", locale)
                     ? <SuccessState message={securityMessage} />
-                    : <ErrorState title="Security update failed" description={securityMessage} />
+                    : <ErrorState title={tr("settings.securityFailed", locale)} description={securityMessage} />
                   : null}
                 <Card>
                   <AppForm

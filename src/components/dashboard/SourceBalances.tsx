@@ -2,25 +2,27 @@ import { AlertTriangle } from "lucide-react";
 import type { ReactNode } from "react";
 import { Card } from "../ui/Card";
 import { formatMoney, toNumber } from "../../lib/money";
+import { tr, useLocale } from "../../lib/i18n";
 
 type Row = { source: string; acc_type: string; amount: string; currency: string };
 
 type Props = { rows: Row[] };
 
 export function SourceBalances({ rows }: Props): ReactNode {
+  const locale = useLocale();
   const visibleRows = rows.filter((row) => String(row.source ?? "").trim().toLowerCase() !== "unknown");
   return (
     <Card>
       <h3 className="muted" style={{ margin: "0 0 0.75rem" }}>
-        Spend account balances
+        {tr("dashboard.balances.title", locale)}
       </h3>
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Source</th>
-              <th>Type</th>
-              <th className="num">Balance</th>
+              <th>{tr("dashboard.balances.col.source", locale)}</th>
+              <th>{tr("dashboard.balances.col.type", locale)}</th>
+              <th className="num">{tr("dashboard.balances.col.balance", locale)}</th>
             </tr>
           </thead>
           <tbody>
@@ -31,7 +33,7 @@ export function SourceBalances({ rows }: Props): ReactNode {
                 <tr key={src.source}>
                   <td>{src.source}</td>
                   <td>
-                    <span className="tx-badge tx-badge--muted">{src.acc_type || "N/A"}</span>
+                    <span className="tx-badge tx-badge--muted">{src.acc_type || tr("dashboard.na", locale)}</span>
                   </td>
                   <td className={`num ${neg ? "balance-neg" : ""}`}>
                     {neg ? (
