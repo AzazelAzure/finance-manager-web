@@ -11,7 +11,9 @@ import {
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { setLocale, tr, useLocale } from "../lib/i18n";
 import { useSession } from "../state/SessionContext";
-import type { ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { Modal } from "../components/ui/Modal";
+import { Button } from "../components/ui/Button";
 
 const PRIMARY_NAV: Array<{
   to: string;
@@ -94,12 +96,55 @@ export function ProtectedShell(): ReactNode {
   const loc = useLocation();
   const navigate = useNavigate();
   const { logout } = useSession();
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const title = tr(TITLE[loc.pathname] ?? "shell.title.app", locale);
+  const guideSteps = useMemo(() => {
+    if (loc.pathname.startsWith("/app/dashboard")) {
+      return [
+        "Use KPI cards to spot period trends quickly.",
+        "Apply filters first, then refresh to compare snapshots.",
+        "Quick add supports income, expense, transfer, and bill flows.",
+        "Chart slices drill to detailed transactions.",
+      ];
+    }
+    if (loc.pathname.startsWith("/app/transactions/calendar")) {
+      return [
+        "Use month arrows to switch periods.",
+        "Click a day to inspect transactions and due expenses.",
+        "Heat intensity increases with spending magnitude.",
+        "Use display/metric controls to compare views.",
+      ];
+    }
+    if (loc.pathname.startsWith("/app/transactions")) {
+      return [
+        "Filter by period/type/source and apply to reload results.",
+        "Use Add transaction or Add transfer for proper payloads.",
+        "Edit and delete actions are in-line per row.",
+      ];
+    }
+    if (loc.pathname.startsWith("/app/upcoming-expenses")) {
+      return [
+        "Track due expenses and recurring bills by date window.",
+        "Use status and recurrence filters to focus follow-up work.",
+        "Deep dive view gives timeline and KPI summaries.",
+      ];
+    }
+    if (loc.pathname.startsWith("/app/data")) {
+      return [
+        "Manage Sources, Categories, and Tags from one page.",
+        "Keep names consistent to improve dashboard filters and charts.",
+        "Source currency/amount updates affect downstream displays.",
+      ];
+    }
+    return [
+      "Use the left nav icons to switch between app surfaces.",
+      "Locale chips in the header switch EN/TL language instantly.",
+      "Use Guide on any page to see context-specific tips.",
+    ];
+  }, [loc.pathname]);
 
   function onLogout(): void {
-    if (!window.confirm(tr("shell.logout.confirm", locale))) {
-      return;
-    }
     logout();
     navigate("/");
   }
@@ -117,16 +162,11 @@ export function ProtectedShell(): ReactNode {
           ))}
         </div>
         <div className="protected-bottom-bar">
-          <a
-            href="https://github.com/AzazelAzure/finance-manager"
-            className="shell-nav-link"
-            rel="noreferrer"
-            target="_blank"
-          >
+          <button type="button" className="shell-nav-link" onClick={() => setGuideOpen(true)}>
             <BookOpen size={20} className="shell-nav-icon" />
             <span className="shell-nav-label">{tr("shell.nav.guide", locale)}</span>
-          </a>
-          <button className="shell-nav-link shell-nav-link--danger" type="button" onClick={onLogout}>
+          </button>
+          <button className="shell-nav-link shell-nav-link--danger" type="button" onClick={() => setLogoutOpen(true)}>
             <LogOut size={20} className="shell-nav-icon" />
             <span className="shell-nav-label">{tr("shell.nav.logout", locale)}</span>
           </button>
@@ -175,7 +215,7 @@ export function ProtectedShell(): ReactNode {
           <button
             type="button"
             className="shell-nav-link shell-nav-link--danger"
-            onClick={onLogout}
+            onClick={() => setLogoutOpen(true)}
             aria-label={tr("shell.nav.logout", locale)}
           >
             <LogOut size={20} />
@@ -183,6 +223,36 @@ export function ProtectedShell(): ReactNode {
           </button>
         </nav>
       </div>
+      <Modal open={guideOpen} onClose={() => setGuideOpen(false)} title={`${tr("shell.nav.guide", locale)} - ${title}`}>
+        <div className="stack" style={{ marginTop: 12 }}>
+          {guideSteps.map((step, idx) => (
+            <p key={step} className="muted-text" style={{ margin: 0 }}>
+              {idx + 1}. {step}
+            </p>
+          ))}
+        </div>
+      </Modal>
+      <Modal open={logoutOpen} onClose={() => setLogoutOpen(false)} title={tr("shell.nav.logout", locale)}>
+        <div className="stack" style={{ marginTop: 12 }}>
+          <p className="muted-text" style={{ margin: 0 }}>
+            {tr("shell.logout.confirm", locale)}
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Button type="button" variant="secondary" onClick={() => setLogoutOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setLogoutOpen(false);
+                onLogout();
+              }}
+            >
+              {tr("shell.nav.logout", locale)}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

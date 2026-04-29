@@ -7,6 +7,7 @@ import { Button } from "../ui/Button";
 import { createTransactions } from "../../api/transactions";
 import { createUpcomingExpense } from "../../api/upcomingExpenses";
 import { ErrorState } from "../ui/ErrorState";
+import type { SourceRow } from "../../api/types";
 
 type QuickActionType = "INCOME" | "EXPENSE" | "XFER" | "BILL";
 
@@ -17,18 +18,31 @@ const items = [
   { type: "BILL" as QuickActionType },
 ];
 
-export function QuickActions(): ReactNode {
+type Props = {
+  baseCurrency: string;
+  sources: SourceRow[];
+};
+
+export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
   const locale = useLocale();
   const queryClient = useQueryClient();
   const [activeType, setActiveType] = useState<QuickActionType | null>(null);
   const [error, setError] = useState("");
+  const today = new Date().toISOString().slice(0, 10);
+  const sourceOptions = sources.map((row) => row.source);
+  const sourceCurrency = new Map(sources.map((row) => [row.source, row.currency]));
   const [draft, setDraft] = useState({
+    date: today,
     amount: "",
     source: "",
-    currency: "USD",
+    currency: baseCurrency,
     category: "",
     description: "",
-    dueDate: new Date().toISOString().slice(0, 10),
+    dueDate: today,
+    toSource: "",
+    sentAmount: "",
+    receivedAmount: "",
+    receivedCurrency: baseCurrency,
   });
   const labels: Record<string, string> = {
     INCOME: tr("dashboard.quick.income", locale),
@@ -52,22 +66,32 @@ export function QuickActions(): ReactNode {
         return;
       }
       if (activeType === "XFER") {
+        const transferCategory = draft.category.trim();
         await createTransactions([
           {
-            date: new Date().toISOString().slice(0, 10),
-            amount: draft.amount,
+            date: draft.date,
+            amount: draft.sentAmount,
             source: draft.source,
             currency: draft.currency,
             tx_type: "XFER_OUT",
             description: draft.description,
-            ...(draft.category.trim() ? { category: draft.category.trim() } : {}),
+            ...(transferCategory ? { category: transferCategory } : {}),
+          },
+          {
+            date: draft.date,
+            amount: draft.receivedAmount,
+            source: draft.toSource,
+            currency: draft.receivedCurrency,
+            tx_type: "XFER_IN",
+            description: draft.description,
+            ...(transferCategory ? { category: transferCategory } : {}),
           },
         ]);
         return;
       }
       await createTransactions([
         {
-          date: new Date().toISOString().slice(0, 10),
+          date: draft.date,
           amount: draft.amount,
           source: draft.source,
           currency: draft.currency,
@@ -84,12 +108,17 @@ export function QuickActions(): ReactNode {
       void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"] });
       setActiveType(null);
       setDraft({
+        date: today,
         amount: "",
         source: "",
-        currency: "USD",
+        currency: baseCurrency,
         category: "",
         description: "",
-        dueDate: new Date().toISOString().slice(0, 10),
+        dueDate: today,
+        toSource: "",
+        sentAmount: "",
+        receivedAmount: "",
+        receivedCurrency: baseCurrency,
       });
     },
     onError: (err) => setError(err instanceof Error ? err.message : "Failed to save."),
@@ -119,17 +148,52 @@ export function QuickActions(): ReactNode {
         <div className="stack" style={{ marginTop: 12 }}>
           {error ? <ErrorState title="Save failed" description={error} /> : null}
           <label className="ui-field">
+            <span className="ui-label">Date</span>
+            <input className="ui-input" type="date" value={draft.date} onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))} />
+          </label>
+          {activeType === "XFER" ? (
+            <>
+              <label className="ui-field">
+                <span className="ui-label">From source</span>
+                <input className="ui-input" value={draft.source} list="quick-source-list" onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value, currency: sourceCurrency.get(e.target.value) ?? d.currency }))} />
+              </label>
+              <label className="ui-field">
+                <span className="ui-label">To source</span>
+                <input className="ui-input" value={draft.toSource} list="quick-source-list" onChange={(e) => setDraft((d) => ({ ...d, toSource: e.target.value, receivedCurrency: sourceCurrency.get(e.target.value) ?? d.receivedCurrency }))} />
+              </label>
+              <label className="ui-field">
+                <span className="ui-label">Sent amount</span>
+                <input className="ui-input" value={draft.sentAmount} onChange={(e) => setDraft((d) => ({ ...d, sentAmount: e.target.value }))} />
+              </label>
+              <label className="ui-field">
+                <span className="ui-label">Sent currency</span>
+                <input className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value.toUpperCase() }))} />
+              </label>
+              <label className="ui-field">
+                <span className="ui-label">Received amount</span>
+                <input className="ui-input" value={draft.receivedAmount} onChange={(e) => setDraft((d) => ({ ...d, receivedAmount: e.target.value }))} />
+              </label>
+              <label className="ui-field">
+                <span className="ui-label">Received currency</span>
+                <input className="ui-input" value={draft.receivedCurrency} onChange={(e) => setDraft((d) => ({ ...d, receivedCurrency: e.target.value.toUpperCase() }))} />
+              </label>
+            </>
+          ) : (
+            <>
+          <label className="ui-field">
             <span className="ui-label">Amount</span>
             <input className="ui-input" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} />
           </label>
           <label className="ui-field">
             <span className="ui-label">Source</span>
-            <input className="ui-input" value={draft.source} onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))} />
+            <input className="ui-input" value={draft.source} list="quick-source-list" onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value, currency: sourceCurrency.get(e.target.value) ?? d.currency }))} />
           </label>
           <label className="ui-field">
             <span className="ui-label">Currency</span>
             <input className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value.toUpperCase() }))} />
           </label>
+            </>
+          )}
           {activeType === "BILL" ? (
             <label className="ui-field">
               <span className="ui-label">Due date</span>
@@ -145,7 +209,20 @@ export function QuickActions(): ReactNode {
             <span className="ui-label">Description</span>
             <input className="ui-input" value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} />
           </label>
-          <Button disabled={saveMutation.isPending || !draft.amount || !draft.source} onClick={() => saveMutation.mutate()}>
+          <datalist id="quick-source-list">
+            {sourceOptions.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+          <Button
+            disabled={
+              saveMutation.isPending ||
+              (activeType === "XFER"
+                ? !draft.source || !draft.toSource || !draft.sentAmount || !draft.receivedAmount
+                : !draft.amount || !draft.source)
+            }
+            onClick={() => saveMutation.mutate()}
+          >
             {saveMutation.isPending ? "Saving..." : "Save"}
           </Button>
         </div>

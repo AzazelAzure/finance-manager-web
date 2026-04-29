@@ -12,17 +12,26 @@ import { ChartFrame } from "../../components/dashboard/ChartFrame";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { tr, useLocale } from "../../lib/i18n";
 
+function formatLocalIso(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function parseIsoLocal(iso: string): Date {
+  const [year, month, day] = iso.split("-").map((part) => Number(part));
+  return new Date(year, (month || 1) - 1, day || 1);
+}
+
 function monthStartIso(): string {
   const d = new Date();
-  d.setDate(1);
-  return d.toISOString().slice(0, 10);
+  return formatLocalIso(new Date(d.getFullYear(), d.getMonth(), 1));
 }
 
 function monthEndIso(fromMonthStartIso: string): string {
-  const d = new Date(`${fromMonthStartIso}T00:00:00`);
-  d.setMonth(d.getMonth() + 1);
-  d.setDate(0);
-  return d.toISOString().slice(0, 10);
+  const d = parseIsoLocal(fromMonthStartIso);
+  return formatLocalIso(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 }
 
 function toNumber(v: unknown): number {
@@ -35,11 +44,18 @@ function isSameMonth(dateIso: string, baseIso: string): boolean {
 }
 
 function monthGridAnchor(startIso: string): Date {
-  const d = new Date(`${startIso}T00:00:00`);
+  const d = parseIsoLocal(startIso);
   d.setDate(1);
   const dow = d.getDay();
   d.setDate(d.getDate() - dow);
   return d;
+}
+
+function txRowDate(row: { date?: string; created_on?: string }): string {
+  if (row.date) {
+    return row.date;
+  }
+  return String(row.created_on ?? "").slice(0, 10);
 }
 
 export function CalendarPage(): ReactNode {
@@ -64,7 +80,7 @@ export function CalendarPage(): ReactNode {
   const dayDrillRows = useMemo(() => {
     const rows = query.data?.day_drill ?? [];
     if (!selectedDay) return rows;
-    return rows.filter((r) => r.date === selectedDay);
+    return rows.filter((r) => txRowDate(r) === selectedDay);
   }, [query.data?.day_drill, selectedDay]);
   const dailyRows = useMemo(() => query.data?.daily ?? [], [query.data?.daily]);
   const monthRows = useMemo(() => query.data?.monthly ?? [], [query.data?.monthly]);
@@ -123,7 +139,7 @@ export function CalendarPage(): ReactNode {
   }, [dailyRows, heatMetricMode]);
 
   const heatMax = useMemo(() => {
-    const values = Array.from(dailyByDate.values()).map((v) => v.expenseOnly);
+    const values = Array.from(dailyByDate.values()).map((v) => Math.max(v.expenseOnly, Math.max(0, -v.metric)));
     return Math.max(...values, 0);
   }, [dailyByDate]);
 
@@ -132,30 +148,29 @@ export function CalendarPage(): ReactNode {
     return Array.from({ length: 42 }, (_, i) => {
       const d = new Date(anchor);
       d.setDate(anchor.getDate() + i);
-      const iso = d.toISOString().slice(0, 10);
+      const iso = formatLocalIso(d);
       const day = d.getDate();
       const inMonth = isSameMonth(iso, startDate);
       const rec = dailyByDate.get(iso);
       const metric = rec?.metric ?? 0;
       const txCount = rec?.txCount ?? 0;
-      const normalized = heatMax <= 0 ? 0 : Math.min((rec?.expenseOnly ?? 0) / heatMax, 1);
+      const spendMagnitude = rec?.expenseOnly ?? Math.max(0, -metric);
+      const normalized = heatMax <= 0 ? 0 : Math.min(spendMagnitude / heatMax, 1);
       const dueCount = (query.data?.due_events ?? []).filter((e) => e.date === iso && !e.paid_flag).length;
       return { iso, day, inMonth, metric, txCount, normalized, dueCount };
     });
   }, [dailyByDate, heatMax, query.data?.due_events, startDate]);
   function shiftMonth(delta: number): void {
-    const d = new Date(`${startDate}T00:00:00`);
-    d.setDate(1);
-    d.setMonth(d.getMonth() + delta);
-    const nextStart = d.toISOString().slice(0, 10);
+    const d = parseIsoLocal(startDate);
+    const nextStart = formatLocalIso(new Date(d.getFullYear(), d.getMonth() + delta, 1));
     const nextEnd = monthEndIso(nextStart);
     setStartDate(nextStart);
     setEndDate(nextEnd);
-    setSelectedDay("");
+    setSelectedDay(nextStart);
   }
 
   const monthTitle = useMemo(() => {
-    const d = new Date(`${startDate}T00:00:00`);
+    const d = parseIsoLocal(startDate);
     return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
   }, [startDate]);
 
@@ -351,6 +366,16 @@ export function CalendarPage(): ReactNode {
             <p className="muted-text" style={{ margin: "0 0 0.55rem" }}>
               Transactions: {dayDrillRows.length} · Due expenses: {dueEventsForSelectedDay.length}
             </p>
+            {dayDrillRows.length > 0 ? (
+              <div style={{ display: "grid", gap: 6, marginBottom: 8 }}>
+                {dayDrillRows.slice(0, 4).map((row) => (
+                  <div key={row.tx_id} className="tx-badge" style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>{row.description || row.tx_type}</span>
+                    <span>{formatMoney(row.amount, row.currency)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {dueEventsForSelectedDay.length > 0 ? (
               <div style={{ display: "grid", gap: 6 }}>
                 {dueEventsForSelectedDay.map((row) => (

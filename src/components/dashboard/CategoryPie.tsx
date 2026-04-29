@@ -71,9 +71,13 @@ export function CategoryPie({ expenseByCategory, baseCurrency, isLoading, isErro
                   return null;
                 }
                 const row = props.payload as CategoryPieRow | undefined;
+                const midAngle = (Number(props.midAngle) * Math.PI) / 180;
+                const outerRadius = Number(props.outerRadius);
+                const lineStartX = Number(props.cx) + Math.cos(-midAngle) * outerRadius;
+                const lineStartY = Number(props.cy) + Math.sin(-midAngle) * outerRadius;
                 return (
                   <g>
-                    <line x1={Number(props.cx)} y1={Number(props.cy)} x2={Number(props.x)} y2={Number(props.y)} stroke="var(--muted)" strokeWidth={1.25} />
+                    <line x1={lineStartX} y1={lineStartY} x2={Number(props.x)} y2={Number(props.y)} stroke="var(--muted)" strokeWidth={1.25} />
                     <text x={Number(props.x)} y={Number(props.y)} fill="var(--fg)" textAnchor={props.textAnchor} dominantBaseline="central">
                     <tspan x={Number(props.x)} dy="-0.2em" className="pie-callout__title">
                       {String(props.name)}
