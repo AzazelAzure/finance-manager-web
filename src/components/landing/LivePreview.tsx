@@ -6,7 +6,7 @@ export function LivePreview(): ReactNode {
   return (
     <section className="landing-section" aria-labelledby="live-preview-title">
       <h2 id="live-preview-title">Static preview</h2>
-      <p className="muted" style={{ margin: "0 0 var(--space-3) 0" }}>
+      <p className="landing-note muted">
         Numbers below are <strong>demo data</strong> to illustrate the UI — not your account.
       </p>
       <div

@@ -29,6 +29,8 @@
   --warn: #d97706;
   --danger: #b91c1c;
   --focus-ring: rgba(79, 70, 229, 0.45);
+  --focus-ring-strong: rgba(79, 70, 229, 0.7);
+  --focus-ring-soft: rgba(79, 70, 229, 0.22);
   /* Charts (dashboard) */
   --chart-incoming: #16a34a;
   --chart-outgoing: #7c3aed;
@@ -37,6 +39,26 @@
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 6px 16px rgba(15, 23, 42, 0.1);
   --shadow-lg: 0 20px 40px rgba(15, 23, 42, 0.12);
+  --shadow-interactive: 0 14px 32px rgba(79, 70, 229, 0.2);
+  --shadow-card-hover: 0 14px 28px rgba(15, 23, 42, 0.14);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  /* Gradients + accents */
+  --gradient-accent: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #2563eb 100%);
+  --gradient-surface: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--surface) 88%, white) 0%,
+    color-mix(in srgb, var(--surface-2) 92%, white) 100%
+  );
+  --hero-glow-1: rgba(79, 70, 229, 0.22);
+  --hero-glow-2: rgba(37, 99, 235, 0.16);
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasis: cubic-bezier(0.2, 0.9, 0.2, 1);
+  --dur-fast: 140ms;
+  --dur-med: 220ms;
+  --dur-slow: 320ms;
+  --lift-y: -2px;
+  --lift-y-lg: -4px;
   /* Spacing */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -71,10 +93,23 @@ html[data-theme="dark"] {
   --warn: #facc15;
   --danger: #f87171;
   --focus-ring: rgba(129, 140, 248, 0.5);
+  --focus-ring-strong: rgba(129, 140, 248, 0.78);
+  --focus-ring-soft: rgba(129, 140, 248, 0.28);
   --chart-incoming: #4ade80;
   --chart-outgoing: #a78bfa;
   --chart-leak: #fbbf24;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
+  --shadow-interactive: 0 16px 36px rgba(129, 140, 248, 0.24);
+  --shadow-card-hover: 0 16px 30px rgba(0, 0, 0, 0.58);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --gradient-accent: linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #3b82f6 100%);
+  --gradient-surface: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--surface) 88%, #1e293b) 0%,
+    color-mix(in srgb, var(--surface-2) 95%, #0f172a) 100%
+  );
+  --hero-glow-1: rgba(99, 102, 241, 0.26);
+  --hero-glow-2: rgba(59, 130, 246, 0.2);
 }

@@ -3,7 +3,10 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 12% 4%, var(--hero-glow-1), transparent 38%),
+    radial-gradient(circle at 90% 10%, var(--hero-glow-2), transparent 34%),
+    var(--bg);
 }
 
 .public-header {
@@ -13,10 +16,12 @@
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
   position: sticky;
   top: 0;
   z-index: 20;
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-sm);
 }
 
 .public-brand {
@@ -26,6 +31,23 @@
   font-weight: 600;
   font-size: var(--font-lg);
   color: var(--fg);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+
+.public-brand:hover {
+  color: var(--accent);
+}
+
+.public-top-nav {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.app-main--public {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .public-footer {
@@ -35,6 +57,7 @@
   font-size: var(--font-sm);
   text-align: center;
   border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
 }
 
 /* Protected */

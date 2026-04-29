@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- **BP7 phase 1 public polish** — upgraded public visual depth and interactivity for landing/login/signup with richer tokenized elevation, gradient surfaces, hover/focus/press states, and motion-safe transitions. Public shell now uses layered background + glass-like top bar, auth cards have stronger hierarchy, and landing sections include improved hero/showcase/CTA treatment for less flat presentation.
 - **Removed user-facing `unknown` source traces** — source lookups now filter out the backend fallback `unknown` entry before rendering selectors/cards, dashboard spend-account balances hide that fallback row, and Data Hub source actions no longer expose special-case reserved-source messaging.
 - **Transaction currency QoL + logout confirmation** — transaction editor currency fields now use a deduped dropdown derived from source currencies and always include the profile base currency as default for new transaction/transfer drafts. Logout now asks for confirmation before clearing session and returning to public pages.
 - **Transactions blank-category fallback** — transaction save/edit now defaults empty `category` by type (`Expense`, `Income`, `Transfer`) before API submit so valid creates are not rejected when category is intentionally left blank.

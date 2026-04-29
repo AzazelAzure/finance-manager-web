@@ -72,7 +72,7 @@ export function FeatureShowcase(): ReactNode {
             hidden={i !== idx}
             aria-labelledby={`${base}-tab-${t.id}`}
           >
-            <p className="muted" style={{ margin: 0 }}>
+            <p className="showcase__panel-copy muted">
               {t.blurb}
             </p>
           </div>

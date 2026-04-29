@@ -79,13 +79,13 @@ export function SignupPage(): ReactNode {
   }
 
   return (
-    <section className="stack" style={{ maxWidth: 480, margin: "0 auto", padding: "1rem 0" }}>
-      <h1 style={{ fontSize: "var(--font-2xl)", margin: 0 }}>Create account</h1>
-      <p className="muted-text" style={{ margin: 0 }}>
+    <section className="stack auth-shell auth-shell--signup">
+      <h1 className="auth-shell__title">Create account</h1>
+      <p className="muted-text auth-shell__subtitle">
         Create your Hive account, then you will be signed in and sent to the dashboard. Onboarding preferences ship in
         a later task.
       </p>
-      <Card>
+      <Card className="auth-card">
         <AppForm form={form} onSubmit={onValid} className="stack" id="signup-form" autoComplete="off">
           <TextField name="username" label="Username" autoComplete="off" unlockOnFocus />
           <TextField name="user_email" label="Email" type="email" autoComplete="off" unlockOnFocus />
@@ -106,10 +106,10 @@ export function SignupPage(): ReactNode {
             {form.formState.isSubmitting ? "Creating account…" : "Create account"}
           </Button>
         </AppForm>
-        <p className="muted" style={{ margin: "0.75rem 0 0" }}>
+        <p className="muted auth-shell__links">
           Already have an account? <Link to="/login">Sign in</Link>
         </p>
-        <p className="muted" style={{ margin: "0.5rem 0 0" }}>
+        <p className="muted auth-shell__links auth-shell__links--compact">
           <Link to="/">Back home</Link>
         </p>
       </Card>
