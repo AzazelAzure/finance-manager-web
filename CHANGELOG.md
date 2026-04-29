@@ -11,3 +11,5 @@ All notable changes to this project are documented in this file.
 ### Fixed
 
 - **Podman / Fedora** — final stage uses `docker.io/library/nginx:1.27-alpine` so builds succeed when `/etc/containers/registries.conf` has no `unqualified-search-registries` (short name `nginx:…` fails).
+
+- **White screen behind TLS/proxy** — production HTML no longer adds `crossorigin` on built `<script type="module">` / CSS (Vite default + CORS-mode fetch can fail if an edge omits `Access-Control-Allow-Origin` on static JS). Nginx SPA config adds `Access-Control-Allow-Origin: *` for `/assets/` and returns **204** for `GET /favicon.ico` to avoid a spurious 404.
