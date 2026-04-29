@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { AppForm } from "../../components/Form/FormProvider";
@@ -74,18 +74,18 @@ function parseApiError(error: unknown): string {
   return status ? `HTTP ${status}: Request rejected.` : error.message;
 }
 
-function parseSpendAccounts(csv: string): string[] {
-  return csv
-    .split(",")
-    .map((v) => v.trim().toLowerCase())
-    .filter((v, idx, arr) => Boolean(v) && arr.indexOf(v) === idx);
-}
-
 function timezoneOptions(current: string): Array<{ value: string; label: string }> {
   const supported = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf;
   const zones = supported ? supported("timeZone") : [];
   const values = zones.includes(current) || !current ? zones : [current, ...zones];
   return values.map((z) => ({ value: z, label: z }));
+}
+
+function parseSpendAccounts(csv: string): string[] {
+  return csv
+    .split(",")
+    .map((v) => v.trim().toLowerCase())
+    .filter((v, idx, arr) => Boolean(v) && arr.indexOf(v) === idx);
 }
 
 export function SettingsProfilePage(): ReactNode {
@@ -97,6 +97,7 @@ export function SettingsProfilePage(): ReactNode {
   const [securityMessage, setSecurityMessage] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [spendAccountsInput, setSpendAccountsInput] = useState("");
 
   const profileQuery = useQuery({
     queryKey: ["profile", "settings"] as const,
@@ -160,9 +161,8 @@ export function SettingsProfilePage(): ReactNode {
 
   const settingsMutation = useMutation({
     mutationFn: async (values: SettingsForm) => {
-      const spendAccounts = parseSpendAccounts(values.spend_accounts_csv);
       await updateAppProfile({
-        spend_accounts: spendAccounts,
+        spend_accounts: selectedSpendAccounts,
         base_currency: values.base_currency.toUpperCase(),
         timezone: values.timezone,
         start_week: Number(values.start_week),
@@ -224,6 +224,25 @@ export function SettingsProfilePage(): ReactNode {
   }, [locale, profileQuery.data?.base_currency, snapshotQuery.data?.snapshot]);
 
   const anyLoading = profileQuery.isLoading || snapshotQuery.isLoading || userEmailQuery.isLoading;
+  const spendAccountsCsv = useWatch({ control: settingsForm.control, name: "spend_accounts_csv" }) ?? "";
+  const selectedSpendAccounts = parseSpendAccounts(spendAccountsCsv);
+  const sourceValues = (sourcesQuery.data ?? []).map((s) => s.source);
+  const normalizedSourceValues = sourceValues.map((s) => s.trim().toLowerCase());
+
+  function updateSelectedSpendAccounts(next: string[]): void {
+    const deduped = Array.from(new Set(next.map((s) => s.trim().toLowerCase()).filter(Boolean)));
+    settingsForm.setValue("spend_accounts_csv", deduped.join(", "), { shouldDirty: true });
+  }
+
+  function addSpendAccount(value: string): void {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized || !normalizedSourceValues.includes(normalized) || selectedSpendAccounts.includes(normalized)) {
+      return;
+    }
+    updateSelectedSpendAccounts([...selectedSpendAccounts, normalized]);
+    setSpendAccountsInput("");
+  }
+
   if (anyLoading && !profileQuery.data) {
     return <LoadingState label={tr("settings.loading", locale)} />;
   }
@@ -232,7 +251,6 @@ export function SettingsProfilePage(): ReactNode {
   }
 
   const timezoneSelect = timezoneOptions(profileQuery.data?.timezone ?? "UTC");
-  const sourceValues = (sourcesQuery.data ?? []).map((s) => s.source);
 
   return (
     <div className="stack">
@@ -280,10 +298,43 @@ export function SettingsProfilePage(): ReactNode {
                     }}
                     className="stack"
                   >
-                    <TextField name="spend_accounts_csv" label="Spend accounts (comma-separated)" />
-                    <p className="muted-text" style={{ margin: "-0.4rem 0 0" }}>
-                      Available sources: {sourceValues.length > 0 ? sourceValues.join(", ") : "No sources found"}
-                    </p>
+                    <input type="hidden" {...settingsForm.register("spend_accounts_csv")} />
+                    <div className="ui-field">
+                      <span className="ui-label">Spend accounts</span>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {selectedSpendAccounts.length === 0 ? <span className="muted-text">No spend accounts selected</span> : null}
+                        {selectedSpendAccounts.map((account) => (
+                          <button
+                            key={account}
+                            type="button"
+                            className="tx-badge"
+                            onClick={() => updateSelectedSpendAccounts(selectedSpendAccounts.filter((s) => s !== account))}
+                          >
+                            {account} ×
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                        <input
+                          className="ui-input"
+                          list="settings-source-list"
+                          value={spendAccountsInput}
+                          onChange={(e) => setSpendAccountsInput(e.target.value)}
+                          placeholder="Add source to spend accounts"
+                        />
+                        <Button type="button" variant="secondary" onClick={() => addSpendAccount(spendAccountsInput)}>
+                          Add
+                        </Button>
+                      </div>
+                      <p className="muted-text" style={{ margin: "0.45rem 0 0" }}>
+                        Available sources: {sourceValues.length > 0 ? sourceValues.join(", ") : "No sources found"}
+                      </p>
+                      <datalist id="settings-source-list">
+                        {sourceValues.map((source) => (
+                          <option key={source} value={source} />
+                        ))}
+                      </datalist>
+                    </div>
                     <TextField name="base_currency" label="Base currency (3-letter code)" />
                     <SelectField
                       name="start_week"
