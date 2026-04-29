@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ACCESS_TOKEN_KEY,
@@ -68,11 +68,10 @@ export function SessionProvider({ children }: { children: ReactNode }): ReactNod
     queryClient.clear();
   }, [queryClient]);
 
-  const value: SessionValue = {
-    isAuthenticated,
-    accessToken,
-    logout,
-  };
+  const value = useMemo<SessionValue>(
+    () => ({ isAuthenticated, accessToken, logout }),
+    [isAuthenticated, accessToken, logout],
+  );
 
   return (
     <SessionContext.Provider value={value}>
