@@ -11,6 +11,7 @@ import { TransactionsPage } from "./pages/transactions/TransactionsPage";
 import { CalendarPage } from "./pages/transactions/CalendarPage";
 import { DeepDivePage } from "./pages/transactions/DeepDivePage";
 import { UpcomingExpensesPage } from "./pages/upcoming/UpcomingExpensesPage";
+import { UpcomingDeepDivePage } from "./pages/upcoming/UpcomingDeepDivePage";
 import { RequireAuth } from "./routes/RequireAuth";
 import { useSession } from "./state/SessionContext";
 import type { ReactNode } from "react";
@@ -46,9 +47,7 @@ export default function App(): ReactNode {
             />
             <Route
               path="upcoming-expenses/deep-dive"
-              element={
-                <PhasePlaceholderPage title="Bills insights" blurb="Bills deep-dive ships in a later task." />
-              }
+              element={<UpcomingDeepDivePage />}
             />
             <Route
               path="data"
