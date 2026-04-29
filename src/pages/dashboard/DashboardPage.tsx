@@ -32,10 +32,13 @@ import { firstCurrency } from "./dashboardUtil";
 import { tr, useLocale } from "../../lib/i18n";
 
 function balanceCurrency(data: SnapshotResponse | undefined, profile: { base_currency: string } | undefined): string {
+  if (profile?.base_currency) {
+    return profile.base_currency;
+  }
   if (data && data.source_balances.length > 0) {
     return firstCurrency(data.source_balances);
   }
-  return profile?.base_currency ?? "USD";
+  return "USD";
 }
 
 function appendDrill(
@@ -265,7 +268,7 @@ export function DashboardPage(): ReactNode {
           <aside className="dashboard-root__side dashboard-col">
             <SourceBalances rows={data.source_balances} />
             <ProfileOverview profile={profileQuery.data} isError={profileQuery.isError} />
-            <QuickActions />
+            <QuickActions baseCurrency={currency} sources={sourceQuery.data ?? []} />
           </aside>
         </div>
         <RecentTransactions rows={txRows} baseCurrency={currency} />

@@ -78,6 +78,7 @@ export function DeepDivePage(): ReactNode {
   const locale = useLocale();
   const [startDate, setStartDate] = useState(monthStartIso());
   const [endDate, setEndDate] = useState(todayIso());
+  const [activeTypeSlice, setActiveTypeSlice] = useState<number>(-1);
   const query = useQuery({
     queryKey: ["transactions-viz", startDate, endDate] as const,
     queryFn: () => getTransactionsVisualization({ start_date: startDate, end_date: endDate }),
@@ -162,9 +163,47 @@ export function DeepDivePage(): ReactNode {
           <div className="recharts-host" style={{ width: "100%", minWidth: 0, height: 280, minHeight: 280 }}>
             <ResponsiveContainer width="100%" height={280} minWidth={0}>
               <PieChart>
-                <Pie data={typeData} dataKey="amount" nameKey="tx_type" outerRadius={100}>
+                <Pie
+                  data={typeData}
+                  dataKey="amount"
+                  nameKey="tx_type"
+                  outerRadius={100}
+                  paddingAngle={2}
+                  onMouseEnter={(_, idx) => setActiveTypeSlice(idx)}
+                  onMouseLeave={() => setActiveTypeSlice(-1)}
+                  labelLine={false}
+                  label={(props) => {
+                    const percent = Number(props.percent ?? 0);
+                    if (percent < 0.07) {
+                      return null;
+                    }
+                    const midAngle = (Number(props.midAngle) * Math.PI) / 180;
+                    const outerRadius = Number(props.outerRadius);
+                    const lineStartX = Number(props.cx) + Math.cos(-midAngle) * outerRadius;
+                    const lineStartY = Number(props.cy) + Math.sin(-midAngle) * outerRadius;
+                    return (
+                      <g>
+                        <line x1={lineStartX} y1={lineStartY} x2={Number(props.x)} y2={Number(props.y)} stroke="var(--muted)" strokeWidth={1.25} />
+                        <text x={Number(props.x)} y={Number(props.y)} fill="var(--fg)" textAnchor={props.textAnchor} dominantBaseline="central">
+                          <tspan x={Number(props.x)} dy="-0.2em" className="pie-callout__title">
+                            {String(props.name)}
+                          </tspan>
+                          <tspan x={Number(props.x)} dy="1.25em" className="pie-callout__value">
+                            {formatMoney(props.value as string | number, "USD")}
+                          </tspan>
+                        </text>
+                      </g>
+                    );
+                  }}
+                >
                   {typeData.map((d, idx) => (
-                    <Cell key={`${d.tx_type}-${idx}`} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+                    <Cell
+                      key={`${d.tx_type}-${idx}`}
+                      fill={PIE_COLORS[idx % PIE_COLORS.length]}
+                      stroke={activeTypeSlice === idx ? "color-mix(in srgb, var(--accent) 58%, white)" : "var(--surface)"}
+                      strokeWidth={activeTypeSlice === idx ? 3 : 1}
+                      style={activeTypeSlice === idx ? { filter: "drop-shadow(0 8px 12px rgba(15,23,42,0.35))" } : undefined}
+                    />
                   ))}
                 </Pie>
                 <Tooltip formatter={(v: unknown) => formatMoney(v as string | number, "USD")} />

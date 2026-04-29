@@ -19,7 +19,8 @@ export function KPIRow(p: Props): ReactNode {
   const c = p.currency;
   const snap = p.summary;
   const incomeN = toNumber(p.totalIncome);
-  const expN = toNumber(p.totalExpenses);
+  const rawExpenseN = toNumber(p.totalExpenses);
+  const expN = rawExpenseN == null ? null : Math.abs(rawExpenseN);
   const netN = incomeN != null && expN != null ? incomeN - expN : null;
   const safe = snap != null ? toNumber(snap.safe_to_spend) : null;
   const rem = snap != null ? toNumber(snap.total_remaining_expenses) : null;
@@ -40,7 +41,7 @@ export function KPIRow(p: Props): ReactNode {
   return (
     <div className="kpi-row">
       <KPI label={tr("dashboard.kpi.income", locale)} value={formatMoney(p.totalIncome, c, { naLabel: "0.00" })} />
-      <KPI label={tr("dashboard.kpi.outgoing", locale)} value={formatMoney(p.totalExpenses, c, { naLabel: "0.00" })} />
+      <KPI label={tr("dashboard.kpi.outgoing", locale)} value={formatMoney(expN, c, { naLabel: "0.00" })} />
       <KPI label={tr("dashboard.kpi.assets", locale)} value={formatMoney(assets, c, { naLabel: "0.00" })} />
       <KPI label={tr("dashboard.kpi.remaining", locale)} value={formatMoney(rem, c, { naLabel: "0.00" })} />
       <KPI label={tr("dashboard.kpi.safe", locale)} value={safe == null ? tr("dashboard.na", locale) : formatMoney(safe, c)} />
