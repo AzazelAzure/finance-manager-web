@@ -20,8 +20,8 @@ const PRIMARY_NAV: Array<{
   end?: boolean;
 }> = [
   { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/app/transactions", label: "Transactions", icon: List },
-  { to: "/app/transactions/calendar", label: "Calendar", icon: Calendar },
+  { to: "/app/transactions", label: "Transactions", icon: List, end: true },
+  { to: "/app/transactions/calendar", label: "Calendar", icon: Calendar, end: true },
   { to: "/app/upcoming-expenses", label: "Upcoming", icon: Wallet },
   { to: "/app/data", label: "Data", icon: Database },
   { to: "/app/settings/profile", label: "Profile", icon: User },
