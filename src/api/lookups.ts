@@ -15,3 +15,8 @@ export async function listSourceNames(): Promise<SourceRow[]> {
   const { data } = await api.get<SourceRow[]>("/finance/sources/");
   return data ?? [];
 }
+
+export async function createCategory(name: string): Promise<CategoryRow> {
+  const { data } = await api.post<CategoryRow>("/finance/categories/", { name });
+  return data;
+}
