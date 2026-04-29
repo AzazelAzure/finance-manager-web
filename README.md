@@ -77,11 +77,20 @@ VITE_API_BASE_URL=https://api.thehivemanager.com
 
 `http://localhost:...` and `http://127.0.0.1:...` are equivalent for `cloudflared` on the same host; `127.0.0.1` avoids a few IPv6/localhost gotchas on Linux.
 
-**4. CORS** — the API must allow `https://jsdevtesting.thehivemanager.com` in `CORS_ALLOWED_ORIGINS` (default in this repo’s API settings includes it on the feature branch; prod must match after deploy). Same for **`https://jsdevprodtest.thehivemanager.com`** when using the preview port tunnel.
+**4. If you see Cloudflare 502 on `jsdevtesting` / `jsdevprodtest`**
 
-**5. Internal proxy (optional)** — If you route tunnel traffic through an **on-box proxy** (e.g. connector or split tunnel uses **`https://127.0.0.1:[port]`** toward the next hop), you may run **Vite with TLS off** on the final hop: the **browser** still loads the site as **`https://`** on the public hostname (TLS at Cloudflare), so you avoid mixed-content issues while the loopback path stays plain HTTP or a local TLS forward with `noTLSVerify`, per your standard.
+Vite serves **plain HTTP** on **5173** / **4173**. The tunnel’s **private “Service” URL** in Zero Trust must use **`http://`**, not **`https://`**:
 
-**6. Plan gates B2 + B3 together (recommended here)** — With the public URL in HTTPS, one manual run is enough: open **`https://<your-tunnel-hostname>/`**, sign in (JWT from **`https://api.thehivemanager.com`**), confirm dashboard / snapshot. That satisfies **auth + CORS (B2)** and **HTTPS smoke from “outside” (B3)** in a single check.
+| Hostname | Service (origin) to set |
+|----------|-------------------------|
+| `jsdevtesting…` | **`http://127.0.0.1:5173`** |
+| `jsdevprodtest…` | **`http://127.0.0.1:4173`** |
+
+If you set **`https://127.0.0.1:…`**, `cloudflared` attempts a **TLS** handshake; Vite does not speak TLS on those ports, so the connection fails and Cloudflare shows **502 Bad Gateway**. **`noTLSVerify` only helps when the origin already uses HTTPS** (e.g. self-signed) — it does **not** make a plain-HTTP Vite process accept `https://` on the same port.
+
+**5. CORS** — the API must allow `https://jsdevtesting.thehivemanager.com` and `https://jsdevprodtest.thehivemanager.com` in `CORS_ALLOWED_ORIGINS` (browser Origin is still **https**; only the loopback hop to Vite is **http**).
+
+**6. Plan gates B2 + B3 together** — Open **`https://<your-tunnel-hostname>/`**, sign in against **`https://api.thehivemanager.com`**, confirm dashboard / snapshot.
 
 ## VPS: `dev@159.198.75.194` (Cloudflare → localhost)
 
