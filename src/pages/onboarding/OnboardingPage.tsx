@@ -73,6 +73,14 @@ const STEP_LABELS: Record<Step, string> = {
   4: "Review",
 };
 
+function timezoneOptions(): Array<{ value: string; label: string }> {
+  const supported = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf;
+  const zones = supported ? supported("timeZone") : [];
+  const preferred = "America/Chicago";
+  const values = zones.includes(preferred) ? [preferred, ...zones.filter((z) => z !== preferred)] : [preferred, ...zones];
+  return values.map((z) => ({ value: z, label: z }));
+}
+
 export function OnboardingPage({ step }: { step: Step }): ReactNode {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -94,7 +102,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
 
   const step1Form = useForm<Step1Form>({
     resolver: zodResolver(step1Schema),
-    defaultValues: { base_currency: "USD", timezone: "UTC", start_week: "1" },
+    defaultValues: { base_currency: "USD", timezone: "America/Chicago", start_week: "1" },
   });
   const step2Form = useForm<Step2Form>({
     resolver: zodResolver(step2Schema),
@@ -192,6 +200,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
 
   const progressLabel = `Step ${step}/4 — ${STEP_LABELS[step]}`;
   const barWidth = `${step * 25}%`;
+  const timezoneSelectOptions = timezoneOptions();
 
   if (step > 1 && expectedPath !== currentPath) {
     return <Navigate to={expectedPath} replace />;
@@ -222,7 +231,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
             className="stack"
           >
             <TextField name="base_currency" label="Base currency" />
-            <TextField name="timezone" label="Timezone (IANA, e.g. Asia/Manila)" />
+            <SelectField name="timezone" label="Timezone" options={timezoneSelectOptions} />
             <SelectField
               name="start_week"
               label="Start of week"
@@ -297,14 +306,14 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
             }}
             className="stack"
           >
-            <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={Boolean(createFirstTx)}
-                onChange={(e) => step4Form.setValue("create_first_tx", e.target.checked)}
-              />
-              <span className="ui-label">Create optional first transaction now</span>
-            </label>
+            <Button
+              type="button"
+              variant={createFirstTx ? "primary" : "secondary"}
+              style={{ width: "100%", minHeight: 46 }}
+              onClick={() => step4Form.setValue("create_first_tx", !createFirstTx)}
+            >
+              {createFirstTx ? "On — Create first transaction" : "Off — Create first transaction"}
+            </Button>
             {createFirstTx ? (
               <>
                 <TextField name="tx_amount" label="Amount" />
