@@ -4,8 +4,13 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Staging API host for pre-cutover full-stack tests** — on `jsdevtesting.thehivemanager.com` the app uses `VITE_STAGING_API_BASE_URL` (default `https://api-jsdevtesting.thehivemanager.com`, see `src/lib/apiBaseUrl.ts`) so Nginx can route the inactive `api-*` with the inactive web; production hostnames still use `VITE_API_BASE_URL` only.
+
 ### Fixed
 
+- **Upcoming expenses list: recurring column** — API serializes `is_recurring` (not `recurring_flag`); the client now maps that field so the table shows **Recurring** vs **One-time** correctly.
 - **Dashboard Quick add: disable `+ Bill` for beta** — the bill quick action is disabled until product defines whether it should create an upcoming expense, record a pay-bill flow, or another hybrid; avoids opening a misleading transaction-shaped modal.
 
 - **BP7 app-wide polish rollout (shell + data surfaces)** — extended the bold landing design language into authenticated areas: protected shell/navigation now has branded depth, stronger active/focus affordances, and improved motion hierarchy; dashboard and core data pages (transactions, calendar/deep-dive, data hub, upcoming/deep-dive) now use elevated toolbar/surface treatment for consistent visual rhythm across the app.

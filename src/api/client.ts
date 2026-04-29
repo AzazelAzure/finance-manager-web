@@ -1,10 +1,11 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { queryClient } from "../lib/queryClient";
+import { resolveApiBaseUrl } from "../lib/apiBaseUrl";
 import { clearSession, getEffectiveAccessTokenForSession, getRefreshToken, setSession } from "../state/auth";
 import { postRefresh } from "./refreshClient";
 import type { LoginResponse } from "./types";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://api.thehivemanager.com";
+const API_BASE_URL = resolveApiBaseUrl();
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
