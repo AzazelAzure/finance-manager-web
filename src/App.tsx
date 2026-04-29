@@ -13,6 +13,7 @@ import { DeepDivePage } from "./pages/transactions/DeepDivePage";
 import { UpcomingExpensesPage } from "./pages/upcoming/UpcomingExpensesPage";
 import { UpcomingDeepDivePage } from "./pages/upcoming/UpcomingDeepDivePage";
 import { DataHubPage } from "./pages/data/DataHubPage";
+import { SettingsProfilePage } from "./pages/settings/SettingsProfilePage";
 import { RequireAuth } from "./routes/RequireAuth";
 import { useSession } from "./state/SessionContext";
 import type { ReactNode } from "react";
@@ -51,12 +52,7 @@ export default function App(): ReactNode {
               element={<UpcomingDeepDivePage />}
             />
             <Route path="data" element={<DataHubPage />} />
-            <Route
-              path="settings/profile"
-              element={
-                <PhasePlaceholderPage title="Profile and settings" blurb="Settings tabs ship in a later task." />
-              }
-            />
+            <Route path="settings/profile" element={<SettingsProfilePage />} />
             <Route
               path="onboarding"
               element={<PhasePlaceholderPage title="Onboarding" blurb="First-run walkthrough ships in a later task." />}

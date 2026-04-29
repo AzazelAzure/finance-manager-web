@@ -53,6 +53,22 @@ export type AppProfileResponse = {
   start_of_week: number;
 };
 
+export type AppProfileUpdateRequest = {
+  spend_accounts: string[];
+  base_currency: string;
+  timezone: string;
+  start_week: number;
+};
+
+export type AppProfileUpdateResponse = {
+  message: string;
+  snapshot?: FinancialSnapshotFields | null;
+};
+
+export type UserEmailResponse = {
+  email: string;
+};
+
 export type TagsListResponse = {
   tags: string[];
 };
