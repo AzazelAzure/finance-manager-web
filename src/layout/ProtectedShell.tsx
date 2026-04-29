@@ -95,6 +95,9 @@ export function ProtectedShell(): ReactNode {
   const title = TITLE[loc.pathname] ?? "App";
 
   function onLogout(): void {
+    if (!window.confirm("Log out now?")) {
+      return;
+    }
     logout();
     navigate("/");
   }

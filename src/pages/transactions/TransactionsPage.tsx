@@ -12,6 +12,7 @@ import {
   type TransactionFilters,
 } from "../../api/transactions";
 import { createCategory, listCategories, listSourceNames, listTags } from "../../api/lookups";
+import { getAppProfile } from "../../api/profile";
 import type { TransactionRecord } from "../../api/types";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -56,29 +57,33 @@ type TransferDraft = {
   bill: string;
 };
 
-const DEFAULT_SINGLE: SingleDraft = {
-  date: new Date().toISOString().slice(0, 10),
-  amount: "",
-  currency: "USD",
-  source: "",
-  tx_type: "EXPENSE",
-  category: "",
-  description: "",
-  bill: "",
-};
+function defaultSingleDraft(baseCurrency: string): SingleDraft {
+  return {
+    date: new Date().toISOString().slice(0, 10),
+    amount: "",
+    currency: baseCurrency,
+    source: "",
+    tx_type: "EXPENSE",
+    category: "",
+    description: "",
+    bill: "",
+  };
+}
 
-const DEFAULT_TRANSFER: TransferDraft = {
-  date: new Date().toISOString().slice(0, 10),
-  from_source: "",
-  to_source: "",
-  sent_amount: "",
-  received_amount: "",
-  sent_currency: "USD",
-  received_currency: "USD",
-  category: "",
-  description: "",
-  bill: "",
-};
+function defaultTransferDraft(baseCurrency: string): TransferDraft {
+  return {
+    date: new Date().toISOString().slice(0, 10),
+    from_source: "",
+    to_source: "",
+    sent_amount: "",
+    received_amount: "",
+    sent_currency: baseCurrency,
+    received_currency: baseCurrency,
+    category: "",
+    description: "",
+    bill: "",
+  };
+}
 
 function mutationFailureMessage(result: {
   rejected?: Array<Record<string, unknown>>;
@@ -158,6 +163,8 @@ export function TransactionsPage(): ReactNode {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const searchString = searchParams.toString();
+  const profileQuery = useQuery({ queryKey: ["app-profile"] as const, queryFn: getAppProfile });
+  const baseCurrency = (profileQuery.data?.base_currency ?? "USD").trim().toUpperCase() || "USD";
   const filters = useMemo<TransactionFilters>(
     () => searchParamsToTransactionFilters(new URLSearchParams(searchString)),
     [searchString],
@@ -175,8 +182,8 @@ export function TransactionsPage(): ReactNode {
   const [editorOpen, setEditorOpen] = useState(location.pathname.endsWith("/new"));
   const [editorMode, setEditorMode] = useState<EditorMode>("single");
   const [editingTxId, setEditingTxId] = useState<string | null>(null);
-  const [singleDraft, setSingleDraft] = useState<SingleDraft>(DEFAULT_SINGLE);
-  const [transferDraft, setTransferDraft] = useState<TransferDraft>(DEFAULT_TRANSFER);
+  const [singleDraft, setSingleDraft] = useState<SingleDraft>(() => defaultSingleDraft("USD"));
+  const [transferDraft, setTransferDraft] = useState<TransferDraft>(() => defaultTransferDraft("USD"));
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [pendingTagInput, setPendingTagInput] = useState("");
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
@@ -196,6 +203,19 @@ export function TransactionsPage(): ReactNode {
     queryKey: ["upcoming-expenses", "unpaid-names"] as const,
     queryFn: listUnpaidExpenseNames,
   });
+  const sourceCurrencyOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const row of sourcesQuery.data ?? []) {
+      const normalized = String(row.currency ?? "").trim().toUpperCase();
+      if (normalized) {
+        set.add(normalized);
+      }
+    }
+    set.add(baseCurrency);
+    return [...set].sort();
+  }, [baseCurrency, sourcesQuery.data]);
+
+  const currencyOptions = sourceCurrencyOptions.length > 0 ? sourceCurrencyOptions : [baseCurrency];
 
   const saveMutation = useMutation({
     mutationFn: async (): Promise<void> => {
@@ -276,8 +296,8 @@ export function TransactionsPage(): ReactNode {
       setEditorOpen(false);
       setEditingTxId(null);
       setEditorMode("single");
-      setSingleDraft(DEFAULT_SINGLE);
-      setTransferDraft(DEFAULT_TRANSFER);
+      setSingleDraft(defaultSingleDraft(baseCurrency));
+      setTransferDraft(defaultTransferDraft(baseCurrency));
       setSelectedTags([]);
       if (location.pathname.endsWith("/new")) {
         navigate("/app/transactions", { replace: true });
@@ -359,8 +379,8 @@ export function TransactionsPage(): ReactNode {
   function openEditorForCreate(mode: EditorMode): void {
     setEditingTxId(null);
     setEditorMode(mode);
-    setSingleDraft(DEFAULT_SINGLE);
-    setTransferDraft(DEFAULT_TRANSFER);
+    setSingleDraft(defaultSingleDraft(baseCurrency));
+    setTransferDraft(defaultTransferDraft(baseCurrency));
     setSelectedTags([]);
     setPendingTagInput("");
     setEditorError("");
@@ -598,11 +618,13 @@ export function TransactionsPage(): ReactNode {
               </label>
               <label className="ui-field">
                 <span className="ui-label">Currency</span>
-                <input
-                  className="ui-input"
-                  value={singleDraft.currency}
-                  onChange={(e) => setSingleDraft((d) => ({ ...d, currency: e.target.value.toUpperCase() }))}
-                />
+                <select className="ui-input" value={singleDraft.currency} onChange={(e) => setSingleDraft((d) => ({ ...d, currency: e.target.value }))}>
+                  {currencyOptions.map((curr) => (
+                    <option key={curr} value={curr}>
+                      {curr}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="ui-field">
                 <span className="ui-label">Source</span>
@@ -666,11 +688,17 @@ export function TransactionsPage(): ReactNode {
               </label>
               <label className="ui-field">
                 <span className="ui-label">Sent currency</span>
-                <input
+                <select
                   className="ui-input"
                   value={transferDraft.sent_currency}
-                  onChange={(e) => setTransferDraft((d) => ({ ...d, sent_currency: e.target.value.toUpperCase() }))}
-                />
+                  onChange={(e) => setTransferDraft((d) => ({ ...d, sent_currency: e.target.value }))}
+                >
+                  {currencyOptions.map((curr) => (
+                    <option key={`sent-${curr}`} value={curr}>
+                      {curr}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="ui-field">
                 <span className="ui-label">Received amount</span>
@@ -682,11 +710,17 @@ export function TransactionsPage(): ReactNode {
               </label>
               <label className="ui-field">
                 <span className="ui-label">Received currency</span>
-                <input
+                <select
                   className="ui-input"
                   value={transferDraft.received_currency}
-                  onChange={(e) => setTransferDraft((d) => ({ ...d, received_currency: e.target.value.toUpperCase() }))}
-                />
+                  onChange={(e) => setTransferDraft((d) => ({ ...d, received_currency: e.target.value }))}
+                >
+                  {currencyOptions.map((curr) => (
+                    <option key={`received-${curr}`} value={curr}>
+                      {curr}
+                    </option>
+                  ))}
+                </select>
               </label>
               <p className="muted-text" style={{ margin: 0 }}>
                 {transferDraft.sent_amount && transferDraft.received_amount
