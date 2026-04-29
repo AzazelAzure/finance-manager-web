@@ -51,6 +51,34 @@ Open `http://localhost:5173` and sign in. Default API `CORS_ALLOWED_ORIGINS` inc
 
 **Runtime:** If another agent needs the same local ports, coordinate via `design_docs/30_Releases/Runtime_Signup_Sheet.md` in the design-docs submodule.
 
+## Lane B — `jsdevtesting.thehivemanager.com` via Cloudflare Tunnel (local)
+
+Use this to hit the **real HTTPS hostname** in the browser while the app and `cloudflared` run on your machine. The API stays **`https://api.thehivemanager.com`** (set `VITE_API_BASE_URL` accordingly in `.env.local`).
+
+**1. Env for prod API from tunnel origin**
+
+```bash
+# .env.local
+VITE_API_BASE_URL=https://api.thehivemanager.com
+```
+
+**2. Start the app (pick one)**
+
+| Mode | Command | **Cloudflare “private” / service URL** (aka localhost pointer) |
+|------|---------|------------------------------------------------------------------|
+| **Dev (HMR)** | `npm run dev` | **`http://127.0.0.1:5173`** (Vite default port) |
+| **Built assets** | `npm run build` then `npm run preview` | **`http://127.0.0.1:4173`** (Vite default preview port; see `vite.config.ts` `preview.port`) |
+
+**3. Cloudflare Tunnel / Zero Trust public hostname**
+
+- **Public hostname:** `jsdevtesting.thehivemanager.com` (or your agreed FQDN).
+- **Type:** HTTP.
+- **Service / origin URL (what you asked for):** one of the URLs in the table above. Prefer **`http://127.0.0.1:5173`** for day‑to‑day dev, or **`http://127.0.0.1:4173`** to test the production bundle.
+
+`http://localhost:...` and `http://127.0.0.1:...` are equivalent for `cloudflared` on the same host; `127.0.0.1` avoids a few IPv6/localhost gotchas on Linux.
+
+**4. CORS** — the API must allow `https://jsdevtesting.thehivemanager.com` in `CORS_ALLOWED_ORIGINS` (default in this repo’s API settings includes it on the feature branch; prod must match after deploy).
+
 ---
 
 ## React + TypeScript + Vite (template)
