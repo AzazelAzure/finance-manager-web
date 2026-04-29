@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import axios from "axios";
 import {
   createTransactions,
   deleteTransaction,
@@ -91,6 +92,52 @@ function mutationFailureMessage(result: {
     (typeof first.error === "string" ? first.error : "") ||
     (typeof first.message === "string" ? first.message : "");
   return raw ?? "Transaction was rejected by the API.";
+}
+
+function parseApiError(err: unknown): string {
+  if (!axios.isAxiosError(err)) {
+    return err instanceof Error ? err.message : "Could not save transaction.";
+  }
+  const status = err.response?.status;
+  const data = err.response?.data;
+  if (Array.isArray(data)) {
+    const message = data
+      .map((item, idx) => {
+        if (item && typeof item === "object") {
+          return Object.entries(item as Record<string, unknown>)
+            .map(([k, v]) => {
+              if (Array.isArray(v)) {
+                return `${k}: ${v.map((x) => String(x)).join(", ")}`;
+              }
+              return `${k}: ${String(v)}`;
+            })
+            .join(" | ");
+        }
+        return `${idx}: ${String(item)}`;
+      })
+      .filter((part) => Boolean(part))
+      .join(" || ");
+    if (message) {
+      return status ? `HTTP ${status}: ${message}` : message;
+    }
+  }
+  if (data && typeof data === "object") {
+    const message = Object.entries(data as Record<string, unknown>)
+      .map(([k, v]) => {
+        if (Array.isArray(v)) {
+          return `${k}: ${v.map((x) => String(x)).join(", ")}`;
+        }
+        return `${k}: ${String(v)}`;
+      })
+      .join(" | ");
+    if (message) {
+      return status ? `HTTP ${status}: ${message}` : message;
+    }
+  }
+  if (typeof data === "string" && data.trim()) {
+    return status ? `HTTP ${status}: ${data}` : data;
+  }
+  return status ? `HTTP ${status}: Request rejected by API.` : err.message;
 }
 
 function typeBadge(t: string): string {
@@ -227,7 +274,7 @@ export function TransactionsPage(): ReactNode {
       }
     },
     onError: (err) => {
-      setEditorError(err instanceof Error ? err.message : "Could not save transaction.");
+      setEditorError(parseApiError(err));
     },
   });
 
@@ -253,7 +300,7 @@ export function TransactionsPage(): ReactNode {
     if (!name) {
       return true;
     }
-    return (categoriesQuery.data ?? []).some((c) => c.trim().toLowerCase() === name);
+    return (categoriesQuery.data ?? []).some((c) => typeof c === "string" && c.trim().toLowerCase() === name);
   }, [categoriesQuery.data, editorMode, editingTxId, singleDraft.category, transferDraft.category]);
 
   const isSaveDisabled = useMemo(() => {

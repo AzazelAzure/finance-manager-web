@@ -8,7 +8,9 @@ export async function listTags(): Promise<string[]> {
 
 export async function listCategories(): Promise<string[]> {
   const { data } = await api.get<CategoryRow[]>("/finance/categories/");
-  return (data ?? []).map((c) => c.name);
+  return (data ?? [])
+    .map((c) => (typeof c?.name === "string" ? c.name.trim() : ""))
+    .filter((name) => Boolean(name));
 }
 
 export async function listSourceNames(): Promise<SourceRow[]> {
