@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { DataTable, type ColumnDef } from "../../components/ui/DataTable";
@@ -250,16 +251,21 @@ export function UpcomingExpensesPage(): ReactNode {
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
           Upcoming expenses
         </h2>
-        <Button
-          onClick={() => {
-            setEditingName(null);
-            setDraft(DEFAULT_DRAFT);
-            setEditorError("");
-            setEditorOpen(true);
-          }}
-        >
-          Add bill
-        </Button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link className="ui-btn ui-btn--secondary" to="/app/upcoming-expenses/deep-dive">
+            Deep dive
+          </Link>
+          <Button
+            onClick={() => {
+              setEditingName(null);
+              setDraft(DEFAULT_DRAFT);
+              setEditorError("");
+              setEditorOpen(true);
+            }}
+          >
+            Add bill
+          </Button>
+        </div>
       </div>
 
       <Card>
