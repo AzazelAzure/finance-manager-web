@@ -12,6 +12,7 @@ import {
   AUTH_CHANGED_EVENT,
   clearSession,
   getAccessToken,
+  getEffectiveAccessTokenForSession,
 } from "./auth";
 
 function subscribeAccess(cb: () => void): () => void {
@@ -36,7 +37,7 @@ function getAccessSnapshot(): string {
   if (typeof window === "undefined") {
     return "";
   }
-  return getAccessToken();
+  return getEffectiveAccessTokenForSession();
 }
 
 const serverAccess = "";
@@ -70,6 +71,18 @@ export function SessionProvider({ children }: { children: ReactNode }): ReactNod
   const accessToken = useSyncExternalStore(subscribeAccess, getAccessSnapshot, () => serverAccess);
   const isAuthenticated = Boolean(accessToken);
   const queryClient = useQueryClient();
+
+  /** Remove expired JWT from storage so API client and UI stay aligned. */
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const raw = getAccessToken();
+    if (raw && getEffectiveAccessTokenForSession() === "") {
+      clearSession();
+      void queryClient.clear();
+    }
+  }, [accessToken, queryClient]);
 
   const logout = useCallback((): void => {
     clearSession();

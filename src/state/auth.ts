@@ -17,6 +17,48 @@ export function getAccessToken(): string {
   return localStorage.getItem(ACCESS_TOKEN_KEY) ?? "";
 }
 
+const JWT_SKEW_MS = 30_000;
+
+function isLikelyJwt(token: string): boolean {
+  return token.split(".").length === 3;
+}
+
+/**
+ * True if the access token is a JWT and its `exp` is in the past (with skew).
+ * Non-JWT or unparseable tokens are treated as not expired (API validates).
+ */
+export function isAccessJwtExpired(token: string, skewMs = JWT_SKEW_MS): boolean {
+  if (!isLikelyJwt(token)) {
+    return false;
+  }
+  try {
+    const parts = token.split(".");
+    const json = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(json) as { exp?: number };
+    if (typeof payload.exp !== "number") {
+      return false;
+    }
+    return Date.now() >= payload.exp * 1000 - skewMs;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Access token to use for session / UI auth: empty if missing or JWT is expired.
+ * Opaque (non-JWT) tokens are returned as-is.
+ */
+export function getEffectiveAccessTokenForSession(): string {
+  const t = getAccessToken();
+  if (!t) {
+    return "";
+  }
+  if (isAccessJwtExpired(t)) {
+    return "";
+  }
+  return t;
+}
+
 export function getRefreshToken(): string {
   if (typeof localStorage === "undefined") {
     return "";

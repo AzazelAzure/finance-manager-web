@@ -1,6 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { queryClient } from "../lib/queryClient";
-import { clearSession, getAccessToken, getRefreshToken, setSession } from "../state/auth";
+import { clearSession, getEffectiveAccessTokenForSession, getRefreshToken, setSession } from "../state/auth";
 import { postRefresh } from "./refreshClient";
 import type { LoginResponse } from "./types";
 
@@ -42,7 +42,7 @@ function refreshAccessToken(): Promise<string | null> {
 }
 
 api.interceptors.request.use((config) => {
-  const token = getAccessToken();
+  const token = getEffectiveAccessTokenForSession();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

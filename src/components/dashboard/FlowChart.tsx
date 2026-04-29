@@ -70,8 +70,8 @@ export function FlowChart({ data, baseCurrency, isLoading, isError, onRetry }: P
         </div>
       }
     >
-      <div style={{ width: "100%", height: 280 }}>
-        <ResponsiveContainer>
+      <div className="recharts-host" style={{ width: "100%", minWidth: 0, height: 280, minHeight: 280 }}>
+        <ResponsiveContainer width="100%" height={280} minWidth={0}>
           <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
             <XAxis dataKey="label" stroke="var(--muted)" tick={{ fontSize: 12 }} />
