@@ -1,0 +1,476 @@
+import { useMemo, useState, type ReactNode } from "react";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { DataTable, type ColumnDef } from "../../components/ui/DataTable";
+import { ErrorState } from "../../components/ui/ErrorState";
+import { LoadingState } from "../../components/ui/LoadingState";
+import { Modal } from "../../components/ui/Modal";
+import {
+  createUpcomingExpense,
+  deleteUpcomingExpense,
+  listUpcomingExpenses,
+  updateUpcomingExpense,
+} from "../../api/upcomingExpenses";
+import type { UpcomingExpenseMutationPayload, UpcomingExpenseRecord } from "../../api/types";
+import { formatMoney } from "../../lib/money";
+import { useBreakpoint } from "../../lib/breakpoints";
+
+type RecurringFilter = "both" | "yes" | "no";
+type PaidFilter = "both" | "yes" | "no";
+type DateQuickFilter = "all" | "this_month" | "next_month" | "overdue";
+
+type UpcomingDraft = {
+  name: string;
+  amount: string;
+  currency: string;
+  due_date: string;
+  source: string;
+  paid_flag: boolean;
+  recurring_flag: boolean;
+  use_start_end: boolean;
+  start_date: string;
+  end_date: string;
+};
+
+const DEFAULT_DRAFT: UpcomingDraft = {
+  name: "",
+  amount: "",
+  currency: "USD",
+  due_date: new Date().toISOString().slice(0, 10),
+  source: "",
+  paid_flag: false,
+  recurring_flag: false,
+  use_start_end: false,
+  start_date: "",
+  end_date: "",
+};
+
+function parseError(error: unknown): string {
+  if (!axios.isAxiosError(error)) {
+    return error instanceof Error ? error.message : "Request failed.";
+  }
+  const status = error.response?.status;
+  const data = error.response?.data;
+  if (data && typeof data === "object") {
+    const parts = Object.entries(data as Record<string, unknown>).map(([k, v]) => `${k}: ${String(v)}`);
+    if (parts.length > 0) {
+      return status ? `HTTP ${status}: ${parts.join(" | ")}` : parts.join(" | ");
+    }
+  }
+  if (typeof data === "string" && data.trim()) {
+    return status ? `HTTP ${status}: ${data}` : data;
+  }
+  return status ? `HTTP ${status}: Request rejected.` : error.message;
+}
+
+function toPayload(draft: UpcomingDraft): UpcomingExpenseMutationPayload {
+  const payload: UpcomingExpenseMutationPayload = {
+    name: draft.name.trim(),
+    amount: draft.amount,
+    currency: draft.currency.trim().toUpperCase(),
+    due_date: draft.due_date,
+    paid_flag: draft.paid_flag,
+    recurring_flag: draft.recurring_flag,
+  };
+  if (draft.source.trim()) {
+    payload.source = draft.source.trim();
+  }
+  if (draft.use_start_end) {
+    if (draft.start_date) payload.start_date = draft.start_date;
+    if (draft.end_date) payload.end_date = draft.end_date;
+  }
+  return payload;
+}
+
+function monthRange(offsetMonths: number): { start: string; end: string } {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + offsetMonths;
+  const start = new Date(y, m, 1);
+  const end = new Date(y, m + 1, 0);
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10),
+  };
+}
+
+export function UpcomingExpensesPage(): ReactNode {
+  const { atOrAboveMd } = useBreakpoint();
+  const queryClient = useQueryClient();
+  const [recurring, setRecurring] = useState<RecurringFilter>("both");
+  const [paid, setPaid] = useState<PaidFilter>("both");
+  const [dateQuick, setDateQuick] = useState<DateQuickFilter>("all");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [draft, setDraft] = useState<UpcomingDraft>(DEFAULT_DRAFT);
+  const [editorError, setEditorError] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Record<string, boolean>>({});
+
+  const upcomingQuery = useQuery({
+    queryKey: ["upcoming-expenses", "all"] as const,
+    queryFn: listUpcomingExpenses,
+    placeholderData: keepPreviousData,
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = toPayload(draft);
+      if (editingName) {
+        await updateUpcomingExpense(editingName, payload);
+      } else {
+        await createUpcomingExpense(payload);
+      }
+    },
+    onMutate: () => setEditorError(""),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"] });
+      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      setEditorOpen(false);
+      setEditingName(null);
+      setDraft(DEFAULT_DRAFT);
+    },
+    onError: (err) => setEditorError(parseError(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (name: string) => deleteUpcomingExpense(name),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"] });
+      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+    },
+  });
+
+  const filteredRows = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const thisMonth = monthRange(0);
+    const nextMonth = monthRange(1);
+    return (upcomingQuery.data ?? []).filter((row) => {
+      if (recurring === "yes" && !row.recurring_flag) return false;
+      if (recurring === "no" && row.recurring_flag) return false;
+      if (paid === "yes" && !row.paid_flag) return false;
+      if (paid === "no" && row.paid_flag) return false;
+      if (dateQuick === "this_month") {
+        return row.due_date >= thisMonth.start && row.due_date <= thisMonth.end;
+      }
+      if (dateQuick === "next_month") {
+        return row.due_date >= nextMonth.start && row.due_date <= nextMonth.end;
+      }
+      if (dateQuick === "overdue") {
+        return row.due_date < today && !row.paid_flag;
+      }
+      return true;
+    });
+  }, [dateQuick, paid, recurring, upcomingQuery.data]);
+
+  const columns = useMemo<Array<ColumnDef<UpcomingExpenseRecord>>>(
+    () => [
+      { id: "name", header: "Name", cell: (r) => r.name, sortValue: (r) => r.name },
+      { id: "amt", header: "Amount", cell: (r) => formatMoney(r.amount, r.currency) },
+      { id: "due", header: "Due date", cell: (r) => r.due_date, sortValue: (r) => r.due_date },
+      {
+        id: "paid",
+        header: "Paid",
+        cell: (r) => <span className="tx-badge">{r.paid_flag ? "Paid" : "Unpaid"}</span>,
+      },
+      {
+        id: "recurring",
+        header: "Recurring",
+        cell: (r) => <span className="tx-badge">{r.recurring_flag ? "Recurring" : "One-time"}</span>,
+      },
+      { id: "source", header: "Source", cell: (r) => r.source || "—" },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: (r) => {
+          const isConfirm = Boolean(pendingDelete[r.name]);
+          return (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                className="ui-btn ui-btn--secondary"
+                onClick={() => {
+                  setEditingName(r.name);
+                  setDraft({
+                    name: r.name,
+                    amount: String(r.amount),
+                    currency: r.currency,
+                    due_date: r.due_date,
+                    source: r.source || "",
+                    paid_flag: r.paid_flag,
+                    recurring_flag: r.recurring_flag,
+                    use_start_end: Boolean(r.start_date || r.end_date),
+                    start_date: r.start_date || "",
+                    end_date: r.end_date || "",
+                  });
+                  setEditorError("");
+                  setEditorOpen(true);
+                }}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className="ui-btn ui-btn--ghost"
+                onClick={() => {
+                  if (!isConfirm) {
+                    setPendingDelete((prev) => ({ ...prev, [r.name]: true }));
+                    return;
+                  }
+                  deleteMutation.mutate(r.name);
+                }}
+              >
+                {isConfirm ? "Confirm delete?" : "Delete"}
+              </button>
+            </div>
+          );
+        },
+      },
+    ],
+    [deleteMutation, pendingDelete],
+  );
+
+  const invalidWindow = Boolean(
+    draft.use_start_end && draft.start_date && draft.end_date && draft.end_date < draft.start_date,
+  );
+  const invalidAmount = !draft.amount || Number.isNaN(Number(draft.amount)) || Number(draft.amount) <= 0;
+  const isSaveDisabled =
+    saveMutation.isPending ||
+    !draft.name.trim() ||
+    !draft.due_date ||
+    !draft.currency.trim() ||
+    draft.currency.trim().length !== 3 ||
+    invalidAmount ||
+    invalidWindow;
+
+  return (
+    <div className="stack">
+      <div className="row-between">
+        <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
+          Upcoming expenses
+        </h2>
+        <Button
+          onClick={() => {
+            setEditingName(null);
+            setDraft(DEFAULT_DRAFT);
+            setEditorError("");
+            setEditorOpen(true);
+          }}
+        >
+          Add bill
+        </Button>
+      </div>
+
+      <Card>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+          <label className="ui-field">
+            <span className="ui-label">Recurring</span>
+            <select className="ui-input" value={recurring} onChange={(e) => setRecurring(e.target.value as RecurringFilter)}>
+              <option value="both">Both</option>
+              <option value="yes">Recurring only</option>
+              <option value="no">One-time only</option>
+            </select>
+          </label>
+          <label className="ui-field">
+            <span className="ui-label">Paid</span>
+            <select className="ui-input" value={paid} onChange={(e) => setPaid(e.target.value as PaidFilter)}>
+              <option value="both">Both</option>
+              <option value="yes">Paid</option>
+              <option value="no">Unpaid</option>
+            </select>
+          </label>
+          <label className="ui-field">
+            <span className="ui-label">Date quick filter</span>
+            <select className="ui-input" value={dateQuick} onChange={(e) => setDateQuick(e.target.value as DateQuickFilter)}>
+              <option value="all">All</option>
+              <option value="this_month">This month</option>
+              <option value="next_month">Next month</option>
+              <option value="overdue">Overdue</option>
+            </select>
+          </label>
+        </div>
+      </Card>
+
+      {upcomingQuery.isError ? (
+        <ErrorState title="Upcoming expenses failed to load" onRetry={() => void upcomingQuery.refetch()} />
+      ) : upcomingQuery.isLoading && !upcomingQuery.data ? (
+        <LoadingState label="Loading upcoming expenses..." />
+      ) : atOrAboveMd ? (
+        <Card>
+          <DataTable columns={columns} data={filteredRows} keyField="name" emptyTitle="No upcoming expenses in this view" />
+        </Card>
+      ) : (
+        <div className="stack">
+          {filteredRows.length === 0 ? (
+            <Card>
+              <p className="muted-text" style={{ margin: 0 }}>
+                No upcoming expenses in this view.
+              </p>
+            </Card>
+          ) : (
+            filteredRows.map((row) => {
+              const isConfirm = Boolean(pendingDelete[row.name]);
+              return (
+                <Card key={row.name}>
+                  <div className="stack" style={{ gap: 8 }}>
+                    <div className="row-between">
+                      <strong>{row.name}</strong>
+                      <span>{formatMoney(row.amount, row.currency)}</span>
+                    </div>
+                    <div className="row-between">
+                      <span className="muted-text">Due {row.due_date}</span>
+                      <span className="tx-badge">{row.paid_flag ? "Paid" : "Unpaid"}</span>
+                    </div>
+                    <div className="row-between">
+                      <span className="tx-badge">{row.recurring_flag ? "Recurring" : "One-time"}</span>
+                      <span className="muted-text">{row.source || "No source"}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        type="button"
+                        className="ui-btn ui-btn--secondary"
+                        onClick={() => {
+                          setEditingName(row.name);
+                          setDraft({
+                            name: row.name,
+                            amount: String(row.amount),
+                            currency: row.currency,
+                            due_date: row.due_date,
+                            source: row.source || "",
+                            paid_flag: row.paid_flag,
+                            recurring_flag: row.recurring_flag,
+                            use_start_end: Boolean(row.start_date || row.end_date),
+                            start_date: row.start_date || "",
+                            end_date: row.end_date || "",
+                          });
+                          setEditorError("");
+                          setEditorOpen(true);
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="ui-btn ui-btn--ghost"
+                        onClick={() => {
+                          if (!isConfirm) {
+                            setPendingDelete((prev) => ({ ...prev, [row.name]: true }));
+                            return;
+                          }
+                          deleteMutation.mutate(row.name);
+                        }}
+                      >
+                        {isConfirm ? "Confirm delete?" : "Delete"}
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      <Modal
+        open={editorOpen}
+        onClose={() => {
+          setEditorOpen(false);
+          setEditorError("");
+        }}
+        title={editingName ? "Edit upcoming expense" : "Add upcoming expense"}
+      >
+        <div className="stack" style={{ marginTop: 12 }}>
+          {editorError ? <ErrorState title="Save failed" description={editorError} /> : null}
+          {(invalidAmount || invalidWindow) && !saveMutation.isPending ? (
+            <div className="ui-state" role="status">
+              <p className="muted-text" style={{ margin: 0 }}>
+                {invalidWindow
+                  ? "End date cannot be before start date."
+                  : "Amount must be a positive number greater than zero."}
+              </p>
+            </div>
+          ) : null}
+          <label className="ui-field">
+            <span className="ui-label">Name</span>
+            <input className="ui-input" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
+          </label>
+          <label className="ui-field">
+            <span className="ui-label">Amount</span>
+            <input className="ui-input" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} />
+          </label>
+          <label className="ui-field">
+            <span className="ui-label">Currency</span>
+            <input
+              className="ui-input"
+              value={draft.currency}
+              onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value.toUpperCase() }))}
+            />
+          </label>
+          <label className="ui-field">
+            <span className="ui-label">Due date</span>
+            <input
+              type="date"
+              className="ui-input"
+              value={draft.due_date}
+              onChange={(e) => setDraft((d) => ({ ...d, due_date: e.target.value }))}
+            />
+          </label>
+          <label className="ui-field">
+            <span className="ui-label">Source (optional)</span>
+            <input className="ui-input" value={draft.source} onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))} />
+          </label>
+          <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={draft.recurring_flag}
+              onChange={(e) => setDraft((d) => ({ ...d, recurring_flag: e.target.checked }))}
+            />
+            <span className="ui-label">Recurring</span>
+          </label>
+          <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={draft.paid_flag}
+              onChange={(e) => setDraft((d) => ({ ...d, paid_flag: e.target.checked }))}
+            />
+            <span className="ui-label">Marked paid</span>
+          </label>
+          <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={draft.use_start_end}
+              onChange={(e) => setDraft((d) => ({ ...d, use_start_end: e.target.checked }))}
+            />
+            <span className="ui-label">Use start / end window</span>
+          </label>
+          {draft.use_start_end ? (
+            <>
+              <label className="ui-field">
+                <span className="ui-label">Start date</span>
+                <input
+                  type="date"
+                  className="ui-input"
+                  value={draft.start_date}
+                  onChange={(e) => setDraft((d) => ({ ...d, start_date: e.target.value }))}
+                />
+              </label>
+              <label className="ui-field">
+                <span className="ui-label">End date</span>
+                <input
+                  type="date"
+                  className="ui-input"
+                  value={draft.end_date}
+                  onChange={(e) => setDraft((d) => ({ ...d, end_date: e.target.value }))}
+                />
+              </label>
+            </>
+          ) : null}
+          <Button disabled={isSaveDisabled} onClick={() => saveMutation.mutate()}>
+            {saveMutation.isPending ? "Saving..." : editingName ? "Save changes" : "Create"}
+          </Button>
+        </div>
+      </Modal>
+    </div>
+  );
+}
