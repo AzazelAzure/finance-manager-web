@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Staging API host for pre-cutover full-stack tests** — on `jsdevtesting.thehivemanager.com` the app uses `VITE_STAGING_API_BASE_URL` (default `https://api-jsdevtesting.thehivemanager.com`, see `src/lib/apiBaseUrl.ts`) so Nginx can route the inactive `api-*` with the inactive web; production hostnames still use `VITE_API_BASE_URL` only.
+
 ### Fixed
 
 - **Upcoming expenses list: recurring column** — API serializes `is_recurring` (not `recurring_flag`); the client now maps that field so the table shows **Recurring** vs **One-time** correctly.

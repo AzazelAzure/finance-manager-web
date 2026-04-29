@@ -1,7 +1,8 @@
 import axios from "axios";
+import { resolveApiBaseUrl } from "../lib/apiBaseUrl";
 import type { LoginResponse } from "./types";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://api.thehivemanager.com";
+const API_BASE_URL = resolveApiBaseUrl();
 
 /** No auth interceptors — used for `POST /api/token/refresh/` and login. */
 export const refreshClient = axios.create({
