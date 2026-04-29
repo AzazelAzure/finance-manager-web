@@ -2,7 +2,7 @@ import { useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getTransactionsCalendar } from "../../api/transactions";
+import { getTransactionsCalendar, listTransactions } from "../../api/transactions";
 import { Card } from "../../components/ui/Card";
 import { LoadingState } from "../../components/ui/LoadingState";
 import { ErrorState } from "../../components/ui/ErrorState";
@@ -35,7 +35,9 @@ function monthEndIso(fromMonthStartIso: string): string {
 }
 
 function toNumber(v: unknown): number {
-  const n = typeof v === "string" ? Number(v) : typeof v === "number" ? v : 0;
+  const normalized =
+    typeof v === "string" ? v.replace(/[^0-9.-]/g, "") : v;
+  const n = typeof normalized === "string" ? Number(normalized) : typeof normalized === "number" ? normalized : 0;
   return Number.isFinite(n) ? n : 0;
 }
 
@@ -52,10 +54,14 @@ function monthGridAnchor(startIso: string): Date {
 }
 
 function txRowDate(row: { date?: string; created_on?: string }): string {
-  if (row.date) {
-    return row.date;
+  if (row.date && row.date.length >= 10) {
+    return row.date.slice(0, 10);
   }
-  return String(row.created_on ?? "").slice(0, 10);
+  const fallback =
+    String((row as Record<string, unknown>).created_on ?? "") ||
+    String((row as Record<string, unknown>).created_at ?? "") ||
+    String((row as Record<string, unknown>).transaction_date ?? "");
+  return fallback.slice(0, 10);
 }
 
 export function CalendarPage(): ReactNode {
@@ -94,6 +100,20 @@ export function CalendarPage(): ReactNode {
     }
     return (query.data?.due_events ?? []).filter((row) => row.date === selectedDayResolved);
   }, [query.data?.due_events, selectedDayResolved]);
+  const selectedDayTransactionsQuery = useQuery({
+    queryKey: ["transactions-by-day", selectedDayResolved] as const,
+    queryFn: () => listTransactions({ date: selectedDayResolved }),
+    enabled: Boolean(selectedDayResolved),
+  });
+  const selectedDayTransactions = useMemo(() => {
+    if (!selectedDayResolved) {
+      return [];
+    }
+    if ((selectedDayTransactionsQuery.data?.length ?? 0) > 0) {
+      return selectedDayTransactionsQuery.data ?? [];
+    }
+    return dayDrillRows;
+  }, [dayDrillRows, selectedDayResolved, selectedDayTransactionsQuery.data]);
 
   const chartRows = useMemo(() => {
     return dailyRows.map((row) => {
@@ -133,7 +153,21 @@ export function CalendarPage(): ReactNode {
           : heatMetricMode === "expense_only"
             ? toNumber(row.expense_only)
             : toNumber(row.net);
-      map.set(row.date, { metric, txCount: toNumber(row.tx_count ?? row.count), expenseOnly: Math.abs(toNumber(row.expense_only)) });
+      const expenseOnly = Math.abs(
+        toNumber(
+          row.expense_only ??
+          (row as Record<string, unknown>).expense ??
+          (row as Record<string, unknown>).outgoing ??
+          (row as Record<string, unknown>).total_expense,
+        ),
+      );
+      const txCount = toNumber(
+        row.tx_count ??
+          row.count ??
+          (row as Record<string, unknown>).transactions ??
+          (row as Record<string, unknown>).tx_total,
+      );
+      map.set(row.date, { metric, txCount, expenseOnly });
     }
     return map;
   }, [dailyRows, heatMetricMode]);
@@ -364,11 +398,11 @@ export function CalendarPage(): ReactNode {
               Day detail {selectedDayResolved ? `(${selectedDayResolved})` : ""}
             </h3>
             <p className="muted-text" style={{ margin: "0 0 0.55rem" }}>
-              Transactions: {dayDrillRows.length} · Due expenses: {dueEventsForSelectedDay.length}
+              Transactions: {selectedDayTransactions.length} · Due expenses: {dueEventsForSelectedDay.length}
             </p>
-            {dayDrillRows.length > 0 ? (
+            {selectedDayTransactions.length > 0 ? (
               <div style={{ display: "grid", gap: 6, marginBottom: 8 }}>
-                {dayDrillRows.slice(0, 4).map((row) => (
+                {selectedDayTransactions.slice(0, 4).map((row) => (
                   <div key={row.tx_id} className="tx-badge" style={{ display: "flex", justifyContent: "space-between" }}>
                     <span>{row.description || row.tx_type}</span>
                     <span>{formatMoney(row.amount, row.currency)}</span>
@@ -437,7 +471,7 @@ export function CalendarPage(): ReactNode {
             </h3>
             <DataTable
               keyField="tx_id"
-              data={dayDrillRows}
+              data={selectedDayTransactions}
               columns={[
                 { id: "date", header: tr("common.date", locale), cell: (r) => r.date },
                 { id: "type", header: tr("common.type", locale), cell: (r) => r.tx_type },

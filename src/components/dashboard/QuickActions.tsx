@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import { useState, type ReactNode } from "react";
 import { Card } from "../ui/Card";
 import { tr, useLocale } from "../../lib/i18n";
@@ -7,6 +8,7 @@ import { Button } from "../ui/Button";
 import { createTransactions } from "../../api/transactions";
 import { createUpcomingExpense } from "../../api/upcomingExpenses";
 import { ErrorState } from "../ui/ErrorState";
+import { createCategory, listCategories } from "../../api/lookups";
 import type { SourceRow } from "../../api/types";
 
 type QuickActionType = "INCOME" | "EXPENSE" | "XFER" | "BILL";
@@ -31,6 +33,17 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
   const today = new Date().toISOString().slice(0, 10);
   const sourceOptions = sources.map((row) => row.source);
   const sourceCurrency = new Map(sources.map((row) => [row.source, row.currency]));
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", "all"] as const,
+    queryFn: listCategories,
+  });
+  const categoryOptions = categoriesQuery.data ?? [];
+  const currencyOptions = Array.from(
+    new Set([
+      baseCurrency,
+      ...sources.map((row) => String(row.currency ?? "").trim().toUpperCase()).filter(Boolean),
+    ]),
+  ).sort((a, b) => a.localeCompare(b));
   const [draft, setDraft] = useState({
     date: today,
     amount: "",
@@ -53,6 +66,20 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!activeType) return;
+      const categoryRaw = draft.category.trim();
+      const hasExistingCategory =
+        categoryRaw.length === 0 ||
+        categoryOptions.some((name) => name.trim().toLowerCase() === categoryRaw.toLowerCase());
+      if (!hasExistingCategory) {
+        try {
+          await createCategory(categoryRaw);
+          void queryClient.invalidateQueries({ queryKey: ["categories", "all"] });
+        } catch (error) {
+          if (!axios.isAxiosError(error) || (error.response?.status !== 400 && error.response?.status !== 409)) {
+            throw error;
+          }
+        }
+      }
       if (activeType === "BILL") {
         await createUpcomingExpense({
           name: draft.description || "Quick bill",
@@ -66,7 +93,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
         return;
       }
       if (activeType === "XFER") {
-        const transferCategory = draft.category.trim();
+        const transferCategory = categoryRaw;
         await createTransactions([
           {
             date: draft.date,
@@ -167,7 +194,13 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
               </label>
               <label className="ui-field">
                 <span className="ui-label">Sent currency</span>
-                <input className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value.toUpperCase() }))} />
+                <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
+                  {currencyOptions.map((curr) => (
+                    <option key={`quick-sent-${curr}`} value={curr}>
+                      {curr}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="ui-field">
                 <span className="ui-label">Received amount</span>
@@ -175,7 +208,17 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
               </label>
               <label className="ui-field">
                 <span className="ui-label">Received currency</span>
-                <input className="ui-input" value={draft.receivedCurrency} onChange={(e) => setDraft((d) => ({ ...d, receivedCurrency: e.target.value.toUpperCase() }))} />
+                <select
+                  className="ui-input"
+                  value={draft.receivedCurrency}
+                  onChange={(e) => setDraft((d) => ({ ...d, receivedCurrency: e.target.value }))}
+                >
+                  {currencyOptions.map((curr) => (
+                    <option key={`quick-received-${curr}`} value={curr}>
+                      {curr}
+                    </option>
+                  ))}
+                </select>
               </label>
             </>
           ) : (
@@ -190,7 +233,13 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
           </label>
           <label className="ui-field">
             <span className="ui-label">Currency</span>
-            <input className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value.toUpperCase() }))} />
+            <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
+              {currencyOptions.map((curr) => (
+                <option key={`quick-curr-${curr}`} value={curr}>
+                  {curr}
+                </option>
+              ))}
+            </select>
           </label>
             </>
           )}
@@ -202,7 +251,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
           ) : (
             <label className="ui-field">
               <span className="ui-label">Category</span>
-              <input className="ui-input" value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))} />
+              <input className="ui-input" list="quick-category-list" value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))} />
             </label>
           )}
           <label className="ui-field">
@@ -211,6 +260,11 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
           </label>
           <datalist id="quick-source-list">
             {sourceOptions.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+          <datalist id="quick-category-list">
+            {categoryOptions.map((name) => (
               <option key={name} value={name} />
             ))}
           </datalist>
