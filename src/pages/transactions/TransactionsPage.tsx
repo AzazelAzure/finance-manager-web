@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import axios from "axios";
 import {
   createTransactions,
   deleteTransaction,
@@ -91,6 +92,30 @@ function mutationFailureMessage(result: {
     (typeof first.error === "string" ? first.error : "") ||
     (typeof first.message === "string" ? first.message : "");
   return raw ?? "Transaction was rejected by the API.";
+}
+
+function parseApiError(err: unknown): string {
+  if (!axios.isAxiosError(err)) {
+    return err instanceof Error ? err.message : "Could not save transaction.";
+  }
+  const status = err.response?.status;
+  const data = err.response?.data;
+  if (data && typeof data === "object") {
+    const rec = data as Record<string, unknown>;
+    const pieces = Object.entries(rec).map(([k, v]) => {
+      if (Array.isArray(v)) {
+        return `${k}: ${v.map((x) => String(x)).join(", ")}`;
+      }
+      return `${k}: ${String(v)}`;
+    });
+    if (pieces.length > 0) {
+      return status ? `HTTP ${status}: ${pieces.join(" | ")}` : pieces.join(" | ");
+    }
+  }
+  if (typeof data === "string" && data.trim()) {
+    return status ? `HTTP ${status}: ${data}` : data;
+  }
+  return status ? `HTTP ${status}: Request rejected by API.` : err.message;
 }
 
 function typeBadge(t: string): string {
@@ -227,7 +252,7 @@ export function TransactionsPage(): ReactNode {
       }
     },
     onError: (err) => {
-      setEditorError(err instanceof Error ? err.message : "Could not save transaction.");
+      setEditorError(parseApiError(err));
     },
   });
 
@@ -261,17 +286,37 @@ export function TransactionsPage(): ReactNode {
       return true;
     }
     if (editingTxId) {
-      return !singleDraft.date || !singleDraft.amount || !singleDraft.source;
+      return (
+        !singleDraft.date ||
+        !singleDraft.amount ||
+        Number.isNaN(Number(singleDraft.amount)) ||
+        !singleDraft.source ||
+        !singleDraft.currency ||
+        singleDraft.currency.trim().length !== 3
+      );
     }
     if (editorMode === "single") {
-      return !singleDraft.date || !singleDraft.amount || !singleDraft.source;
+      return (
+        !singleDraft.date ||
+        !singleDraft.amount ||
+        Number.isNaN(Number(singleDraft.amount)) ||
+        !singleDraft.source ||
+        !singleDraft.currency ||
+        singleDraft.currency.trim().length !== 3
+      );
     }
     return (
       !transferDraft.date ||
       !transferDraft.from_source ||
       !transferDraft.to_source ||
       !transferDraft.sent_amount ||
-      !transferDraft.received_amount
+      Number.isNaN(Number(transferDraft.sent_amount)) ||
+      !transferDraft.received_amount ||
+      Number.isNaN(Number(transferDraft.received_amount)) ||
+      !transferDraft.sent_currency ||
+      transferDraft.sent_currency.trim().length !== 3 ||
+      !transferDraft.received_currency ||
+      transferDraft.received_currency.trim().length !== 3
     );
   }, [editingTxId, editorMode, isLoadingEditor, saveMutation.isPending, singleDraft, transferDraft]);
 
