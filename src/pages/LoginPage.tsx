@@ -68,12 +68,13 @@ export function LoginPage(): ReactNode {
     <section className="stack" style={{ maxWidth: 420, margin: "0 auto" }}>
       <h1 style={{ margin: 0, fontSize: "var(--font-2xl)" }}>Log in</h1>
       <p className="muted-text" style={{ margin: 0 }}>
-        Access your dashboard. No credentials are prefilled in production.
+        Access your dashboard. Fields stay empty until you focus them, so the app does not pre-fill credentials; your
+        browser may still offer saved passwords after you click in a field.
       </p>
       <Card>
-        <AppForm form={form} onSubmit={onValid} className="stack">
-          <TextField name="username" label="Username" autoComplete="username" />
-          <TextField name="password" label="Password" type="password" autoComplete="current-password" />
+        <AppForm form={form} onSubmit={onValid} className="stack" id="login-form" autoComplete="off">
+          <TextField name="username" label="Username" autoComplete="off" unlockOnFocus />
+          <TextField name="password" label="Password" type="password" autoComplete="off" unlockOnFocus />
           {formError ? (
             <p className="error-text" role="alert">
               {formError}

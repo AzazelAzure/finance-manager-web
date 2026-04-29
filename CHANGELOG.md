@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Cookie notice + login autofill (post-BP1)** — Consent UI now keys off `localStorage` (`fm_cookie_consent_v1`) so a broad `Domain=.thehivemanager.com` cookie no longer suppresses the banner in incognito; on HTTPS we also set a host-only `__Host-fm_cookie_consent` cookie when accepting. Login form uses `autocomplete="off"`, per-field `unlockOnFocus` (readOnly until first focus) to avoid load-time autofill, and copy clarifies browser password managers may still offer after focus.
+
 ### Added
 
 - **Foundations (parity sweep P1 / BP1 prep)** — `PublicShell` + `ProtectedShell` with Reflex-style navigation (sidebar ≥900px, mobile strip, lucide icons), `tokens.css` theme variables + self-hosted Inter, `src/lib/breakpoints.ts` + `useBreakpoint`, shared UI primitives (Card, Button, Modal, DataTable, ChartFrame, Form field helpers, state components), `CookieBanner` with `fm_cookie_consent` cookie, React Query defaults in `lib/queryClient.ts`, auth session keys `fm_access_token` / `fm_refresh_token` with 401 → refresh queue + retry via axios interceptors, routes `/` and `/app/*` with dashboard at `/app/dashboard`.

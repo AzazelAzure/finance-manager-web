@@ -7,12 +7,27 @@ type Props<T extends FieldValues> = {
   className?: string;
   children: ReactNode;
   id?: string;
+  /** Default `off` to reduce browser password-manager autofill before first interaction. */
+  autoComplete?: string;
 };
 
-export function AppForm<T extends FieldValues>({ form, onSubmit, children, className, id }: Props<T>): ReactNode {
+export function AppForm<T extends FieldValues>({
+  form,
+  onSubmit,
+  children,
+  className,
+  id,
+  autoComplete = "off",
+}: Props<T>): ReactNode {
   return (
     <RHFFormProvider {...form}>
-      <form id={id} className={className} onSubmit={form.handleSubmit(onSubmit)} noValidate>
+      <form
+        id={id}
+        className={className}
+        onSubmit={form.handleSubmit(onSubmit)}
+        noValidate
+        autoComplete={autoComplete}
+      >
         {children}
       </form>
     </RHFFormProvider>
