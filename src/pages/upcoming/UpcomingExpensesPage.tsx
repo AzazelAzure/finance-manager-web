@@ -247,11 +247,11 @@ export function UpcomingExpensesPage(): ReactNode {
 
   return (
     <div className="stack">
-      <div className="row-between">
+      <div className="app-toolbar app-surface">
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
           Upcoming expenses
         </h2>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className="app-toolbar__actions">
           <Link className="ui-btn ui-btn--secondary" to="/app/upcoming-expenses/deep-dive">
             Deep dive
           </Link>

@@ -250,9 +250,11 @@ export function DataHubPage(): ReactNode {
 
   return (
     <div className="stack">
-      <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-        Data hub
-      </h2>
+      <div className="app-surface app-surface--data">
+        <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
+          Data hub
+        </h2>
+      </div>
       {anyError ? (
         <ErrorState
           title="Failed to load data hub"

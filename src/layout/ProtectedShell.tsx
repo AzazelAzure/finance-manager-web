@@ -105,6 +105,10 @@ export function ProtectedShell(): ReactNode {
   return (
     <div className="protected-root">
       <aside className="protected-sidebar" aria-label="Main navigation (desktop)">
+        <div className="protected-brand" aria-hidden>
+          <span className="protected-brand__mark" />
+          <span className="protected-brand__text">Hive</span>
+        </div>
         <div className="protected-side-nav">
           {PRIMARY_NAV.map((n) => (
             <NavItem key={n.to} to={n.to} label={n.label} end={n.end} icon={n.icon} />
@@ -116,12 +120,11 @@ export function ProtectedShell(): ReactNode {
             className="shell-nav-link"
             rel="noreferrer"
             target="_blank"
-            style={{ display: "flex" }}
           >
             <BookOpen size={20} />
             <span>Guide</span>
           </a>
-          <button className="shell-nav-link" type="button" onClick={onLogout} style={{ width: "100%" }}>
+          <button className="shell-nav-link shell-nav-link--danger" type="button" onClick={onLogout}>
             <LogOut size={20} />
             <span>Logout</span>
           </button>
@@ -129,10 +132,15 @@ export function ProtectedShell(): ReactNode {
       </aside>
       <div className="protected-content-wrap">
         <header className="protected-sticky-top">
-          <h1 id="app-page-title">{title}</h1>
-          <span className="muted" title="Locale selector in a later task">
-            EN
-          </span>
+          <div className="protected-sticky-top__title-wrap">
+            <h1 id="app-page-title">{title}</h1>
+            <span className="protected-sticky-top__subtitle">Finance Manager</span>
+          </div>
+          <div className="protected-header-actions">
+            <span className="protected-locale-chip" title="App-wide localization rollout in progress">
+              EN
+            </span>
+          </div>
         </header>
         <main className="protected-main-inner" aria-labelledby="app-page-title">
           <Outlet />
@@ -143,10 +151,9 @@ export function ProtectedShell(): ReactNode {
           ))}
           <button
             type="button"
-            className="shell-nav-link"
+            className="shell-nav-link shell-nav-link--danger"
             onClick={onLogout}
             aria-label="Log out"
-            style={{ minWidth: "2.5rem" }}
           >
             <LogOut size={20} />
             <span className="sr-only">Log out</span>

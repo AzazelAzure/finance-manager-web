@@ -161,7 +161,7 @@ export function CalendarPage(): ReactNode {
 
   return (
     <div className="stack">
-      <div className="row-between">
+      <div className="app-toolbar app-surface">
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
           Transactions calendar
         </h2>
