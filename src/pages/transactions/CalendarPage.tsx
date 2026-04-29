@@ -1,6 +1,7 @@
 import { useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getTransactionsCalendar } from "../../api/transactions";
 import { Card } from "../../components/ui/Card";
 import { LoadingState } from "../../components/ui/LoadingState";
@@ -11,13 +12,16 @@ import { ChartFrame } from "../../components/dashboard/ChartFrame";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { tr, useLocale } from "../../lib/i18n";
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function monthStartIso(): string {
   const d = new Date();
   d.setDate(1);
+  return d.toISOString().slice(0, 10);
+}
+
+function monthEndIso(fromMonthStartIso: string): string {
+  const d = new Date(`${fromMonthStartIso}T00:00:00`);
+  d.setMonth(d.getMonth() + 1);
+  d.setDate(0);
   return d.toISOString().slice(0, 10);
 }
 
@@ -41,7 +45,7 @@ function monthGridAnchor(startIso: string): Date {
 export function CalendarPage(): ReactNode {
   const locale = useLocale();
   const [startDate, setStartDate] = useState(monthStartIso());
-  const [endDate, setEndDate] = useState(todayIso());
+  const [endDate, setEndDate] = useState(monthEndIso(monthStartIso()));
   const [displayCurrencyMode, setDisplayCurrencyMode] = useState<"base" | "original">("base");
   const [heatMetricMode, setHeatMetricMode] = useState<"net" | "expense_only" | "count">("net");
   const [selectedDay, setSelectedDay] = useState<string>("");
@@ -62,13 +66,18 @@ export function CalendarPage(): ReactNode {
     if (!selectedDay) return rows;
     return rows.filter((r) => r.date === selectedDay);
   }, [query.data?.day_drill, selectedDay]);
-
   const dailyRows = useMemo(() => query.data?.daily ?? [], [query.data?.daily]);
   const monthRows = useMemo(() => query.data?.monthly ?? [], [query.data?.monthly]);
   const selectedDayResolved = useMemo(() => {
     if (selectedDay) return selectedDay;
     return dailyRows[0]?.date ?? "";
   }, [dailyRows, selectedDay]);
+  const dueEventsForSelectedDay = useMemo(() => {
+    if (!selectedDayResolved) {
+      return [];
+    }
+    return (query.data?.due_events ?? []).filter((row) => row.date === selectedDayResolved);
+  }, [query.data?.due_events, selectedDayResolved]);
 
   const chartRows = useMemo(() => {
     return dailyRows.map((row) => {
@@ -100,15 +109,21 @@ export function CalendarPage(): ReactNode {
   }, [monthRows]);
 
   const dailyByDate = useMemo(() => {
-    const map = new Map<string, { metric: number; txCount: number }>();
-    for (const row of chartRows) {
-      map.set(row.date, { metric: row.metric, txCount: row.tx_count });
+    const map = new Map<string, { metric: number; txCount: number; expenseOnly: number }>();
+    for (const row of dailyRows) {
+      const metric =
+        heatMetricMode === "count"
+          ? toNumber(row.tx_count ?? row.count)
+          : heatMetricMode === "expense_only"
+            ? toNumber(row.expense_only)
+            : toNumber(row.net);
+      map.set(row.date, { metric, txCount: toNumber(row.tx_count ?? row.count), expenseOnly: Math.abs(toNumber(row.expense_only)) });
     }
     return map;
-  }, [chartRows]);
+  }, [dailyRows, heatMetricMode]);
 
   const heatMax = useMemo(() => {
-    const values = Array.from(dailyByDate.values()).map((v) => Math.abs(v.metric));
+    const values = Array.from(dailyByDate.values()).map((v) => v.expenseOnly);
     return Math.max(...values, 0);
   }, [dailyByDate]);
 
@@ -123,10 +138,27 @@ export function CalendarPage(): ReactNode {
       const rec = dailyByDate.get(iso);
       const metric = rec?.metric ?? 0;
       const txCount = rec?.txCount ?? 0;
-      const normalized = heatMax <= 0 ? 0 : Math.min(Math.abs(metric) / heatMax, 1);
-      return { iso, day, inMonth, metric, txCount, normalized };
+      const normalized = heatMax <= 0 ? 0 : Math.min((rec?.expenseOnly ?? 0) / heatMax, 1);
+      const dueCount = (query.data?.due_events ?? []).filter((e) => e.date === iso && !e.paid_flag).length;
+      return { iso, day, inMonth, metric, txCount, normalized, dueCount };
     });
-  }, [dailyByDate, heatMax, startDate]);
+  }, [dailyByDate, heatMax, query.data?.due_events, startDate]);
+  function shiftMonth(delta: number): void {
+    const d = new Date(`${startDate}T00:00:00`);
+    d.setDate(1);
+    d.setMonth(d.getMonth() + delta);
+    const nextStart = d.toISOString().slice(0, 10);
+    const nextEnd = monthEndIso(nextStart);
+    setStartDate(nextStart);
+    setEndDate(nextEnd);
+    setSelectedDay("");
+  }
+
+  const monthTitle = useMemo(() => {
+    const d = new Date(`${startDate}T00:00:00`);
+    return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  }, [startDate]);
+
 
   const inMonthDates = useMemo(
     () => monthCells.filter((c) => c.inMonth).map((c) => c.iso),
@@ -237,9 +269,20 @@ export function CalendarPage(): ReactNode {
           </ChartFrame>
 
           <Card>
-            <h3 className="muted" style={{ margin: "0 0 0.75rem" }}>
-              Month grid
-            </h3>
+            <div className="row-between" style={{ marginBottom: "0.75rem" }}>
+              <h3 className="muted" style={{ margin: 0 }}>
+                Month grid
+              </h3>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button type="button" className="ui-icon-btn" onClick={() => shiftMonth(-1)} aria-label="Previous month">
+                  <ChevronLeft size={18} />
+                </button>
+                <strong>{monthTitle}</strong>
+                <button type="button" className="ui-icon-btn" onClick={() => shiftMonth(1)} aria-label="Next month">
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
             <div
               role="grid"
               aria-label={tr("txCalendar.monthGridAria", locale)}
@@ -251,7 +294,8 @@ export function CalendarPage(): ReactNode {
                 </div>
               ))}
               {monthCells.map((cell) => {
-                const bg = cell.normalized > 0 ? `color-mix(in oklab, var(--accent) ${Math.round(cell.normalized * 85)}%, var(--surface))` : "var(--surface)";
+                const heat = Math.round(8 + cell.normalized * 82);
+                const bg = cell.normalized > 0 ? `color-mix(in oklab, var(--danger) ${heat}%, var(--surface))` : "var(--surface)";
                 const selected = selectedDayResolved === cell.iso;
                 return (
                   <button
@@ -279,10 +323,48 @@ export function CalendarPage(): ReactNode {
                         {cell.txCount}
                       </span>
                     </div>
+                    {cell.dueCount > 0 ? (
+                      <div style={{ marginTop: 4, display: "grid", gap: 2 }}>
+                        {Array.from({ length: Math.min(3, cell.dueCount) }).map((_, idx) => (
+                          <span
+                            key={`${cell.iso}-${idx}`}
+                            style={{
+                              display: "block",
+                              height: 3,
+                              borderRadius: 999,
+                              background: "color-mix(in srgb, var(--warn) 82%, var(--surface))",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
                   </button>
                 );
               })}
             </div>
+          </Card>
+
+          <Card>
+            <h3 className="muted" style={{ margin: "0 0 0.5rem" }}>
+              Day detail {selectedDayResolved ? `(${selectedDayResolved})` : ""}
+            </h3>
+            <p className="muted-text" style={{ margin: "0 0 0.55rem" }}>
+              Transactions: {dayDrillRows.length} · Due expenses: {dueEventsForSelectedDay.length}
+            </p>
+            {dueEventsForSelectedDay.length > 0 ? (
+              <div style={{ display: "grid", gap: 6 }}>
+                {dueEventsForSelectedDay.map((row) => (
+                  <div key={`${row.date}-${row.expense_name}`} className="tx-badge" style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>{row.expense_name}</span>
+                    <span>{formatMoney(row.amount, row.currency)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted-text" style={{ margin: 0 }}>
+                No due expenses for this day.
+              </p>
+            )}
           </Card>
 
           <ChartFrame

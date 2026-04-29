@@ -8,6 +8,7 @@ type Props = { profile: AppProfileResponse | null | undefined; isError: boolean 
 
 export function ProfileOverview({ profile, isError }: Props): ReactNode {
   const locale = useLocale();
+  const startWeekLabel = profile?.start_of_week === 0 ? "Sunday" : "Monday";
   if (isError || !profile) {
     return (
       <Card>
@@ -33,7 +34,7 @@ export function ProfileOverview({ profile, isError }: Props): ReactNode {
           <strong>{tr("dashboard.profile.timezone", locale)}:</strong> {profile.timezone}
         </li>
         <li>
-          <strong>{tr("dashboard.profile.startOfWeek", locale)}:</strong> {profile.start_of_week}
+          <strong>{tr("dashboard.profile.startOfWeek", locale)}:</strong> {startWeekLabel}
         </li>
         <li>
           <strong>{tr("dashboard.profile.spendAccounts", locale)}:</strong>{" "}
@@ -46,8 +47,8 @@ export function ProfileOverview({ profile, isError }: Props): ReactNode {
             : "—"}
         </li>
       </ul>
-      <div style={{ marginTop: "0.75rem" }}>
-        <Link to="/app/settings/profile" className="ui-btn ui-btn--secondary" style={{ display: "inline-block" }}>
+      <div className="profile-overview__action">
+        <Link to="/app/settings/profile" className="ui-btn ui-btn--secondary">
           {tr("dashboard.profile.edit", locale)}
         </Link>
       </div>

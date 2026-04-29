@@ -264,6 +264,16 @@
   font-size: var(--font-md);
 }
 
+.profile-overview__action {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: center;
+}
+
+.profile-overview__action .ui-btn {
+  min-width: 11.5rem;
+}
+
 .quick-actions {
   display: flex;
   flex-wrap: wrap;
