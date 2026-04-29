@@ -81,6 +81,16 @@
   gap: var(--space-4);
 }
 
+.dashboard-root__main,
+.dashboard-root__side {
+  min-width: 0;
+}
+
+.recharts-host {
+  min-width: 0;
+  flex-shrink: 0;
+}
+
 @media (min-width: 1200px) {
   .dashboard-root__row {
     display: grid;

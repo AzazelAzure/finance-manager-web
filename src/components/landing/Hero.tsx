@@ -13,7 +13,11 @@ export function Hero(): ReactNode {
         <Link to="/signup" style={{ textDecoration: "none" }}>
           <Button type="button">Get started</Button>
         </Link>
-        <Link to={isAuthenticated ? "/app/dashboard" : "/login"} style={{ textDecoration: "none" }}>
+        <Link
+          to={isAuthenticated ? "/app/dashboard" : "/login"}
+          state={isAuthenticated ? undefined : { from: { pathname: "/app/dashboard" } }}
+          style={{ textDecoration: "none" }}
+        >
           <Button type="button" variant="secondary">
             {isAuthenticated ? "Open app" : "Sign in"}
           </Button>

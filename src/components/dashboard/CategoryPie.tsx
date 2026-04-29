@@ -35,8 +35,8 @@ export function CategoryPie({ expenseByCategory, baseCurrency, isLoading, isErro
       onRetry={onRetry}
       isEmpty={empty}
     >
-      <div style={{ width: "100%", height: 280 }}>
-        <ResponsiveContainer>
+      <div className="recharts-host" style={{ width: "100%", minWidth: 0, height: 280, minHeight: 280 }}>
+        <ResponsiveContainer width="100%" height={280} minWidth={0}>
           <PieChart>
             <Tooltip
               formatter={(v: unknown) => formatMoney(v as string | number, baseCurrency)}

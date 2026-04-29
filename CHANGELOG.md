@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Session + landing CTA** — UI auth (`isAuthenticated`) and the axios `Authorization` header now use **non-expired** access tokens: JWT `exp` is checked with clock skew, expired tokens are cleared, and the hero’s **Open app** only appears when a session is actually usable. **Recharts** dashboard charts use explicit `ResponsiveContainer` size and `min-width: 0` on flex columns to stop width/height -1 measurement warnings and the related runaway updates / minified React #185.
+
 ### Added
 
 - **Dashboard parity (P3 / T05–T07, BP3 prep)** — `/app/dashboard` uses API-driven filters (URL is the source of truth; **Apply** refetches; same signature dedupes via React Query), flow / daily spend (with income line toggle) / category + tag pies (tag totals from `transactions_for_month`), KPI row (eight metrics including N/A for safe-to-spend), source balances, recent transactions (desktop table + mobile cards), profile strip from `GET /finance/appprofile/`, quick-add links. Chart slice / tag drillthrough navigates to `/app/transactions?fromDashboard=1&…` (placeholder shows URL hints). New API helpers: `getSnapshot`, profile + tag/category/source lookups. `GET /app/transactions/new?type=` placeholder route.
