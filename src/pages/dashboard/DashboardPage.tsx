@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getAppProfile } from "../../api/profile";
-import { getSnapshot } from "../../api/snapshot";
+import { fetchAppSnapshot } from "../../api/snapshot";
 import { listCategories, listSourceNames, listTags } from "../../api/lookups";
 import type { SnapshotResponse } from "../../api/types";
 import { CategoryPie } from "../../components/dashboard/CategoryPie";
@@ -56,14 +56,28 @@ function appendDrill(
 export function DashboardPage(): ReactNode {
   const [searchParams, setSearchParams] = useSearchParams();
   const nav = useNavigate();
-  const appliedKey = useMemo(() => appliedSnapshotKey(searchParams), [searchParams]);
-  const initialFilterDraft = useMemo(() => urlSearchParamsToFilterDraft(searchParams), [searchParams]);
+  const searchString = searchParams.toString();
+  const appliedKey = useMemo(
+    () => appliedSnapshotKey(new URLSearchParams(searchString)),
+    [searchString],
+  );
+  const initialFilterDraft = useMemo(
+    () => urlSearchParamsToFilterDraft(new URLSearchParams(searchString)),
+    [searchString],
+  );
+
+  const snapshotParams = useMemo(
+    () => searchParamsToApiParams(new URLSearchParams(searchString)),
+    [searchString],
+  );
+
+  const loadSnapshot = useCallback(() => {
+    return fetchAppSnapshot(snapshotParams);
+  }, [snapshotParams]);
 
   const { data, isError, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["snapshot", appliedKey] as const,
-    queryFn: () => {
-      return getSnapshot(searchParamsToApiParams(searchParams));
-    },
+    queryFn: loadSnapshot,
     placeholderData: keepPreviousData,
   });
 
