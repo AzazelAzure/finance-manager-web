@@ -22,13 +22,13 @@ import {
   type SourceMutationPayload,
   updateSource,
 } from "../../api/lookups";
-import type { TransactionRecord } from "../../api/types";
+import type { SourceRow, TransactionRecord } from "../../api/types";
 
 type EntityType = "source" | "category" | "tag";
 
 type EditorState = {
   entity: EntityType;
-  mode: "create" | "rename";
+  mode: "create" | "rename" | "edit";
   currentName?: string;
 };
 
@@ -149,7 +149,12 @@ export function DataHubPage(): ReactNode {
           return;
         }
         if (editor.currentName) {
-          await updateSource(editor.currentName, { source: textDraft.trim() });
+          await updateSource(editor.currentName, {
+            source: sourceDraft.source.trim(),
+            acc_type: sourceDraft.acc_type.trim().toUpperCase(),
+            amount: sourceDraft.amount,
+            currency: sourceDraft.currency.trim().toUpperCase(),
+          });
         }
         return;
       }
@@ -208,6 +213,17 @@ export function DataHubPage(): ReactNode {
     setTextDraft(currentName);
   }
 
+  function openSourceEdit(row: SourceRow): void {
+    setEditor({ entity: "source", mode: "edit", currentName: row.source });
+    setEditorError("");
+    setSourceDraft({
+      source: row.source,
+      acc_type: row.acc_type,
+      amount: row.amount,
+      currency: row.currency,
+    });
+  }
+
   function requestDelete(entity: EntityType, name: string): void {
     const key = `${entity}:${name}`;
     if (!pendingDelete[key]) {
@@ -223,7 +239,7 @@ export function DataHubPage(): ReactNode {
   }
 
   const editorCanSave =
-    editor?.entity === "source" && editor.mode === "create"
+    editor?.entity === "source" && (editor.mode === "create" || editor.mode === "edit")
       ? Boolean(
           sourceDraft.source.trim() &&
             sourceDraft.acc_type.trim() &&
@@ -274,8 +290,14 @@ export function DataHubPage(): ReactNode {
                       </span>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <button type="button" className="ui-btn ui-btn--secondary" onClick={() => openRename("source", row.source)}>
-                        Rename
+                      <button
+                        type="button"
+                        className="ui-btn ui-btn--secondary"
+                        onClick={() => openSourceEdit(row)}
+                        disabled={row.source.toLowerCase() === "unknown"}
+                        title={row.source.toLowerCase() === "unknown" ? "Reserved source cannot be edited." : undefined}
+                      >
+                        Edit
                       </button>
                       <button
                         type="button"
@@ -373,13 +395,13 @@ export function DataHubPage(): ReactNode {
         onClose={() => setEditor(null)}
         title={
           editor
-            ? `${editor.mode === "create" ? "Create" : "Rename"} ${editor.entity}`
+            ? `${editor.mode === "create" ? "Create" : editor.mode === "edit" ? "Edit" : "Rename"} ${editor.entity}`
             : "Edit"
         }
       >
         <div className="stack" style={{ marginTop: 12 }}>
           {editorError ? <ErrorState title="Save failed" description={editorError} /> : null}
-          {editor?.entity === "source" && editor.mode === "create" ? (
+          {editor?.entity === "source" && (editor.mode === "create" || editor.mode === "edit") ? (
             <>
               <label className="ui-field">
                 <span className="ui-label">Source name</span>
