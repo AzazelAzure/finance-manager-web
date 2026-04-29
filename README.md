@@ -88,7 +88,7 @@ Vite serves **plain HTTP** on **5173** / **4173**. The tunnel’s **private “S
 
 If you set **`https://127.0.0.1:…`**, `cloudflared` attempts a **TLS** handshake; Vite does not speak TLS on those ports, so the connection fails and Cloudflare shows **502 Bad Gateway**. **`noTLSVerify` only helps when the origin already uses HTTPS** (e.g. self-signed) — it does **not** make a plain-HTTP Vite process accept `https://` on the same port.
 
-**5. CORS** — the API must allow `https://jsdevtesting.thehivemanager.com` and `https://jsdevprodtest.thehivemanager.com` in `CORS_ALLOWED_ORIGINS` (browser Origin is still **https**; only the loopback hop to Vite is **http**).
+**5. CORS** — the API must allow `https://jsdevtesting.thehivemanager.com` and `https://jsdevprodtest.thehivemanager.com` in `CORS_ALLOWED_ORIGINS` (browser Origin is still **https**; only the loopback hop to Vite is **http**). If login shows **ERR_NETWORK** but the API works from Reflex, see the API doc [CORS_PRODUCTION_TROUBLESHOOTING.md](https://github.com/AzazelAzure/finance-manager-api/blob/main/docs/CORS_PRODUCTION_TROUBLESHOOTING.md) (Cloudflare often caches a bad **OPTIONS** preflight for `api.thehivemanager.com`).
 
 **6. Plan gates B2 + B3 together** — Open **`https://<your-tunnel-hostname>/`**, sign in against **`https://api.thehivemanager.com`**, confirm dashboard / snapshot.
 
