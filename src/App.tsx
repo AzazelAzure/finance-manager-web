@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { CookieBanner } from "./components/CookieBanner";
 import { PublicShell } from "./layout/PublicShell";
 import { ProtectedShell } from "./layout/ProtectedShell";
-import { DashboardPage } from "./pages/DashboardPage";
+import { DashboardPage } from "./pages/dashboard/DashboardPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PhasePlaceholderPage } from "./pages/PhasePlaceholderPage";
@@ -35,6 +35,16 @@ export default function App(): ReactNode {
                 <PhasePlaceholderPage
                   title="Transactions"
                   blurb="Quick entry, filters, and CRUD are implemented in a later task."
+                  showDashboardDrillHint
+                />
+              }
+            />
+            <Route
+              path="transactions/new"
+              element={
+                <PhasePlaceholderPage
+                  title="New transaction"
+                  blurb="The transaction editor modal ships in the transactions workstream. Link opened from the dashboard with ?type=."
                 />
               }
             />

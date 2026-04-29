@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Dashboard parity (P3 / T05–T07, BP3 prep)** — `/app/dashboard` uses API-driven filters (URL is the source of truth; **Apply** refetches; same signature dedupes via React Query), flow / daily spend (with income line toggle) / category + tag pies (tag totals from `transactions_for_month`), KPI row (eight metrics including N/A for safe-to-spend), source balances, recent transactions (desktop table + mobile cards), profile strip from `GET /finance/appprofile/`, quick-add links. Chart slice / tag drillthrough navigates to `/app/transactions?fromDashboard=1&…` (placeholder shows URL hints). New API helpers: `getSnapshot`, profile + tag/category/source lookups. `GET /app/transactions/new?type=` placeholder route.
+
 ### Fixed
 
 - **Cookie notice + login autofill (post-BP1)** — Consent UI now keys off `localStorage` (`fm_cookie_consent_v1`) so a broad `Domain=.thehivemanager.com` cookie no longer suppresses the banner in incognito; on HTTPS we also set a host-only `__Host-fm_cookie_consent` cookie when accepting. Login form uses `autocomplete="off"`, per-field `unlockOnFocus` (readOnly until first focus) to avoid load-time autofill, and copy clarifies browser password managers may still offer after focus.
