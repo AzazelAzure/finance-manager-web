@@ -17,6 +17,9 @@ type ConfigWithRetry = InternalAxiosRequestConfig & { _retry?: boolean };
 
 let refreshChain: Promise<string | null> | null = null;
 
+/** Avoid N× `clearSession` + `queryClient.clear()` when many requests fail 401 together. */
+let postAuthFailureCleanup = false;
+
 function refreshAccessToken(): Promise<string | null> {
   if (!refreshChain) {
     refreshChain = (async () => {
@@ -69,11 +72,17 @@ api.interceptors.response.use(
       original.headers.Authorization = `Bearer ${newAccess}`;
       return api(original);
     }
-    clearSession();
-    queryClient.clear();
-    const path = window.location?.pathname ?? "";
-    if (!path.startsWith("/login") && !path.startsWith("/signup") && path !== "/") {
-      window.location.replace("/login");
+    if (!postAuthFailureCleanup) {
+      postAuthFailureCleanup = true;
+      clearSession();
+      queryClient.clear();
+      const path = window.location?.pathname ?? "";
+      if (!path.startsWith("/login") && !path.startsWith("/signup") && path !== "/") {
+        window.location.replace("/login");
+      }
+      queueMicrotask(() => {
+        postAuthFailureCleanup = false;
+      });
     }
     return Promise.reject(err);
   },

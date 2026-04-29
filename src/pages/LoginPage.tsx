@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { login } from "../api/auth";
 import { AppForm } from "../components/Form/FormProvider";
@@ -22,7 +22,6 @@ type FormValues = z.infer<typeof schema>;
 
 export function LoginPage(): ReactNode {
   const { isAuthenticated } = useSession();
-  const navigate = useNavigate();
   const location = useLocation();
   const rawFrom = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
   const fromPath =
@@ -42,7 +41,6 @@ export function LoginPage(): ReactNode {
     try {
       const data = await login(values.username, values.password);
       setSession({ access: data.access, refresh: data.refresh });
-      navigate(fromPath, { replace: true });
     } catch (err) {
       if (import.meta.env.DEV && axios.isAxiosError(err)) {
         const status = err.response?.status;

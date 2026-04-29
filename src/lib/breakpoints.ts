@@ -15,36 +15,45 @@ function isAtOrAbove(minWidth: number): boolean {
   return window.innerWidth >= minWidth;
 }
 
-export function getBreakpointSnapshot(): {
+export type BreakpointSnapshot = {
   atOrAboveSm: boolean;
   atOrAboveMd: boolean;
   atOrAboveLg: boolean;
   atOrAboveXl: boolean;
-} {
-  return {
+};
+
+let breakpointSnapCached: BreakpointSnapshot | null = null;
+
+/**
+ * Read current breakpoint flags. Returns a **referentially stable** object when values
+ * match the last read so `useSyncExternalStore` does not see a new snapshot every render
+ * (which caused infinite updates / React #185).
+ */
+export function getBreakpointSnapshot(): BreakpointSnapshot {
+  const next: BreakpointSnapshot = {
     atOrAboveSm: isAtOrAbove(BP.sm),
     atOrAboveMd: isAtOrAbove(BP.md),
     atOrAboveLg: isAtOrAbove(BP.lg),
     atOrAboveXl: isAtOrAbove(BP.xl),
   };
+  const prev = breakpointSnapCached;
+  if (
+    prev != null &&
+    prev.atOrAboveSm === next.atOrAboveSm &&
+    prev.atOrAboveMd === next.atOrAboveMd &&
+    prev.atOrAboveLg === next.atOrAboveLg &&
+    prev.atOrAboveXl === next.atOrAboveXl
+  ) {
+    return prev;
+  }
+  breakpointSnapCached = next;
+  return next;
 }
-
-const serverSnap = {
-  atOrAboveSm: false,
-  atOrAboveMd: false,
-  atOrAboveLg: false,
-  atOrAboveXl: false,
-};
 
 /**
  * `atOrAboveMd` matches protected shell: sidebar (≥900px) vs horizontal strip (<900px).
  */
-export function useBreakpoint(): {
-  atOrAboveSm: boolean;
-  atOrAboveMd: boolean;
-  atOrAboveLg: boolean;
-  atOrAboveXl: boolean;
-} {
+export function useBreakpoint(): BreakpointSnapshot {
   return useSyncExternalStore(
     (onChange) => {
       if (typeof window === "undefined") {
@@ -61,6 +70,6 @@ export function useBreakpoint(): {
       };
     },
     getBreakpointSnapshot,
-    () => serverSnap,
+    getBreakpointSnapshot,
   );
 }
