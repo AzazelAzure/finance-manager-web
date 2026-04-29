@@ -9,7 +9,7 @@ import type { ReactNode } from "react";
 
 export function LandingPage(): ReactNode {
   return (
-    <div>
+    <div className="landing-page">
       <Hero />
       <ValueProps />
       <FeatureShowcase />

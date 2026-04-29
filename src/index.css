@@ -22,6 +22,7 @@ body {
 a {
   color: var(--accent);
   text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-standard);
 }
 
 a:hover {
@@ -63,6 +64,36 @@ a:hover {
 .error-text {
   color: var(--danger);
   margin: 0;
+}
+
+.auth-shell {
+  max-width: 31rem;
+  margin: 0 auto;
+  padding: var(--space-5) 0;
+}
+
+.auth-shell__title {
+  margin: 0;
+  font-size: clamp(var(--font-xl), 3.2vw, var(--font-2xl));
+  letter-spacing: 0.01em;
+}
+
+.auth-shell__subtitle {
+  margin: 0;
+  color: var(--muted);
+}
+
+.auth-card {
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+  box-shadow: var(--shadow-md), var(--shadow-inset);
+}
+
+.auth-shell__links {
+  margin: 0.75rem 0 0;
+}
+
+.auth-shell__links--compact {
+  margin-top: 0.5rem;
 }
 
 .app-root {

@@ -15,7 +15,7 @@ export function Roadmap(): ReactNode {
       <div className="roadmap-grid">
         {ROAD.map((r) => (
           <Card className="roadmap-card" key={r.title}>
-            <h3 style={{ margin: "0 0 0.35rem", fontSize: "var(--font-md)" }}>{r.title}</h3>
+            <h3 className="roadmap-card__title">{r.title}</h3>
             <p>{r.body}</p>
           </Card>
         ))}

@@ -26,7 +26,6 @@ export function LocalePicker(): ReactNode {
           setLocale(n);
           setV(n);
         }}
-        style={{ minWidth: "6rem" }}
         aria-label="Interface language (stub: English only copy this sweep)"
       >
         {OPTIONS.map((o) => (

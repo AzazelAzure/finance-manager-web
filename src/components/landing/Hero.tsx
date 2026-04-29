@@ -7,6 +7,7 @@ export function Hero(): ReactNode {
   const { isAuthenticated } = useSession();
   return (
     <header className="landing-hero">
+      <p className="landing-hero__eyebrow">Finance clarity, built for daily use</p>
       <h1>Know your money. Plan with confidence.</h1>
       <p>Dashboards, transactions, bills, and a data hub — tuned for how you really spend and save.</p>
       <div className="landing-hero__actions" role="group" aria-label="Primary actions">

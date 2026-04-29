@@ -71,13 +71,13 @@ export function LoginPage(): ReactNode {
   }
 
   return (
-    <section className="stack" style={{ maxWidth: 420, margin: "0 auto" }}>
-      <h1 style={{ margin: 0, fontSize: "var(--font-2xl)" }}>Log in</h1>
-      <p className="muted-text" style={{ margin: 0 }}>
+    <section className="stack auth-shell auth-shell--login">
+      <h1 className="auth-shell__title">Log in</h1>
+      <p className="muted-text auth-shell__subtitle">
         Access your dashboard. Fields stay empty until you focus them, so the app does not pre-fill credentials; your
         browser may still offer saved passwords after you click in a field.
       </p>
-      <Card>
+      <Card className="auth-card">
         <AppForm form={form} onSubmit={onValid} className="stack" id="login-form" autoComplete="off">
           <TextField name="username" label="Username" autoComplete="off" unlockOnFocus />
           <TextField name="password" label="Password" type="password" autoComplete="off" unlockOnFocus />
@@ -90,7 +90,7 @@ export function LoginPage(): ReactNode {
             {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
           </Button>
         </AppForm>
-        <p className="muted" style={{ margin: "0.75rem 0 0" }}>
+        <p className="muted auth-shell__links">
           <Link to="/">Home</Link>
           {" · "}
           <Link to="/signup">Sign up</Link>

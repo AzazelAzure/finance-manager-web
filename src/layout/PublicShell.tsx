@@ -6,14 +6,14 @@ export function PublicShell(): ReactNode {
   return (
     <div className="public-root">
       <header className="public-header">
-        <Link to="/" className="public-brand" style={{ textDecoration: "none", color: "var(--fg)" }}>
+        <Link to="/" className="public-brand">
           Hive Manager
         </Link>
-        <nav style={{ display: "flex", gap: "0.75rem", alignItems: "center" }} aria-label="Language">
+        <nav className="public-top-nav" aria-label="Language">
           <LocalePicker />
         </nav>
       </header>
-      <div className="app-main" style={{ maxWidth: 1200, margin: "0 auto" }}>
+      <div className="app-main app-main--public">
         <Outlet />
       </div>
       <footer className="public-footer">Hive — personal finance (web beta)</footer>
