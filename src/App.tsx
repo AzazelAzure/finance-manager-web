@@ -1,39 +1,121 @@
-import type { ReactElement } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { CookieBanner } from "./components/CookieBanner";
+import { PublicShell } from "./layout/PublicShell";
+import { ProtectedShell } from "./layout/ProtectedShell";
 import { DashboardPage } from "./pages/DashboardPage";
+import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
-import { clearToken, getToken } from "./state/auth";
+import { PhasePlaceholderPage } from "./pages/PhasePlaceholderPage";
+import { SignupPage } from "./pages/SignupPage";
+import { RequireAuth } from "./routes/RequireAuth";
+import { useSession } from "./state/SessionContext";
+import type { ReactNode } from "react";
 
-function ProtectedRoute({ children }: { children: ReactElement }) {
-  if (!getToken()) {
-    return <Navigate to="/login" replace />;
-  }
-  return children;
+function WildcardRedirect(): ReactNode {
+  const { isAuthenticated } = useSession();
+  return <Navigate to={isAuthenticated ? "/app/dashboard" : "/"} replace />;
 }
 
-export default function App() {
+export default function App(): ReactNode {
   return (
-    <main className="app-shell">
-      <header className="app-header">
-        <h1>Hive Frontend Rebuild (JS)</h1>
-        {getToken() ? (
-          <button className="ghost-btn" onClick={() => { clearToken(); window.location.href = "/login"; }}>
-            Logout
-          </button>
-        ) : null}
-      </header>
+    <div className="app-root">
+      <CookieBanner />
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to={getToken() ? "/dashboard" : "/login"} replace />} />
+        <Route element={<PublicShell />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+        </Route>
+        <Route element={<RequireAuth />}>
+          <Route path="/app" element={<ProtectedShell />}>
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route
+              path="transactions"
+              element={
+                <PhasePlaceholderPage
+                  title="Transactions"
+                  blurb="Quick entry, filters, and CRUD are implemented in a later task."
+                />
+              }
+            />
+            <Route
+              path="transactions/calendar"
+              element={
+                <PhasePlaceholderPage
+                  title="Transaction calendar"
+                  blurb="Calendar and heat map views ship in a later task."
+                />
+              }
+            />
+            <Route
+              path="transactions/deep-dive"
+              element={
+                <PhasePlaceholderPage
+                  title="Transaction insights"
+                  blurb="Flow and category deep-dive ships in a later task."
+                />
+              }
+            />
+            <Route
+              path="upcoming-expenses"
+              element={
+                <PhasePlaceholderPage title="Upcoming expenses" blurb="Bills pipeline comes in a later task." />
+              }
+            />
+            <Route
+              path="upcoming-expenses/deep-dive"
+              element={
+                <PhasePlaceholderPage title="Bills insights" blurb="Bills deep-dive ships in a later task." />
+              }
+            />
+            <Route
+              path="data"
+              element={
+                <PhasePlaceholderPage
+                  title="Data hub"
+                  blurb="Sources, categories, and tags management ships in a later task."
+                />
+              }
+            />
+            <Route
+              path="settings/profile"
+              element={
+                <PhasePlaceholderPage title="Profile and settings" blurb="Settings tabs ship in a later task." />
+              }
+            />
+            <Route
+              path="onboarding"
+              element={<PhasePlaceholderPage title="Onboarding" blurb="First-run walkthrough ships in a later task." />}
+            />
+            <Route
+              path="onboarding/sources"
+              element={
+                <PhasePlaceholderPage
+                  title="Onboarding: sources"
+                  blurb="First source setup is implemented in a later task."
+                />
+              }
+            />
+            <Route
+              path="onboarding/categories"
+              element={
+                <PhasePlaceholderPage
+                  title="Onboarding: categories"
+                  blurb="Category step ships in a later task."
+                />
+              }
+            />
+            <Route
+              path="onboarding/review"
+              element={
+                <PhasePlaceholderPage title="Onboarding: review" blurb="Review and finish step ships in a later task." />
+              }
+            />
+            <Route index element={<Navigate to="/app/dashboard" replace />} />
+          </Route>
+        </Route>
+        <Route path="*" element={<WildcardRedirect />} />
       </Routes>
-    </main>
+    </div>
   );
 }

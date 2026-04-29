@@ -1,5 +1,8 @@
-import axios from "axios";
-import { getToken } from "../state/auth";
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { queryClient } from "../lib/queryClient";
+import { clearSession, getAccessToken, getRefreshToken, setSession } from "../state/auth";
+import { postRefresh } from "./refreshClient";
+import type { LoginResponse } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://api.thehivemanager.com";
 
@@ -10,46 +13,70 @@ export const api = axios.create({
   },
 });
 
+type ConfigWithRetry = InternalAxiosRequestConfig & { _retry?: boolean };
+
+let refreshChain: Promise<string | null> | null = null;
+
+function refreshAccessToken(): Promise<string | null> {
+  if (!refreshChain) {
+    refreshChain = (async () => {
+      const refresh = getRefreshToken();
+      if (!refresh) {
+        return null;
+      }
+      try {
+        const res: LoginResponse = await postRefresh(refresh);
+        setSession({
+          access: res.access,
+          refresh: res.refresh ?? refresh,
+        });
+        return res.access;
+      } catch {
+        return null;
+      } finally {
+        refreshChain = null;
+      }
+    })();
+  }
+  return refreshChain;
+}
+
 api.interceptors.request.use((config) => {
-  const token = getToken();
+  const token = getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-export type LoginResponse = {
-  access: string;
-  refresh: string;
-};
+api.interceptors.response.use(
+  (r) => r,
+  async (err: AxiosError) => {
+    const original = err.config as ConfigWithRetry | undefined;
+    if (!original) {
+      return Promise.reject(err);
+    }
+    if (err.response?.status !== 401 || original._retry) {
+      return Promise.reject(err);
+    }
+    if (original.url?.includes("/api/token/")) {
+      return Promise.reject(err);
+    }
+    original._retry = true;
+    const newAccess = await refreshAccessToken();
+    if (newAccess) {
+      original.headers = original.headers ?? {};
+      original.headers.Authorization = `Bearer ${newAccess}`;
+      return api(original);
+    }
+    clearSession();
+    queryClient.clear();
+    const path = window.location?.pathname ?? "";
+    if (!path.startsWith("/login") && !path.startsWith("/signup") && path !== "/") {
+      window.location.replace("/login");
+    }
+    return Promise.reject(err);
+  },
+);
 
-export type SnapshotResponse = {
-  flow_series: Array<{ label: string; incoming: number; outgoing: number; leaks: number }>;
-  expense_by_category: Array<{ name: string; value: number }>;
-  source_balances: Array<{ source: string; acc_type: string; amount: string; currency: string }>;
-  daily_spend: Array<{ date: string; amount: number }>;
-  daily_income: Array<{ date: string; amount: number }>;
-  total_expenses_for_month: number;
-  total_income_for_month: number;
-  total_transfer_out_for_month: number;
-  total_transfer_in_for_month: number;
-  total_leaks_for_month: number;
-  snapshot: {
-    total_assets?: number;
-    safe_to_spend?: number;
-    total_remaining_expenses?: number;
-    [key: string]: number | string | undefined;
-  };
-};
-
-export async function login(username: string, password: string): Promise<LoginResponse> {
-  const { data } = await api.post<LoginResponse>("/api/token/", { username, password });
-  return data;
-}
-
-export async function getSnapshotCurrentMonth(): Promise<SnapshotResponse> {
-  const { data } = await api.get<SnapshotResponse>("/finance/appprofile/snapshot/", {
-    params: { current_month: true },
-  });
-  return data;
-}
+export type { LoginResponse, SnapshotResponse } from "./types";
