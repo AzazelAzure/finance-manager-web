@@ -10,6 +10,7 @@ import { TextField } from "../components/Form/TextField";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { setSession } from "../state/auth";
+import { consumeForceOnboardingNextLogin } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
 import type { ReactNode } from "react";
 
@@ -24,8 +25,8 @@ export function LoginPage(): ReactNode {
   const { isAuthenticated } = useSession();
   const location = useLocation();
   const rawFrom = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-  const fromPath =
-    rawFrom && rawFrom.startsWith("/") && !rawFrom.startsWith("//") ? rawFrom : "/app/dashboard";
+  const safeFromPath = rawFrom && rawFrom.startsWith("/") && !rawFrom.startsWith("//") ? rawFrom : "/app/dashboard";
+  const [postLoginPath, setPostLoginPath] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -33,13 +34,16 @@ export function LoginPage(): ReactNode {
   });
 
   if (isAuthenticated) {
-    return <Navigate to={fromPath} replace />;
+    return <Navigate to={postLoginPath ?? safeFromPath} replace />;
   }
 
   async function onValid(values: FormValues): Promise<void> {
     setFormError("");
     try {
       const data = await login(values.username, values.password);
+      const nextPath =
+        safeFromPath === "/app/dashboard" && consumeForceOnboardingNextLogin() ? "/app/onboarding" : safeFromPath;
+      setPostLoginPath(nextPath);
       setSession({ access: data.access, refresh: data.refresh });
     } catch (err) {
       if (import.meta.env.DEV && axios.isAxiosError(err)) {

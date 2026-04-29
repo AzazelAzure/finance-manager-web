@@ -5,7 +5,6 @@ import { ProtectedShell } from "./layout/ProtectedShell";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
-import { PhasePlaceholderPage } from "./pages/PhasePlaceholderPage";
 import { SignupPage } from "./pages/SignupPage";
 import { TransactionsPage } from "./pages/transactions/TransactionsPage";
 import { CalendarPage } from "./pages/transactions/CalendarPage";
@@ -14,6 +13,7 @@ import { UpcomingExpensesPage } from "./pages/upcoming/UpcomingExpensesPage";
 import { UpcomingDeepDivePage } from "./pages/upcoming/UpcomingDeepDivePage";
 import { DataHubPage } from "./pages/data/DataHubPage";
 import { SettingsProfilePage } from "./pages/settings/SettingsProfilePage";
+import { OnboardingPage } from "./pages/onboarding/OnboardingPage";
 import { RequireAuth } from "./routes/RequireAuth";
 import { useSession } from "./state/SessionContext";
 import type { ReactNode } from "react";
@@ -55,31 +55,19 @@ export default function App(): ReactNode {
             <Route path="settings/profile" element={<SettingsProfilePage />} />
             <Route
               path="onboarding"
-              element={<PhasePlaceholderPage title="Onboarding" blurb="First-run walkthrough ships in a later task." />}
+              element={<OnboardingPage step={1} />}
             />
             <Route
               path="onboarding/sources"
-              element={
-                <PhasePlaceholderPage
-                  title="Onboarding: sources"
-                  blurb="First source setup is implemented in a later task."
-                />
-              }
+              element={<OnboardingPage step={2} />}
             />
             <Route
               path="onboarding/categories"
-              element={
-                <PhasePlaceholderPage
-                  title="Onboarding: categories"
-                  blurb="Category step ships in a later task."
-                />
-              }
+              element={<OnboardingPage step={3} />}
             />
             <Route
               path="onboarding/review"
-              element={
-                <PhasePlaceholderPage title="Onboarding: review" blurb="Review and finish step ships in a later task." />
-              }
+              element={<OnboardingPage step={4} />}
             />
             <Route index element={<Navigate to="/app/dashboard" replace />} />
           </Route>

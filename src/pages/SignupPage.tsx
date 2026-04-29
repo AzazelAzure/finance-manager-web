@@ -11,6 +11,7 @@ import { TextField } from "../components/Form/TextField";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { setSession } from "../state/auth";
+import { markForceOnboardingNextLogin } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
 import type { ReactNode } from "react";
 
@@ -70,7 +71,8 @@ export function SignupPage(): ReactNode {
     try {
       const data = await login(values.username.trim(), values.password);
       setSession({ access: data.access, refresh: data.refresh });
-      navigate("/app/dashboard", { replace: true });
+      markForceOnboardingNextLogin();
+      navigate("/app/onboarding", { replace: true });
     } catch {
       setFormError("Account was created but sign-in failed. Try logging in manually.");
     }
