@@ -1,2 +1,7 @@
-/** App profile REST calls — implemented in later tasks. */
-export {};
+import { api } from "./client";
+import type { AppProfileResponse } from "./types";
+
+export async function getAppProfile(): Promise<AppProfileResponse> {
+  const { data } = await api.get<AppProfileResponse>("/finance/appprofile/");
+  return data;
+}

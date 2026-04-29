@@ -1,9 +1,14 @@
 import { api } from "./client";
 import type { SnapshotResponse } from "./types";
 
-export async function getSnapshotCurrentMonth(): Promise<SnapshotResponse> {
+export async function getSnapshot(params: Record<string, string> = {}): Promise<SnapshotResponse> {
   const { data } = await api.get<SnapshotResponse>("/finance/appprofile/snapshot/", {
-    params: { current_month: true },
+    params,
   });
   return data;
+}
+
+/** @deprecated Use getSnapshot with URL-derived params */
+export async function getSnapshotCurrentMonth(): Promise<SnapshotResponse> {
+  return getSnapshot({ current_month: "1" });
 }
