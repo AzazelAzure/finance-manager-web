@@ -80,7 +80,7 @@ function toPayload(draft: UpcomingDraft): UpcomingExpenseMutationPayload {
     currency: draft.currency.trim().toUpperCase(),
     due_date: draft.due_date,
     paid_flag: draft.paid_flag,
-    recurring_flag: draft.recurring_flag,
+    is_recurring: draft.recurring_flag,
   };
   if (draft.source.trim()) {
     payload.source = draft.source.trim();
