@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **Tunnel / dev hostname** — Vite `server` / `preview` `allowedHosts` uses `api-jsdevtesting.thehivemanager.com` instead of the retired `jsdevprodtest` hostname, matching proxy and API CORS defaults.
+
 ### Added
 
 - **Staging API host for pre-cutover full-stack tests** — on `jsdevtesting.thehivemanager.com` the app uses `VITE_STAGING_API_BASE_URL` (default `https://api-jsdevtesting.thehivemanager.com`, see `src/lib/apiBaseUrl.ts`) so Nginx can route the inactive `api-*` with the inactive web; production hostnames still use `VITE_API_BASE_URL` only.
@@ -17,6 +21,7 @@ All notable changes to this project are documented in this file.
 - **BP7 phase 1 public polish** — upgraded public visual depth and interactivity for landing/login/signup with richer tokenized elevation, gradient surfaces, hover/focus/press states, and motion-safe transitions. Public shell now uses layered background + glass-like top bar, auth cards have stronger hierarchy, and landing sections include improved hero/showcase/CTA treatment for less flat presentation.
 - **Removed user-facing `unknown` source traces** — source lookups now filter out the backend fallback `unknown` entry before rendering selectors/cards, dashboard spend-account balances hide that fallback row, and Data Hub source actions no longer expose special-case reserved-source messaging.
 - **Transaction currency QoL + logout confirmation** — transaction editor currency fields now use a deduped dropdown derived from source currencies and always include the profile base currency as default for new transaction/transfer drafts. Logout now asks for confirmation before clearing session and returning to public pages.
+- **Upcoming expenses editor currency** — the add/edit bill modal uses the same source-derived currency dropdown and defaults new expenses to the profile `base_currency` (no hardcoded `USD` free-text field).
 - **Transactions blank-category fallback** — transaction save/edit now defaults empty `category` by type (`Expense`, `Income`, `Transfer`) before API submit so valid creates are not rejected when category is intentionally left blank.
 - **Transactions create modal crash + opaque 400 diagnostics** — category lookups now sanitize out non-string/empty names before reaching editor matching, preventing `toLowerCase` crashes when lookup payloads are irregular. Save failures now parse Axios 400 payloads from both object and array shapes so modal errors show concrete field-level rejection details instead of `[object Object]`.
 - **Session + landing CTA** — UI auth (`isAuthenticated`) and the axios `Authorization` header use **effective** access tokens: JWT `exp` is checked with clock skew, and expired JWTs are treated as no session (no `Authorization` sent) so the hero’s **Open app** only appears when a session is usable. **Recharts** dashboard charts use explicit `ResponsiveContainer` size and `min-width: 0` on flex columns to avoid width/height -1 measurement warnings.

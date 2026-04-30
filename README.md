@@ -20,7 +20,7 @@ The browser Origin (e.g. `http://localhost:5173` or `https://jsdevtesting.thehiv
 
 ## Docker (ecosystem / proxy verification)
 
-The parent **finance_manager** monorepo wires this app into `docker-compose.yml` and `docker-compose.bluegreen.yml` as **`web`** (single stack) or **`web-blue` / `web-green`** (blue/green). The **proxy** service exposes `https` on the host (e.g. `8443:443`) and routes `jsdevtesting.thehivemanager.com` / `jsdevprodtest.thehivemanager.com` to the **active** color’s static container, alongside API and Reflex.
+The parent **finance_manager** monorepo wires this app into `docker-compose.yml` and `docker-compose.bluegreen.yml` as **`web`** (single stack) or **`web-blue` / `web-green`** (blue/green). The **proxy** service exposes `https` on the host (e.g. `8443:443`) and routes `jsdevtesting.thehivemanager.com` to the static container (see `deploy/BLUEGREEN_SWITCHOVER.md` for inactive vs active); staging API uses `api-jsdevtesting.thehivemanager.com`, alongside the main API and Reflex.
 
 - **Build-time API URL:** set `VITE_API_BASE_URL` in the parent `.env` or pass a compose `build.args` value (default `https://api.thehivemanager.com`).
 - **Build:** from the monorepo root, e.g. `podman compose build web` (or `web-blue` / `web-green` in blue/green). Do not rely on `npm run dev` / Vite for this path — the image serves `dist/` with nginx.
@@ -85,18 +85,18 @@ VITE_API_BASE_URL=https://api.thehivemanager.com
 
 `http://localhost:...` and `http://127.0.0.1:...` are equivalent for `cloudflared` on the same host; `127.0.0.1` avoids a few IPv6/localhost gotchas on Linux.
 
-**4. If you see Cloudflare 502 on `jsdevtesting` / `jsdevprodtest`**
+**4. If you see Cloudflare 502 on `jsdevtesting` / `api-jsdevtesting`**
 
 Vite serves **plain HTTP** on **5173** / **4173**. The tunnel’s **private “Service” URL** in Zero Trust must use **`http://`**, not **`https://`**:
 
 | Hostname | Service (origin) to set |
 |----------|-------------------------|
 | `jsdevtesting…` | **`http://127.0.0.1:5173`** |
-| `jsdevprodtest…` | **`http://127.0.0.1:4173`** |
+| `api-jsdevtesting…` (if tunneled to Vite preview) | **`http://127.0.0.1:4173`** |
 
 If you set **`https://127.0.0.1:…`**, `cloudflared` attempts a **TLS** handshake; Vite does not speak TLS on those ports, so the connection fails and Cloudflare shows **502 Bad Gateway**. **`noTLSVerify` only helps when the origin already uses HTTPS** (e.g. self-signed) — it does **not** make a plain-HTTP Vite process accept `https://` on the same port.
 
-**5. CORS** — the API must allow `https://jsdevtesting.thehivemanager.com` and `https://jsdevprodtest.thehivemanager.com` in `CORS_ALLOWED_ORIGINS` (browser Origin is still **https**; only the loopback hop to Vite is **http**). If login shows **ERR_NETWORK** but the API works from Reflex, see the API doc [CORS_PRODUCTION_TROUBLESHOOTING.md](https://github.com/AzazelAzure/finance-manager-api/blob/main/docs/CORS_PRODUCTION_TROUBLESHOOTING.md) (Cloudflare often caches a bad **OPTIONS** preflight for `api.thehivemanager.com`).
+**5. CORS** — the API must allow `https://jsdevtesting.thehivemanager.com` and `https://api-jsdevtesting.thehivemanager.com` in `CORS_ALLOWED_ORIGINS` (browser Origin is still **https**; only the loopback hop to Vite is **http**). If login shows **ERR_NETWORK** but the API works from Reflex, see the API doc [CORS_PRODUCTION_TROUBLESHOOTING.md](https://github.com/AzazelAzure/finance-manager-api/blob/main/docs/CORS_PRODUCTION_TROUBLESHOOTING.md) (Cloudflare often caches a bad **OPTIONS** preflight for `api.thehivemanager.com`).
 
 **6. Plan gates B2 + B3 together** — Open **`https://<your-tunnel-hostname>/`**, sign in against **`https://api.thehivemanager.com`**, confirm dashboard / snapshot.
 
