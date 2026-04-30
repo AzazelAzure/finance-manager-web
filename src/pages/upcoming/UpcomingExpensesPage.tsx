@@ -14,6 +14,8 @@ import {
   listUpcomingExpenses,
   updateUpcomingExpense,
 } from "../../api/upcomingExpenses";
+import { listSourceNames } from "../../api/lookups";
+import { getAppProfile } from "../../api/profile";
 import type { UpcomingExpenseMutationPayload, UpcomingExpenseRecord } from "../../api/types";
 import { formatMoney } from "../../lib/money";
 import { useBreakpoint } from "../../lib/breakpoints";
@@ -36,18 +38,22 @@ type UpcomingDraft = {
   end_date: string;
 };
 
-const DEFAULT_DRAFT: UpcomingDraft = {
-  name: "",
-  amount: "",
-  currency: "USD",
-  due_date: new Date().toISOString().slice(0, 10),
-  source: "",
-  paid_flag: false,
-  recurring_flag: false,
-  use_start_end: false,
-  start_date: "",
-  end_date: "",
-};
+/** New bills default to profile base currency; options match transaction editor (source currencies + base). */
+function emptyUpcomingDraft(baseCurrency: string): UpcomingDraft {
+  const c = baseCurrency.trim().toUpperCase() || "USD";
+  return {
+    name: "",
+    amount: "",
+    currency: c,
+    due_date: new Date().toISOString().slice(0, 10),
+    source: "",
+    paid_flag: false,
+    recurring_flag: false,
+    use_start_end: false,
+    start_date: "",
+    end_date: "",
+  };
+}
 
 function parseError(error: unknown): string {
   if (!axios.isAxiosError(error)) {
@@ -107,7 +113,7 @@ export function UpcomingExpensesPage(): ReactNode {
   const [dateQuick, setDateQuick] = useState<DateQuickFilter>("all");
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingName, setEditingName] = useState<string | null>(null);
-  const [draft, setDraft] = useState<UpcomingDraft>(DEFAULT_DRAFT);
+  const [draft, setDraft] = useState<UpcomingDraft>(() => emptyUpcomingDraft("USD"));
   const [editorError, setEditorError] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Record<string, boolean>>({});
 
@@ -116,6 +122,30 @@ export function UpcomingExpensesPage(): ReactNode {
     queryFn: listUpcomingExpenses,
     placeholderData: keepPreviousData,
   });
+
+  const profileQuery = useQuery({ queryKey: ["app-profile"] as const, queryFn: getAppProfile });
+  const sourcesQuery = useQuery({ queryKey: ["sources", "all"] as const, queryFn: listSourceNames });
+  const baseCurrency = (profileQuery.data?.base_currency ?? "USD").trim().toUpperCase() || "USD";
+  const sourceCurrencyOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const row of sourcesQuery.data ?? []) {
+      const normalized = String(row.currency ?? "").trim().toUpperCase();
+      if (normalized) {
+        set.add(normalized);
+      }
+    }
+    set.add(baseCurrency);
+    return [...set].sort();
+  }, [baseCurrency, sourcesQuery.data]);
+  const currencyOptions = sourceCurrencyOptions.length > 0 ? sourceCurrencyOptions : [baseCurrency];
+  const draftCurrency = draft.currency.trim().toUpperCase();
+  const currencySelectOptions = useMemo(() => {
+    const set = new Set(currencyOptions);
+    if (draftCurrency.length === 3) {
+      set.add(draftCurrency);
+    }
+    return [...set].sort();
+  }, [currencyOptions, draftCurrency]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -132,7 +162,7 @@ export function UpcomingExpensesPage(): ReactNode {
       void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
       setEditorOpen(false);
       setEditingName(null);
-      setDraft(DEFAULT_DRAFT);
+      setDraft(emptyUpcomingDraft(baseCurrency));
     },
     onError: (err) => setEditorError(parseError(err)),
   });
@@ -195,10 +225,13 @@ export function UpcomingExpensesPage(): ReactNode {
                 className="ui-btn ui-btn--secondary"
                 onClick={() => {
                   setEditingName(r.name);
+                  const cur = String(r.currency ?? "")
+                    .trim()
+                    .toUpperCase();
                   setDraft({
                     name: r.name,
                     amount: String(r.amount),
-                    currency: r.currency,
+                    currency: cur.length === 3 ? cur : baseCurrency,
                     due_date: r.due_date,
                     source: r.source || "",
                     paid_flag: r.paid_flag,
@@ -231,7 +264,7 @@ export function UpcomingExpensesPage(): ReactNode {
         },
       },
     ],
-    [deleteMutation, pendingDelete],
+    [baseCurrency, deleteMutation, pendingDelete],
   );
 
   const invalidWindow = Boolean(
@@ -260,7 +293,7 @@ export function UpcomingExpensesPage(): ReactNode {
           <Button
             onClick={() => {
               setEditingName(null);
-              setDraft(DEFAULT_DRAFT);
+              setDraft(emptyUpcomingDraft(baseCurrency));
               setEditorError("");
               setEditorOpen(true);
             }}
@@ -340,10 +373,13 @@ export function UpcomingExpensesPage(): ReactNode {
                         className="ui-btn ui-btn--secondary"
                         onClick={() => {
                           setEditingName(row.name);
+                          const cur = String(row.currency ?? "")
+                            .trim()
+                            .toUpperCase();
                           setDraft({
                             name: row.name,
                             amount: String(row.amount),
-                            currency: row.currency,
+                            currency: cur.length === 3 ? cur : baseCurrency,
                             due_date: row.due_date,
                             source: row.source || "",
                             paid_flag: row.paid_flag,
@@ -409,11 +445,17 @@ export function UpcomingExpensesPage(): ReactNode {
           </label>
           <label className="ui-field">
             <span className="ui-label">Currency</span>
-            <input
+            <select
               className="ui-input"
-              value={draft.currency}
-              onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value.toUpperCase() }))}
-            />
+              value={currencySelectOptions.includes(draftCurrency) ? draftCurrency : currencySelectOptions[0] ?? baseCurrency}
+              onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}
+            >
+              {currencySelectOptions.map((curr) => (
+                <option key={curr} value={curr}>
+                  {curr}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="ui-field">
             <span className="ui-label">Due date</span>

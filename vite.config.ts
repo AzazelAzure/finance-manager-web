@@ -10,7 +10,7 @@ export default defineConfig({
     host: true,
     allowedHosts: [
       'jsdevtesting.thehivemanager.com',
-      'jsdevprodtest.thehivemanager.com',
+      'api-jsdevtesting.thehivemanager.com',
       '.thehivemanager.com',
       'localhost',
       '127.0.0.1',
@@ -22,7 +22,7 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: [
       'jsdevtesting.thehivemanager.com',
-      'jsdevprodtest.thehivemanager.com',
+      'api-jsdevtesting.thehivemanager.com',
       '.thehivemanager.com',
       'localhost',
       '127.0.0.1',
