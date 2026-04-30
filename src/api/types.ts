@@ -135,6 +135,9 @@ export type TransactionPatchRequest = {
 
 export type CalendarDailyRow = {
   date: string;
+  amount?: number;
+  heat_value?: number;
+  heat_intensity?: number;
   tx_count?: number;
   net?: number;
   expense_only?: number;

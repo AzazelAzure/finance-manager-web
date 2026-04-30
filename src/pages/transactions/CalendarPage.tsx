@@ -41,6 +41,25 @@ function toNumber(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function resolveDailyMetric(
+  row: Record<string, unknown>,
+  mode: "net" | "expense_only" | "count",
+): number {
+  if (mode === "count") {
+    return toNumber(row.tx_count ?? row.count);
+  }
+  if (mode === "expense_only") {
+    if (row.expense_only !== undefined) {
+      return toNumber(row.expense_only);
+    }
+    if (row.heat_value !== undefined) {
+      return toNumber(row.heat_value);
+    }
+    return Math.abs(Math.min(0, toNumber(row.net ?? row.amount)));
+  }
+  return toNumber(row.net ?? row.amount);
+}
+
 function isSameMonth(dateIso: string, baseIso: string): boolean {
   return dateIso.slice(0, 7) === baseIso.slice(0, 7);
 }
@@ -117,12 +136,8 @@ export function CalendarPage(): ReactNode {
 
   const chartRows = useMemo(() => {
     return dailyRows.map((row) => {
-      const metric =
-        heatMetricMode === "count"
-          ? toNumber(row.tx_count ?? row.count)
-          : heatMetricMode === "expense_only"
-            ? toNumber(row.expense_only)
-            : toNumber(row.net);
+      const rec = row as Record<string, unknown>;
+      const metric = resolveDailyMetric(rec, heatMetricMode);
       return { date: row.date, metric, tx_count: toNumber(row.tx_count ?? row.count) };
     });
   }, [dailyRows, heatMetricMode]);
@@ -145,35 +160,24 @@ export function CalendarPage(): ReactNode {
   }, [monthRows]);
 
   const dailyByDate = useMemo(() => {
-    const map = new Map<string, { metric: number; txCount: number; expenseOnly: number }>();
+    const map = new Map<string, { metric: number; txCount: number; heatIntensity: number }>();
     for (const row of dailyRows) {
-      const metric =
-        heatMetricMode === "count"
-          ? toNumber(row.tx_count ?? row.count)
-          : heatMetricMode === "expense_only"
-            ? toNumber(row.expense_only)
-            : toNumber(row.net);
-      const expenseOnly = Math.abs(
-        toNumber(
-          row.expense_only ??
-          (row as Record<string, unknown>).expense ??
-          (row as Record<string, unknown>).outgoing ??
-          (row as Record<string, unknown>).total_expense,
-        ),
-      );
+      const rec = row as Record<string, unknown>;
+      const metric = resolveDailyMetric(rec, heatMetricMode);
       const txCount = toNumber(
         row.tx_count ??
           row.count ??
-          (row as Record<string, unknown>).transactions ??
-          (row as Record<string, unknown>).tx_total,
+          rec.transactions ??
+          rec.tx_total,
       );
-      map.set(row.date, { metric, txCount, expenseOnly });
+      const heatIntensity = Math.max(0, Math.min(100, toNumber(rec.heat_intensity)));
+      map.set(row.date, { metric, txCount, heatIntensity });
     }
     return map;
   }, [dailyRows, heatMetricMode]);
 
   const heatMax = useMemo(() => {
-    const values = Array.from(dailyByDate.values()).map((v) => Math.max(v.expenseOnly, Math.max(0, -v.metric)));
+    const values = Array.from(dailyByDate.values()).map((v) => v.heatIntensity);
     return Math.max(...values, 0);
   }, [dailyByDate]);
 
@@ -188,8 +192,7 @@ export function CalendarPage(): ReactNode {
       const rec = dailyByDate.get(iso);
       const metric = rec?.metric ?? 0;
       const txCount = rec?.txCount ?? 0;
-      const spendMagnitude = rec?.expenseOnly ?? Math.max(0, -metric);
-      const normalized = heatMax <= 0 ? 0 : Math.min(spendMagnitude / heatMax, 1);
+      const normalized = heatMax <= 0 ? 0 : Math.min((rec?.heatIntensity ?? 0) / heatMax, 1);
       const dueCount = (query.data?.due_events ?? []).filter((e) => e.date === iso && !e.paid_flag).length;
       return { iso, day, inMonth, metric, txCount, normalized, dueCount };
     });
