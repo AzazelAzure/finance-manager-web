@@ -4,13 +4,13 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
-### Changed
-
-- **Tunnel / dev hostname** — Vite `server` / `preview` `allowedHosts` uses `api-jsdevtesting.thehivemanager.com` instead of the retired `jsdevprodtest` hostname, matching proxy and API CORS defaults.
-
 ### Added
 
 - **Staging API host for pre-cutover full-stack tests** — on `jsdevtesting.thehivemanager.com` the app uses `VITE_STAGING_API_BASE_URL` (default `https://api-jsdevtesting.thehivemanager.com`, see `src/lib/apiBaseUrl.ts`) so Nginx can route the inactive `api-*` with the inactive web; production hostnames still use `VITE_API_BASE_URL` only.
+
+### Changed
+
+- **Tunnel / dev hostname** — Vite `server` / `preview` `allowedHosts` uses `api-jsdevtesting.thehivemanager.com` instead of the retired `jsdevprodtest` hostname, matching proxy and API CORS defaults.
 
 ### Fixed
 
