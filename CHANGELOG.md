@@ -15,6 +15,7 @@ All notable changes to this project are documented in this file.
 ### Fixed
 
 - **Transactions calendar heatmap + daily activity contract alignment:** the calendar page now reads API `daily.amount`, `heat_value`, and `heat_intensity` fields directly (with safe fallbacks) so month-grid heat shading and daily activity metrics populate correctly instead of flattening to zero when `net`/`expense_only` keys are absent.
+- **Upcoming expense edit recurring flag mapping:** the upcoming-expense editor now submits the canonical API field `is_recurring` (instead of `recurring_flag`) so editing recurring bills preserves/toggles recurrence correctly.
 - **Upcoming expenses list: recurring column** — API serializes `is_recurring` (not `recurring_flag`); the client now maps that field so the table shows **Recurring** vs **One-time** correctly.
 - **Dashboard Quick add: disable `+ Bill` for beta** — the bill quick action is disabled until product defines whether it should create an upcoming expense, record a pay-bill flow, or another hybrid; avoids opening a misleading transaction-shaped modal.
 

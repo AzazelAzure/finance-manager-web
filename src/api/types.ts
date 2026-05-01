@@ -190,6 +190,7 @@ export type UpcomingExpenseMutationPayload = {
   due_date: string;
   paid_flag?: boolean;
   recurring_flag?: boolean;
+  is_recurring?: boolean;
   source?: string;
   start_date?: string;
   end_date?: string;
