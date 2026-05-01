@@ -12,7 +12,11 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { tr, useLocale } from "../lib/i18n";
 import { setSession } from "../state/auth";
-import { markForceOnboardingNextLogin } from "../state/onboarding";
+import {
+  clearOnboardingProgress,
+  isForceOnboardingNextLoginSet,
+  markForceOnboardingNextLogin,
+} from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
 import type { ReactNode } from "react";
 
@@ -34,7 +38,6 @@ export function SignupPage(): ReactNode {
   const locale = useLocale();
   const { isAuthenticated } = useSession();
   const [formError, setFormError] = useState("");
-  const [postSignupPath, setPostSignupPath] = useState<string | null>(null);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -46,7 +49,10 @@ export function SignupPage(): ReactNode {
   });
 
   if (isAuthenticated) {
-    return <Navigate to={postSignupPath ?? "/app/dashboard"} replace />;
+    // Session updates synchronously via useSyncExternalStore; do not rely on a queued
+    // postSignupPath state. Force flag is set before setSession during signup success.
+    const next = isForceOnboardingNextLoginSet() ? "/app/onboarding" : "/app/dashboard";
+    return <Navigate to={next} replace />;
   }
 
   async function onValid(values: FormValues): Promise<void> {
@@ -59,7 +65,21 @@ export function SignupPage(): ReactNode {
       });
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 400) {
-        const data = err.response.data as { detail?: string };
+        const data = err.response.data as {
+          detail?: string;
+          user_email?: string[];
+          username?: string[];
+        };
+        const emailMsg = data.user_email?.[0];
+        const userMsg = data.username?.[0];
+        if (emailMsg) {
+          setFormError(emailMsg);
+          return;
+        }
+        if (userMsg) {
+          setFormError(userMsg);
+          return;
+        }
         if (data?.detail?.toLowerCase().includes("exists")) {
           setFormError("That username or email is already in use. Try signing in or use a different email.");
           return;
@@ -72,9 +92,11 @@ export function SignupPage(): ReactNode {
     }
     try {
       const data = await login(values.username.trim(), values.password);
-      setPostSignupPath("/app/onboarding");
-      setSession({ access: data.access, refresh: data.refresh });
+      // Progress is keyed only in localStorage today; clear so a new account never inherits
+      // another session's onboarding_completed from the same browser profile.
+      clearOnboardingProgress();
       markForceOnboardingNextLogin();
+      setSession({ access: data.access, refresh: data.refresh });
     } catch {
       setFormError("Account was created but sign-in failed. Try logging in manually.");
     }

@@ -14,6 +14,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- **Signup → onboarding (S1):** new accounts could land on `/app/dashboard` because (1) `isAuthenticated` + `<Navigate>` raced with queued `postSignupPath` state against `useSyncExternalStore`, and (2) `fm_onboarding_progress_v1` is browser-global, so `onboarding_completed` from another session sent `OnboardingPage` straight to the dashboard. Signup now sets the force-onboarding flag **before** `setSession`, routes authenticated `/signup` via `isForceOnboardingNextLoginSet()`, and calls `clearOnboardingProgress()` before marking force onboarding after a successful new-user login.
 - **Transactions calendar heatmap + daily activity contract alignment:** the calendar page now reads API `daily.amount`, `heat_value`, and `heat_intensity` fields directly (with safe fallbacks) so month-grid heat shading and daily activity metrics populate correctly instead of flattening to zero when `net`/`expense_only` keys are absent.
 - **Upcoming expense edit recurring flag mapping:** the upcoming-expense editor now submits the canonical API field `is_recurring` (instead of `recurring_flag`) so editing recurring bills preserves/toggles recurrence correctly.
 - **Upcoming expenses list: recurring column** — API serializes `is_recurring` (not `recurring_flag`); the client now maps that field so the table shows **Recurring** vs **One-time** correctly.
