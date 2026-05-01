@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { z } from "zod";
 import { createUser } from "../api/user";
 import { login } from "../api/auth";
@@ -12,7 +12,11 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { tr, useLocale } from "../lib/i18n";
 import { setSession } from "../state/auth";
-import { markForceOnboardingNextLogin } from "../state/onboarding";
+import {
+  clearOnboardingProgress,
+  isForceOnboardingNextLoginSet,
+  markForceOnboardingNextLogin,
+} from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
 import type { ReactNode } from "react";
 
@@ -32,7 +36,6 @@ type FormValues = z.infer<typeof schema>;
 
 export function SignupPage(): ReactNode {
   const locale = useLocale();
-  const navigate = useNavigate();
   const { isAuthenticated } = useSession();
   const [formError, setFormError] = useState("");
   const form = useForm<FormValues>({
@@ -46,7 +49,10 @@ export function SignupPage(): ReactNode {
   });
 
   if (isAuthenticated) {
-    return <Navigate to="/app/dashboard" replace />;
+    // Session updates synchronously via useSyncExternalStore; force flag is set before
+    // setSession during signup success (see onValid).
+    const next = isForceOnboardingNextLoginSet() ? "/app/onboarding" : "/app/dashboard";
+    return <Navigate to={next} replace />;
   }
 
   async function onValid(values: FormValues): Promise<void> {
@@ -86,12 +92,11 @@ export function SignupPage(): ReactNode {
     }
     try {
       const data = await login(values.username.trim(), values.password);
+      // Progress is keyed only in localStorage today; clear so a new account never inherits
+      // another session's onboarding_completed from the same browser profile.
+      clearOnboardingProgress();
       markForceOnboardingNextLogin();
       setSession({ access: data.access, refresh: data.refresh });
-      // Navigate here: setSession updates useSyncExternalStore immediately; a follow-up
-      // render can see isAuthenticated true before a queued setState (old postSignupPath
-      // pattern) would flush, which incorrectly sent new users to /app/dashboard.
-      navigate("/app/onboarding", { replace: true });
     } catch {
       setFormError("Account was created but sign-in failed. Try logging in manually.");
     }
