@@ -63,6 +63,14 @@ export function earliestIncompleteOnboardingPath(progress = getOnboardingProgres
   return "/app/onboarding/review";
 }
 
+/** True when signup (or similar) asked for onboarding on the next authenticated render. */
+export function isForceOnboardingNextLoginSet(): boolean {
+  if (typeof localStorage === "undefined") {
+    return false;
+  }
+  return localStorage.getItem(FORCE_ONBOARDING_KEY) === "1";
+}
+
 export function markForceOnboardingNextLogin(): void {
   if (typeof localStorage === "undefined") {
     return;
