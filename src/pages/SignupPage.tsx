@@ -49,8 +49,8 @@ export function SignupPage(): ReactNode {
   });
 
   if (isAuthenticated) {
-    // Session updates synchronously via useSyncExternalStore; do not rely on a queued
-    // postSignupPath state. Force flag is set before setSession during signup success.
+    // Session updates synchronously via useSyncExternalStore; force flag is set before
+    // setSession during signup success (see onValid).
     const next = isForceOnboardingNextLoginSet() ? "/app/onboarding" : "/app/dashboard";
     return <Navigate to={next} replace />;
   }
