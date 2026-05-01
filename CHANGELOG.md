@@ -14,6 +14,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- **Signup duplicate-account messaging:** `POST /finance/user/` duplicate responses now expose `user_email` / `username` field arrays; the signup page surfaces those messages directly when present.
 - **Transactions calendar heatmap + daily activity contract alignment:** the calendar page now reads API `daily.amount`, `heat_value`, and `heat_intensity` fields directly (with safe fallbacks) so month-grid heat shading and daily activity metrics populate correctly instead of flattening to zero when `net`/`expense_only` keys are absent.
 - **Upcoming expense edit recurring flag mapping:** the upcoming-expense editor now submits the canonical API field `is_recurring` (instead of `recurring_flag`) so editing recurring bills preserves/toggles recurrence correctly.
 - **Upcoming expenses list: recurring column** — API serializes `is_recurring` (not `recurring_flag`); the client now maps that field so the table shows **Recurring** vs **One-time** correctly.

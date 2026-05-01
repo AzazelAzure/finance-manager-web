@@ -59,7 +59,21 @@ export function SignupPage(): ReactNode {
       });
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 400) {
-        const data = err.response.data as { detail?: string };
+        const data = err.response.data as {
+          detail?: string;
+          user_email?: string[];
+          username?: string[];
+        };
+        const emailMsg = data.user_email?.[0];
+        const userMsg = data.username?.[0];
+        if (emailMsg) {
+          setFormError(emailMsg);
+          return;
+        }
+        if (userMsg) {
+          setFormError(userMsg);
+          return;
+        }
         if (data?.detail?.toLowerCase().includes("exists")) {
           setFormError("That username or email is already in use. Try signing in or use a different email.");
           return;
