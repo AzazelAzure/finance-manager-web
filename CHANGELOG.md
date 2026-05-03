@@ -14,6 +14,12 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- **KNOWN_ISSUES #8 (source balances after delete):** after transaction delete, the client **invalidates `sources`** so balances refetch; the API **reverses the transaction with the same currency rules as apply-on-create** and refreshes the snapshot so source balances stay consistent (including cross-currency).
+- **KNOWN_ISSUES #6 (mobile wedge):** dashboard **Quick add** is placed **above KPIs** so add expense/income/transfer is reachable without scrolling past charts.
+- **KNOWN_ISSUES #3 (quick-add parity):** Quick add modal supports **optional bill link** (unpaid bills datalist) and **tags** (add + datalist), matching main transaction create fields aside from tx-type (still chosen by the button).
+
+- **Transaction edit + sources:** edit modal leaves **category empty** when the stored value is only the API default for that `tx_type` (`expense` / `income` / `transfer`) and the user has no category row with that name, so the field is not forced to a non-existent lowercase label. **Source** uses a real **dropdown** everywhere transactions are entered (ledger single + transfer, Quick add including XFER legs); orphaned source names still show as an extra option.
+
 - **Signup → onboarding (S1):** new accounts could land on `/app/dashboard` because (1) `isAuthenticated` + `<Navigate>` raced with queued `postSignupPath` state against `useSyncExternalStore`, and (2) `fm_onboarding_progress_v1` is browser-global, so `onboarding_completed` from another session sent `OnboardingPage` straight to the dashboard. Signup now sets the force-onboarding flag **before** `setSession`, routes authenticated `/signup` via `isForceOnboardingNextLoginSet()`, and calls `clearOnboardingProgress()` before marking force onboarding after a successful new-user login.
 - **Signup duplicate-account messaging:** `POST /finance/user/` duplicate responses now expose `user_email` / `username` field arrays; the signup page surfaces those messages directly when present.
 - **Transactions calendar heatmap + daily activity contract alignment:** the calendar page now reads API `daily.amount`, `heat_value`, and `heat_intensity` fields directly (with safe fallbacks) so month-grid heat shading and daily activity metrics populate correctly instead of flattening to zero when `net`/`expense_only` keys are absent.

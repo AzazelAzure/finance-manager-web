@@ -22,6 +22,9 @@ import { LoadingState } from "../../components/ui/LoadingState";
 import { Modal } from "../../components/ui/Modal";
 import { SuccessState } from "../../components/ui/SuccessState";
 import { formatMoney } from "../../lib/money";
+import { categoryInitialValueForEditor } from "../../lib/transactionCategoryEdit";
+import { tr, useLocale } from "../../lib/i18n";
+import { SourceSelect } from "../../components/transactions/SourceSelect";
 import {
   transactionFilterSignature,
   transactionsDraftToSearchParams,
@@ -158,6 +161,7 @@ function normalizedCategory(category: string): string {
 }
 
 export function TransactionsPage(): ReactNode {
+  const locale = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -313,6 +317,7 @@ export function TransactionsPage(): ReactNode {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
       void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      void queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
     },
   });
 
@@ -357,6 +362,7 @@ export function TransactionsPage(): ReactNode {
     setEditorError("");
     try {
       const tx = await getTransaction(txId);
+      const userCats = categoriesQuery.data ?? [];
       setEditingTxId(txId);
       setEditorMode("single");
       setSelectedTags(tx.tags ?? []);
@@ -366,7 +372,7 @@ export function TransactionsPage(): ReactNode {
         currency: tx.currency || "USD",
         source: tx.source || "",
         tx_type: tx.tx_type || "EXPENSE",
-        category: tx.category || "",
+        category: categoryInitialValueForEditor(tx, userCats),
         description: tx.description || "",
         bill: tx.bill || "",
       });
@@ -628,11 +634,23 @@ export function TransactionsPage(): ReactNode {
               </label>
               <label className="ui-field">
                 <span className="ui-label">Source</span>
-                <input
-                  className="ui-input"
+                <SourceSelect
+                  sources={sourcesQuery.data ?? []}
                   value={singleDraft.source}
-                  onChange={(e) => setSingleDraft((d) => ({ ...d, source: e.target.value }))}
-                  list="tx-source-list"
+                  emptyLabel={tr("common.selectSource", locale)}
+                  unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+                  onSourceChange={(source) => {
+                    const row = (sourcesQuery.data ?? []).find((r) => r.source === source);
+                    setSingleDraft((d) => ({
+                      ...d,
+                      source,
+                      currency: row
+                        ? String(row.currency ?? "")
+                            .trim()
+                            .toUpperCase() || d.currency
+                        : d.currency,
+                    }));
+                  }}
                 />
               </label>
               <label className="ui-field">
@@ -662,20 +680,22 @@ export function TransactionsPage(): ReactNode {
               </label>
               <label className="ui-field">
                 <span className="ui-label">From source</span>
-                <input
-                  className="ui-input"
-                  list="tx-source-list"
+                <SourceSelect
+                  sources={sourcesQuery.data ?? []}
                   value={transferDraft.from_source}
-                  onChange={(e) => setTransferDraft((d) => ({ ...d, from_source: e.target.value }))}
+                  emptyLabel={tr("common.selectSource", locale)}
+                  unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+                  onSourceChange={(source) => setTransferDraft((d) => ({ ...d, from_source: source }))}
                 />
               </label>
               <label className="ui-field">
                 <span className="ui-label">To source</span>
-                <input
-                  className="ui-input"
-                  list="tx-source-list"
+                <SourceSelect
+                  sources={sourcesQuery.data ?? []}
                   value={transferDraft.to_source}
-                  onChange={(e) => setTransferDraft((d) => ({ ...d, to_source: e.target.value }))}
+                  emptyLabel={tr("common.selectSource", locale)}
+                  unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+                  onSourceChange={(source) => setTransferDraft((d) => ({ ...d, to_source: source }))}
                 />
               </label>
               <label className="ui-field">
@@ -844,11 +864,6 @@ export function TransactionsPage(): ReactNode {
               </Button>
             </div>
           </div>
-          <datalist id="tx-source-list">
-            {(sourcesQuery.data ?? []).map((s) => (
-              <option key={s.source} value={s.source} />
-            ))}
-          </datalist>
           <datalist id="tx-category-list">
             {(categoriesQuery.data ?? []).map((c) => (
               <option key={c} value={c} />

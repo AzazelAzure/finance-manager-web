@@ -203,6 +203,10 @@ export function DashboardPage(): ReactNode {
         </Button>
       </div>
 
+      <div className="dashboard-root__quick">
+        <QuickActions baseCurrency={currency} sources={sourceQuery.data ?? []} />
+      </div>
+
       <section className="dashboard-section" aria-label={tr("dashboard.section.kpis", locale)}>
         <KPIRow
           currency={currency}
@@ -268,7 +272,6 @@ export function DashboardPage(): ReactNode {
           <aside className="dashboard-root__side dashboard-col">
             <SourceBalances rows={data.source_balances} />
             <ProfileOverview profile={profileQuery.data} isError={profileQuery.isError} />
-            <QuickActions baseCurrency={currency} sources={sourceQuery.data ?? []} />
           </aside>
         </div>
         <RecentTransactions rows={txRows} baseCurrency={currency} />
