@@ -1,4 +1,5 @@
 import { fetchExchangeRatesMatrix } from "../api/exchangeRates";
+import { UPCOMING_LIST_CACHE_ID } from "../api/upcomingExpenses";
 import { preferOfflineCaches } from "./connectivity";
 import { readCachePayload, snapshotParamsCacheKey } from "./cache";
 import { offlineDb } from "./db";
@@ -57,6 +58,20 @@ export async function collectCurrenciesForMinimalRates(): Promise<string[]> {
       const c = String(t.currency ?? "").trim().toUpperCase().slice(0, 3);
       if (c) {
         set.add(c);
+      }
+    }
+  }
+  const upcomingRaw = await readCachePayload(UPCOMING_LIST_CACHE_ID);
+  if (Array.isArray(upcomingRaw)) {
+    for (const item of upcomingRaw) {
+      if (item && typeof item === "object" && "currency" in item) {
+        const c = String((item as { currency?: string }).currency ?? "")
+          .trim()
+          .toUpperCase()
+          .slice(0, 3);
+        if (c) {
+          set.add(c);
+        }
       }
     }
   }

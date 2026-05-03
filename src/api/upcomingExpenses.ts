@@ -1,5 +1,5 @@
 import { preferOfflineCaches } from "../offline/connectivity";
-import { offlineDb } from "../offline/db";
+import { readCachePayload, writeCachePayload } from "../offline/cache";
 import { api } from "./client";
 import {
   isOfflineQueued,
@@ -15,6 +15,8 @@ type UpcomingExpenseListResponse =
       items?: UpcomingExpenseRecord[];
       results?: UpcomingExpenseRecord[];
     };
+
+export const UPCOMING_LIST_CACHE_ID = "upcoming:list";
 
 function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpenseRecord {
   const isRecur = (row as { is_recurring?: boolean }).is_recurring;
@@ -33,8 +35,7 @@ function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpe
 
 export async function listUpcomingExpenses(): Promise<UpcomingExpenseRecord[]> {
   if (preferOfflineCaches()) {
-    const row = await offlineDb.caches.get("upcoming:list");
-    const raw = row?.payload;
+    const raw = await readCachePayload(UPCOMING_LIST_CACHE_ID);
     if (Array.isArray(raw)) {
       return raw
         .map((r) => normalizeUpcomingRow(r as Partial<UpcomingExpenseRecord>))
@@ -47,11 +48,7 @@ export async function listUpcomingExpenses(): Promise<UpcomingExpenseRecord[]> {
   const normalized = rows
     .map((row) => normalizeUpcomingRow(row))
     .filter((row) => Boolean(row.name));
-  if (!preferOfflineCaches()) {
-    void offlineDb.caches
-      .put({ id: "upcoming:list", payload: normalized, fetchedAt: Date.now() })
-      .catch(() => undefined);
-  }
+  void writeCachePayload(UPCOMING_LIST_CACHE_ID, normalized, Date.now()).catch(() => undefined);
   return normalized;
 }
 

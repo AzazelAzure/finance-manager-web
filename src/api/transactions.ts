@@ -12,6 +12,7 @@ import { loadCurrencyConverter } from "../offline/exchangeRates";
 import { buildVisualizationFromTransactions } from "../offline/visualizationOffline";
 import { applyTransactionOutboxToList } from "../offline/transactionOutboxOverlay";
 import { api } from "./client";
+import { listUpcomingExpenses } from "./upcomingExpenses";
 import {
   isOfflineQueued,
   type CalendarResponse,
@@ -154,6 +155,14 @@ export async function getTransactionsVisualization(params: {
 }
 
 export async function listUnpaidExpenseNames(): Promise<string[]> {
+  if (preferOfflineCaches()) {
+    const all = await listUpcomingExpenses();
+    const names = all
+      .filter((row) => !row.paid_flag)
+      .map((row) => String(row.name ?? "").trim())
+      .filter(Boolean);
+    return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+  }
   const { data } = await api.get<{ expenses?: Array<{ name?: string }> } | Array<{ name?: string }>>(
     "/finance/upcoming_expenses/",
     { params: { paid_flag: "false" } },
