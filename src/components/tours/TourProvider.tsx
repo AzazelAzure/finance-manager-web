@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride';
+import Joyride, { STATUS } from 'react-joyride';
+import type { CallBackProps, Step } from 'react-joyride';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { updateAppProfile, getAppProfile } from '../../api/profile';
 
@@ -165,7 +166,7 @@ export function HelpModeWrapper({
           disableBeacon: true,
           hideFooter: true,
           hideBackButton: true,
-        },
+        } as any,
       ]);
     }
   };

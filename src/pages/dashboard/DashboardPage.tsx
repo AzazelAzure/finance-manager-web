@@ -220,7 +220,7 @@ export function DashboardPage(): ReactNode {
     { target: '#tour-filters', content: 'Apply filters first, then refresh to compare snapshots.', title: 'Dashboard Filters' },
     { target: '#tour-quick-actions', content: 'Quick add supports income, expense, transfer, and bill flows.', title: 'Quick Add' },
     { target: '#tour-charts', content: 'Chart slices drill to detailed transactions.', title: 'Charts' }
-  ]);
+  ] as any);
 
   return (
     <div className="stack dashboard-page">
