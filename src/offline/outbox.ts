@@ -12,6 +12,7 @@ export async function enqueueOutboxEntry(input: {
   method: string;
   url: string;
   body: unknown;
+  echo?: unknown;
 }): Promise<string> {
   const idempotencyKey = randomIdempotencyKey();
   await offlineDb.outbox.add({
@@ -20,6 +21,7 @@ export async function enqueueOutboxEntry(input: {
     body: input.body,
     idempotencyKey,
     createdAt: Date.now(),
+    ...(input.echo !== undefined ? { echo: input.echo } : {}),
   });
   return idempotencyKey;
 }

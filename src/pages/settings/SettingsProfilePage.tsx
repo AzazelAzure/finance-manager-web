@@ -24,6 +24,7 @@ import { formatMoney } from "../../lib/money";
 import { getThemePreference, setThemePreference, type ThemePreference } from "../../lib/theme";
 import { useSession } from "../../state/SessionContext";
 import { clearOutbox } from "../../offline/outbox";
+import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 import { tr, useLocale } from "../../lib/i18n";
 
 const settingsSchema = z.object({
@@ -102,20 +103,20 @@ export function SettingsProfilePage(): ReactNode {
 
   const profileQuery = useQuery({
     queryKey: ["profile", "settings"] as const,
-    queryFn: getAppProfile,
+    queryFn: (ctx) => getAppProfile(readOptsFromQuery(ctx)),
   });
   const userEmailQuery = useQuery({
     queryKey: ["profile", "email"] as const,
-    queryFn: getCurrentUserEmail,
+    queryFn: (ctx) => getCurrentUserEmail(readOptsFromQuery(ctx)),
   });
   const snapshotQuery = useQuery({
     queryKey: ["profile", "snapshot"] as const,
-    queryFn: () => fetchAppSnapshot({ current_month: "1" }),
+    queryFn: (ctx) => fetchAppSnapshot({ current_month: "1" }, readOptsFromQuery(ctx)),
     placeholderData: keepPreviousData,
   });
   const sourcesQuery = useQuery({
     queryKey: ["lookups", "sources"] as const,
-    queryFn: listSourceNames,
+    queryFn: (ctx) => listSourceNames(readOptsFromQuery(ctx)),
     placeholderData: keepPreviousData,
   });
 
@@ -172,8 +173,10 @@ export function SettingsProfilePage(): ReactNode {
     },
     onSuccess: () => {
       setSettingsMessage(tr("settings.saved", locale));
-      void queryClient.invalidateQueries({ queryKey: ["profile"] });
-      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      requestPwaReadBypassAfterMutation();
+      void queryClient.invalidateQueries({ queryKey: ["profile"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["app-profile"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
     },
     onError: (error) => setSettingsMessage(parseApiError(error)),
   });

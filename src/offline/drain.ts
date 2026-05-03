@@ -1,10 +1,14 @@
 import axios, { isAxiosError } from "axios";
 import { postRefresh } from "../api/refreshClient";
 import type { LoginResponse } from "../api/types";
+import { queryClient } from "../lib/queryClient";
 import { dispatchClientBuildUnsupported } from "../lib/clientBuildUpgradeEvents";
 import { AUTH_CHANGED_EVENT, getRefreshToken, setSession } from "../state/auth";
+import { isApiMarkedUnreachable, probeApiReachability } from "./connectivity";
 import { clearOutbox, listOutboxOrdered, removeOutboxEntry } from "./outbox";
 import { emitSyncState } from "./syncEvents";
+import { syncMinimalExchangeRates } from "./exchangeRates";
+import { requestPwaReadBypassAfterMutation } from "./pwaReadBypass";
 
 let drainInFlight: Promise<void> | null = null;
 
@@ -17,7 +21,13 @@ export async function drainOutbox(): Promise<void> {
     const onAuth = (): void => ac.abort();
     window.addEventListener(AUTH_CHANGED_EVENT, onAuth, { once: true });
 
-    if (!navigator.onLine) {
+    let canReach = typeof navigator !== "undefined" && navigator.onLine;
+    if (!canReach) {
+      canReach = await probeApiReachability();
+    } else if (isApiMarkedUnreachable()) {
+      canReach = await probeApiReachability();
+    }
+    if (!canReach) {
       emitSyncState({ phase: "idle" });
       return;
     }
@@ -26,7 +36,7 @@ export async function drainOutbox(): Promise<void> {
       emitSyncState({ phase: "auth_blocked", detail: "Sign in again to sync queued changes." });
       return;
     }
-    emitSyncState({ phase: "syncing" });
+    emitSyncState({ phase: "syncing", detail: "Uploading queued changes…" });
     let login: LoginResponse;
     try {
       login = await postRefresh(refresh);
@@ -79,6 +89,23 @@ export async function drainOutbox(): Promise<void> {
         });
         return;
       }
+    }
+    emitSyncState({ phase: "syncing", detail: "Refreshing data from the server…" });
+    try {
+      requestPwaReadBypassAfterMutation();
+      await queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["app-profile"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["tags", "all"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["categories", "all"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+      await queryClient.refetchQueries({ type: "active" });
+      void syncMinimalExchangeRates(true);
+    } catch {
+      /* ignore refetch failures after successful upload */
     }
     emitSyncState({ phase: "idle" });
   })().finally(() => {

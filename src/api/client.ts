@@ -2,15 +2,22 @@ import axios, {
   AxiosHeaders,
   getAdapter,
   type AxiosError,
+  type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from "axios";
 import { CLIENT_BUILD } from "../lib/clientBuild";
-import { enqueueOfflineAxiosWrite, shouldQueueOfflineWrite } from "../offline/queueMutating";
+import { isLikelyNetworkFailure, markApiReachable } from "../offline/connectivity";
+import {
+  canRetroactivelyQueue,
+  enqueueOfflineAxiosWrite,
+  shouldQueueOfflineWrite,
+} from "../offline/queueMutating";
+import { requestPwaReadBypassAfterMutation } from "../offline/pwaReadBypass";
 import { queryClient } from "../lib/queryClient";
 import { resolveApiBaseUrl } from "../lib/apiBaseUrl";
 import { clearSession, getEffectiveAccessTokenForSession, getRefreshToken, setSession } from "../state/auth";
 import { postRefresh } from "./refreshClient";
-import type { LoginResponse } from "./types";
+import { isOfflineQueued, type LoginResponse } from "./types";
 import {
   dispatchClientBuildUnsupported,
   type ClientBuildUnsupportedDetail,
@@ -29,13 +36,18 @@ const browserAdapter = getAdapter(axios.defaults.adapter);
 
 api.defaults.adapter = async (config) => {
   if (shouldQueueOfflineWrite(config)) {
-    await enqueueOfflineAxiosWrite(config);
+    const idempotency_key = await enqueueOfflineAxiosWrite(config);
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("fm-offline-queued"));
+      requestPwaReadBypassAfterMutation();
+      void queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
     }
     const headers = new AxiosHeaders();
     return {
-      data: { offline_queued: true },
+      data: { offline_queued: true, idempotency_key },
       status: 202,
       statusText: "Accepted",
       headers,
@@ -91,9 +103,46 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+function isOfflineQueuedResponse(r: AxiosResponse): boolean {
+  return r.status === 202 && isOfflineQueued(r.data);
+}
+
 api.interceptors.response.use(
-  (r) => r,
+  (r) => {
+    if (!isOfflineQueuedResponse(r)) {
+      markApiReachable(true);
+    }
+    return r;
+  },
   async (err: AxiosError) => {
+    if (isLikelyNetworkFailure(err)) {
+      markApiReachable(false);
+
+      // Retroactively queue allowlisted writes that failed due to network error.
+      // This closes the gap where the first write after connectivity loss was
+      // always lost because shouldTreatAsDisconnectedForMutations() had not yet
+      // detected the outage.
+      const failedConfig = err.config as ConfigWithRetry | undefined;
+      if (failedConfig && canRetroactivelyQueue(failedConfig)) {
+        const idempotency_key = await enqueueOfflineAxiosWrite(failedConfig);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("fm-offline-queued"));
+          requestPwaReadBypassAfterMutation();
+          void queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+          void queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
+          void queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+          void queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+        }
+        const headers = new AxiosHeaders();
+        return {
+          data: { offline_queued: true, idempotency_key },
+          status: 202,
+          statusText: "Accepted",
+          headers,
+          config: failedConfig,
+        };
+      }
+    }
     const original = err.config as ConfigWithRetry | undefined;
     if (!original) {
       return Promise.reject(err);

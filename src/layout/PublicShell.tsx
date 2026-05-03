@@ -14,7 +14,7 @@ export function PublicShell(): ReactNode {
             <i />
           </span>
           <span>
-            <strong>Hive Manager</strong>
+            <strong>Hive Financial Manager</strong>
             <small>Web Beta</small>
           </span>
         </Link>
@@ -31,7 +31,7 @@ export function PublicShell(): ReactNode {
       <div className="app-main app-main--public">
         <Outlet />
       </div>
-      <footer className="public-footer">Hive — personal finance (web beta)</footer>
+      <footer className="public-footer">Hive Financial Manager — personal finance (web beta)</footer>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { createTransactions, listUnpaidExpenseNames } from "../../api/transactio
 import { createUpcomingExpense } from "../../api/upcomingExpenses";
 import { ErrorState } from "../ui/ErrorState";
 import { createCategory, listCategories, listTags } from "../../api/lookups";
+import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 import { isOfflineQueued, type SourceRow } from "../../api/types";
 import { SourceSelect } from "../transactions/SourceSelect";
 
@@ -37,9 +38,12 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
   const sourceCurrency = new Map(sources.map((row) => [row.source, row.currency]));
   const categoriesQuery = useQuery({
     queryKey: ["categories", "all"] as const,
-    queryFn: listCategories,
+    queryFn: (ctx) => listCategories(readOptsFromQuery(ctx)),
   });
-  const tagsQuery = useQuery({ queryKey: ["tags", "all"] as const, queryFn: listTags });
+  const tagsQuery = useQuery({
+    queryKey: ["tags", "all"] as const,
+    queryFn: (ctx) => listTags(readOptsFromQuery(ctx)),
+  });
   const unpaidBillsQuery = useQuery({
     queryKey: ["upcoming-expenses", "unpaid-names"] as const,
     queryFn: listUnpaidExpenseNames,
@@ -158,11 +162,14 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
     },
     onMutate: () => setError(""),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
-      void queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
-      void queryClient.invalidateQueries({ queryKey: ["tags", "all"] });
-      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"] });
+      requestPwaReadBypassAfterMutation();
+      void queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["tags", "all"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
       setActiveType(null);
       setSelectedTags([]);
       setPendingTag("");

@@ -1,4 +1,8 @@
+import { preferOfflineCaches, preferPwaLocalFirstReads } from "../offline/connectivity";
+import { readCachePayload, writeCachePayload } from "../offline/cache";
 import { offlineDb } from "../offline/db";
+import { isPwaBackgroundStale, schedulePwaBackgroundWork } from "../offline/pwaLocalFirstBg";
+import { shouldBypassPwaDataCache, type PwaReadBypassOpts } from "../offline/pwaReadBypass";
 import { api } from "./client";
 import {
   isOfflineQueued,
@@ -15,6 +19,8 @@ type UpcomingExpenseListResponse =
       results?: UpcomingExpenseRecord[];
     };
 
+export const UPCOMING_LIST_CACHE_ID = "upcoming:list";
+
 function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpenseRecord {
   const isRecur = (row as { is_recurring?: boolean }).is_recurring;
   return {
@@ -30,10 +36,9 @@ function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpe
   };
 }
 
-export async function listUpcomingExpenses(): Promise<UpcomingExpenseRecord[]> {
-  if (typeof navigator !== "undefined" && !navigator.onLine) {
-    const row = await offlineDb.caches.get("upcoming:list");
-    const raw = row?.payload;
+export async function listUpcomingExpenses(opts?: PwaReadBypassOpts): Promise<UpcomingExpenseRecord[]> {
+  if (preferOfflineCaches()) {
+    const raw = await readCachePayload(UPCOMING_LIST_CACHE_ID);
     if (Array.isArray(raw)) {
       return raw
         .map((r) => normalizeUpcomingRow(r as Partial<UpcomingExpenseRecord>))
@@ -41,16 +46,34 @@ export async function listUpcomingExpenses(): Promise<UpcomingExpenseRecord[]> {
     }
     return [];
   }
+  if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
+    const row = await offlineDb.caches.get(UPCOMING_LIST_CACHE_ID);
+    const raw = row?.payload;
+    const fetchedAt = row?.fetchedAt ?? 0;
+    if (Array.isArray(raw)) {
+      if (isPwaBackgroundStale(fetchedAt)) {
+        schedulePwaBackgroundWork(UPCOMING_LIST_CACHE_ID, async () => {
+          const { data } = await api.get<UpcomingExpenseListResponse>("/finance/upcoming_expenses/");
+          const rows = Array.isArray(data) ? data : data.expenses ?? data.items ?? data.results ?? [];
+          const normalized = rows
+            .map((row) => normalizeUpcomingRow(row))
+            .filter((row) => Boolean(row.name));
+          await writeCachePayload(UPCOMING_LIST_CACHE_ID, normalized, Date.now());
+          const { queryClient } = await import("../lib/queryClient");
+          await queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"], refetchType: "all" });
+        });
+      }
+      return raw
+        .map((r) => normalizeUpcomingRow(r as Partial<UpcomingExpenseRecord>))
+        .filter((r) => Boolean(r.name));
+    }
+  }
   const { data } = await api.get<UpcomingExpenseListResponse>("/finance/upcoming_expenses/");
   const rows = Array.isArray(data) ? data : data.expenses ?? data.items ?? data.results ?? [];
   const normalized = rows
     .map((row) => normalizeUpcomingRow(row))
     .filter((row) => Boolean(row.name));
-  if (typeof navigator !== "undefined" && navigator.onLine) {
-    void offlineDb.caches
-      .put({ id: "upcoming:list", payload: normalized, fetchedAt: Date.now() })
-      .catch(() => undefined);
-  }
+  void writeCachePayload(UPCOMING_LIST_CACHE_ID, normalized, Date.now()).catch(() => undefined);
   return normalized;
 }
 

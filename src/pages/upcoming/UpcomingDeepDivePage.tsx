@@ -13,6 +13,7 @@ import { KPI } from "../../components/ui/KPI";
 import { LoadingState } from "../../components/ui/LoadingState";
 import { formatMoney } from "../../lib/money";
 import { tr, useLocale } from "../../lib/i18n";
+import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 
 type TimelineRow = {
   due_date: string;
@@ -76,11 +77,12 @@ export function UpcomingDeepDivePage(): ReactNode {
 
   const vizQuery = useQuery({
     queryKey: ["upcoming-viz", startDate, endDate] as const,
-    queryFn: () => getTransactionsVisualization({ start_date: startDate, end_date: endDate }),
+    queryFn: (ctx) =>
+      getTransactionsVisualization({ start_date: startDate, end_date: endDate }, readOptsFromQuery(ctx)),
   });
   const upcomingQuery = useQuery({
     queryKey: ["upcoming-expenses", "all"] as const,
-    queryFn: listUpcomingExpenses,
+    queryFn: (ctx) => listUpcomingExpenses(readOptsFromQuery(ctx)),
   });
 
   const monthlyData = useMemo(

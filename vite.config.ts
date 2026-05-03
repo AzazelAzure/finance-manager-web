@@ -24,17 +24,15 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,woff2}"],
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
-        runtimeCaching: [
-          {
-            urlPattern: ({ request }) => request.mode === "navigate",
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "pages",
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 },
-            },
-          },
-        ],
+        clientsClaim: true,
+        /**
+         * Do not register a separate Workbox route for `request.mode === "navigate"`.
+         * generateSW already adds `NavigationRoute(createHandlerBoundToURL("/index.html"))`, which
+         * serves the precached SPA shell when offline. A second navigate handler (e.g.
+         * StaleWhileRevalidate) can match navigations and, on an empty cache after site-data reset,
+         * try the network first and surface a hard document load failure (e.g. ERR_ADDRESS_UNREACHABLE)
+         * before precache can satisfy the request.
+         */
       },
     }),
   ],

@@ -24,6 +24,7 @@ import { SuccessState } from "../../components/ui/SuccessState";
 import { formatMoney } from "../../lib/money";
 import { categoryInitialValueForEditor } from "../../lib/transactionCategoryEdit";
 import { tr, useLocale } from "../../lib/i18n";
+import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 import { SourceSelect } from "../../components/transactions/SourceSelect";
 import {
   transactionFilterSignature,
@@ -167,7 +168,10 @@ export function TransactionsPage(): ReactNode {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const searchString = searchParams.toString();
-  const profileQuery = useQuery({ queryKey: ["app-profile"] as const, queryFn: getAppProfile });
+  const profileQuery = useQuery({
+    queryKey: ["app-profile"] as const,
+    queryFn: (ctx) => getAppProfile(readOptsFromQuery(ctx)),
+  });
   const baseCurrency = (profileQuery.data?.base_currency ?? "USD").trim().toUpperCase() || "USD";
   const filters = useMemo<TransactionFilters>(
     () => searchParamsToTransactionFilters(new URLSearchParams(searchString)),
@@ -196,13 +200,22 @@ export function TransactionsPage(): ReactNode {
 
   const txQuery = useQuery({
     queryKey: ["transactions", signature] as const,
-    queryFn: () => listTransactions(filters),
+    queryFn: (ctx) => listTransactions(filters, readOptsFromQuery(ctx)),
     placeholderData: keepPreviousData,
   });
 
-  const tagsQuery = useQuery({ queryKey: ["tags", "all"] as const, queryFn: listTags });
-  const categoriesQuery = useQuery({ queryKey: ["categories", "all"] as const, queryFn: listCategories });
-  const sourcesQuery = useQuery({ queryKey: ["sources", "all"] as const, queryFn: listSourceNames });
+  const tagsQuery = useQuery({
+    queryKey: ["tags", "all"] as const,
+    queryFn: (ctx) => listTags(readOptsFromQuery(ctx)),
+  });
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", "all"] as const,
+    queryFn: (ctx) => listCategories(readOptsFromQuery(ctx)),
+  });
+  const sourcesQuery = useQuery({
+    queryKey: ["sources", "all"] as const,
+    queryFn: (ctx) => listSourceNames(readOptsFromQuery(ctx)),
+  });
   const unpaidBillsQuery = useQuery({
     queryKey: ["upcoming-expenses", "unpaid-names"] as const,
     queryFn: listUnpaidExpenseNames,
@@ -304,8 +317,14 @@ export function TransactionsPage(): ReactNode {
       setEditorError("");
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      void (async () => {
+        requestPwaReadBypassAfterMutation();
+        await queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+      })();
       setEditorOpen(false);
       setEditingTxId(null);
       setEditorMode("single");
@@ -322,17 +341,22 @@ export function TransactionsPage(): ReactNode {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (txId: string) => {
-      const r = await deleteTransaction(txId);
+    mutationFn: async (payload: { txId: string; echo?: TransactionRecord }) => {
+      const r = await deleteTransaction(payload.txId, payload.echo ? { echo: payload.echo } : undefined);
       if (isOfflineQueued(r)) {
         return "queued" as const;
       }
       return "ok" as const;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
-      void queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
+      void (async () => {
+        requestPwaReadBypassAfterMutation();
+        await queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+      })();
     },
   });
 
@@ -373,6 +397,10 @@ export function TransactionsPage(): ReactNode {
   }, [editingTxId, editorMode, isLoadingEditor, saveMutation.isPending, singleDraft, transferDraft]);
 
   async function openEditorForEdit(txId: string): Promise<void> {
+    if (txId.startsWith("pending:")) {
+      setEditorError(tr("tx.pendingEditBlocked", locale));
+      return;
+    }
     setIsLoadingEditor(true);
     setEditorError("");
     try {
@@ -427,11 +455,15 @@ export function TransactionsPage(): ReactNode {
         header: "Actions",
         cell: (r) => {
           const isConfirm = (pendingDelete[r.tx_id] ?? 0) > Date.now();
+          const queuedLocal = r.tx_id.startsWith("pending:");
+          const pendingTitle = queuedLocal ? tr("tx.pendingActions", locale) : undefined;
           return (
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 className="ui-btn ui-btn--secondary"
                 type="button"
+                disabled={queuedLocal}
+                title={pendingTitle}
                 onClick={() => {
                   void openEditorForEdit(r.tx_id);
                 }}
@@ -441,12 +473,14 @@ export function TransactionsPage(): ReactNode {
               <button
                 className="ui-btn ui-btn--ghost"
                 type="button"
+                disabled={queuedLocal}
+                title={pendingTitle}
                 onClick={() => {
                   if (!isConfirm) {
                     setPendingDelete((prev) => ({ ...prev, [r.tx_id]: Date.now() + 5000 }));
                     return;
                   }
-                  deleteMutation.mutate(r.tx_id);
+                  deleteMutation.mutate({ txId: r.tx_id, echo: r });
                 }}
               >
                 {isConfirm ? "Confirm delete?" : "Delete"}
@@ -456,7 +490,7 @@ export function TransactionsPage(): ReactNode {
         },
       },
     ],
-    [pendingDelete, deleteMutation],
+    [pendingDelete, deleteMutation, locale],
   );
 
   const fromDashboard = searchParams.get("fromDashboard") === "1";
