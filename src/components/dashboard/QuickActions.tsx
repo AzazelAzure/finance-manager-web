@@ -10,6 +10,7 @@ import { createUpcomingExpense } from "../../api/upcomingExpenses";
 import { ErrorState } from "../ui/ErrorState";
 import { createCategory, listCategories, listTags } from "../../api/lookups";
 import type { SourceRow } from "../../api/types";
+import { SourceSelect } from "../transactions/SourceSelect";
 
 type QuickActionType = "INCOME" | "EXPENSE" | "XFER" | "BILL";
 
@@ -31,7 +32,6 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
   const [activeType, setActiveType] = useState<QuickActionType | null>(null);
   const [error, setError] = useState("");
   const today = new Date().toISOString().slice(0, 10);
-  const sourceOptions = sources.map((row) => row.source);
   const sourceCurrency = new Map(sources.map((row) => [row.source, row.currency]));
   const categoriesQuery = useQuery({
     queryKey: ["categories", "all"] as const,
@@ -205,11 +205,35 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
             <>
               <label className="ui-field">
                 <span className="ui-label">From source</span>
-                <input className="ui-input" value={draft.source} list="quick-source-list" onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value, currency: sourceCurrency.get(e.target.value) ?? d.currency }))} />
+                <SourceSelect
+                  sources={sources}
+                  value={draft.source}
+                  emptyLabel={tr("common.selectSource", locale)}
+                  unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+                  onSourceChange={(source) =>
+                    setDraft((d) => ({
+                      ...d,
+                      source,
+                      currency: sourceCurrency.get(source) ?? d.currency,
+                    }))
+                  }
+                />
               </label>
               <label className="ui-field">
                 <span className="ui-label">To source</span>
-                <input className="ui-input" value={draft.toSource} list="quick-source-list" onChange={(e) => setDraft((d) => ({ ...d, toSource: e.target.value, receivedCurrency: sourceCurrency.get(e.target.value) ?? d.receivedCurrency }))} />
+                <SourceSelect
+                  sources={sources}
+                  value={draft.toSource}
+                  emptyLabel={tr("common.selectSource", locale)}
+                  unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+                  onSourceChange={(source) =>
+                    setDraft((d) => ({
+                      ...d,
+                      toSource: source,
+                      receivedCurrency: sourceCurrency.get(source) ?? d.receivedCurrency,
+                    }))
+                  }
+                />
               </label>
               <label className="ui-field">
                 <span className="ui-label">Sent amount</span>
@@ -252,7 +276,19 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
           </label>
           <label className="ui-field">
             <span className="ui-label">Source</span>
-            <input className="ui-input" value={draft.source} list="quick-source-list" onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value, currency: sourceCurrency.get(e.target.value) ?? d.currency }))} />
+            <SourceSelect
+              sources={sources}
+              value={draft.source}
+              emptyLabel={tr("common.selectSource", locale)}
+              unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+              onSourceChange={(source) =>
+                setDraft((d) => ({
+                  ...d,
+                  source,
+                  currency: sourceCurrency.get(source) ?? d.currency,
+                }))
+              }
+            />
           </label>
           <label className="ui-field">
             <span className="ui-label">Currency</span>
@@ -334,11 +370,6 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
             <span className="ui-label">Description</span>
             <input className="ui-input" value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} />
           </label>
-          <datalist id="quick-source-list">
-            {sourceOptions.map((name) => (
-              <option key={name} value={name} />
-            ))}
-          </datalist>
           <datalist id="quick-category-list">
             {categoryOptions.map((name) => (
               <option key={name} value={name} />
