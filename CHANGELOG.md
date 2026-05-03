@@ -28,6 +28,8 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- **Offline Quick add / ledger when creating categories, tags, or sources:** mutating `POST`/`PATCH`/`DELETE` to **`/finance/categories/`**, **`/finance/tags/`**, and **`/finance/sources/`** are now on the same offline outbox allowlist as transactions and upcoming expenses, so a **new category** (or tag/source mutation) queued before a transaction no longer fails the whole save with a non-allowlisted network error.
+
 - **Offline / PWA transaction create “missing from list”:** `txlist:*` Dexie cache keys use `JSON.parse`, which produced numeric `current_month` / flag values; list overlay used strict string checks (`=== "1"`), so pending rows were filtered out. Filters are now coerced consistently. Offline mutating queue accepts **either** refresh or access token (drain still requires refresh to upload). Queued transaction POSTs **merge synthetic pending rows** into matching `txlist:*` cache payloads for cache-first reads.
 
 - **Sync UX on public routes + dashboard totals after ledger saves:** **`OfflineRoot`** mount/visibility/online handlers no longer run outbox drain or seed on marketing routes (`/` etc.)—only under `/app` or in an **installed PWA**—so a session with a non-empty outbox does not open **`SyncProgressOverlay`** on the landing page. **`SyncProgressOverlay`** is limited to **standalone / installed PWA** display modes; **`SyncStatusBar`** remains on `/app` in the browser. Transaction save/delete mutations now **`invalidateQueries` with `refetchType: "all"`** for snapshot, transactions, sources, and calendar/viz keys so KPI totals refresh reliably when returning to the dashboard.
