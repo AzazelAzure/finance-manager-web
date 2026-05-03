@@ -46,7 +46,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
   });
   const unpaidBillsQuery = useQuery({
     queryKey: ["upcoming-expenses", "unpaid-names"] as const,
-    queryFn: listUnpaidExpenseNames,
+    queryFn: (ctx) => listUnpaidExpenseNames(readOptsFromQuery(ctx)),
   });
   const categoryOptions = categoriesQuery.data ?? [];
   const tagOptions = tagsQuery.data ?? [];

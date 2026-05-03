@@ -67,11 +67,22 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "shell.logout.confirm": "Log out now?",
     "shell.logout.outboxPrompt":
       "You have changes saved only on this device. Sync now, discard them, or go back to keep editing.",
+    "shell.logout.outboxPromptDepth":
+      "You have {count} change(s) saved only on this device. Sync now, discard them, or go back to keep editing.",
     "shell.logout.back": "Back",
     "shell.logout.syncNow": "Sync now",
     "shell.logout.discard": "Discard unsynced and sign out",
     "sync.status.offlineQueued":
       "Offline or can't reach the server — edits you can queue are saved on this device and will upload when connected.",
+    "sync.status.offlineQueuedDepth":
+      "Offline or can't reach the server — {count} change(s) queued on this device; they will upload when connected.",
+    "sync.status.queuedWillSyncDepth": "{count} change(s) queued — will sync when the connection is stable.",
+    "sync.status.syncingDepth": "Syncing {count} queued change(s)…",
+    "sync.dismiss": "Hide",
+    "sync.dismiss.aria": "Hide sync status for this session",
+    "sync.status.offlineNoQueue":
+      "Can't reach the server right now — showing cached data. Changes will sync when the connection is back.",
+    "sync.status.queuedWillSync": "You have local changes waiting to upload.",
     "sync.status.syncing": "Syncing…",
     "sync.status.authBlocked": "Sign in again to sync queued changes.",
     "sync.status.error": "Sync paused — check connection or update the app.",
@@ -83,6 +94,7 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "sync.overlay.title": "Sync in progress",
     "tx.pendingActions": "This entry is waiting to sync — edit and delete are disabled until then.",
     "tx.pendingEditBlocked": "Edit is unavailable until this queued entry has finished syncing.",
+    "tx.pendingEditDraft": "Edit your queued draft (syncs when online).",
     "shell.nav.dashboard": "Dashboard",
     "shell.nav.transactions": "Transactions",
     "shell.nav.calendar": "Calendar",
@@ -292,6 +304,7 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "settings.loading": "Loading profile settings...",
     "settings.failed": "Failed to load profile settings",
     "settings.saved": "Settings saved.",
+    "settings.savedOffline": "Saved on this device — will sync when you're back online.",
     "settings.passwordUpdated": "Password updated.",
     "settings.tab.overview": "Overview",
     "settings.tab.settings": "Settings",
@@ -368,11 +381,22 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "shell.logout.confirm": "Mag-log out na ba ngayon?",
     "shell.logout.outboxPrompt":
       "May mga binago ka na naka-save lang sa device na ito. I-sync, itapon, o bumalik para magpatuloy.",
+    "shell.logout.outboxPromptDepth":
+      "May {count} binago kang naka-save lang sa device na ito. I-sync, itapon, o bumalik para magpatuloy.",
     "shell.logout.back": "Bumalik",
     "shell.logout.syncNow": "I-sync ngayon",
     "shell.logout.discard": "Itapon ang hindi pa naka-sync at mag-log out",
     "sync.status.offlineQueued":
       "Offline o hindi maabot ang server — ang mga na-queue na binago ay naka-save sa device at ia-upload kapag may koneksyon.",
+    "sync.status.offlineQueuedDepth":
+      "Offline o hindi maabot ang server — {count} binago ang naka-queue sa device; ia-upload kapag may koneksyon.",
+    "sync.status.queuedWillSyncDepth": "{count} binago ang naka-queue — mag-si-sync kapag stable na ang koneksyon.",
+    "sync.status.syncingDepth": "Nagsi-sync ng {count} nakapiling binago…",
+    "sync.dismiss": "Itago",
+    "sync.dismiss.aria": "Itago ang sync status sa session na ito",
+    "sync.status.offlineNoQueue":
+      "Hindi maabot ang server — nakikita ang naka-cache na data. I-sync ang mga binago kapag bumalik ang koneksyon.",
+    "sync.status.queuedWillSync": "May mga lokal na binago na naghihintay na i-upload.",
     "sync.status.syncing": "Nagsi-sync…",
     "sync.status.authBlocked": "Mag-sign in ulit para i-sync ang mga nakapila.",
     "sync.status.error": "Tumigil ang sync — tingnan ang koneksyon o i-update ang app.",
@@ -384,6 +408,7 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "sync.overlay.title": "Nagsi-sync pa",
     "tx.pendingActions": "Naghihintay pa itong i-sync — hindi muna maa-edit o i-delete.",
     "tx.pendingEditBlocked": "Hindi muna maa-edit hanggang matapos ang sync ng nakapilang entry.",
+    "tx.pendingEditDraft": "I-edit ang nakapiling draft (mag-si-sync kapag online).",
     "shell.nav.dashboard": "Dashboard",
     "shell.nav.transactions": "Mga transaksyon",
     "shell.nav.calendar": "Kalendaryo",
@@ -593,6 +618,7 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "settings.loading": "Nilo-load ang profile settings...",
     "settings.failed": "Hindi na-load ang profile settings",
     "settings.saved": "Na-save ang settings.",
+    "settings.savedOffline": "Na-save sa device na ito — mag-si-sync kapag balik online.",
     "settings.passwordUpdated": "Na-update ang password.",
     "settings.tab.overview": "Overview",
     "settings.tab.settings": "Settings",
@@ -636,6 +662,15 @@ export function setLocale(loc: AppLocale): void {
 export function tr(key: string, locale?: AppLocale): string {
   const loc = locale ?? getLocale();
   return MESSAGES[loc]?.[key] ?? MESSAGES["en-US"]?.[key] ?? key;
+}
+
+/** Replace `{name}` placeholders in a translated string. */
+export function trFmt(key: string, locale: AppLocale | undefined, vars: Record<string, string | number>): string {
+  let s = tr(key, locale);
+  for (const [k, v] of Object.entries(vars)) {
+    s = s.split(`{${k}}`).join(String(v));
+  }
+  return s;
 }
 
 export function useLocale(): AppLocale {

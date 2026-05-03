@@ -11,11 +11,20 @@
  * the user deletes from the ledger while offline.
  */
 
-import type { SnapshotResponse, SnapshotTransactionRow, TransactionCreateRequest, TransactionPatchRequest, TransactionRecord } from "../api/types";
+import type {
+  SnapshotResponse,
+  SnapshotTransactionRow,
+  SourceRow,
+  TransactionCreateRequest,
+  TransactionPatchRequest,
+  TransactionRecord,
+} from "../api/types";
 import type { OutboxRow } from "./db";
 import { readCachePayload } from "./cache";
 import type { CurrencyConverter } from "./exchangeRates";
 import { loadCurrencyConverter } from "./exchangeRates";
+import { applySourceOutboxToList } from "./lookupsOutboxOverlay";
+import { offlineDb } from "./db";
 import { listOutboxOrdered } from "./outbox";
 
 const TX_LIST = /^\/finance\/transactions\/?$/;
@@ -506,6 +515,41 @@ async function mergedTransactionMap(base: TransactionRecord[]): Promise<Map<stri
   return mergedTransactionMapWithRows(base, rows);
 }
 
+const TXLIST_CACHE_PREFIX = "txlist:";
+
+/**
+ * Resolve a transaction row while offline or for queued `pending:*` ids by scanning
+ * materialized `txlist:*` caches plus outbox replay (pending-only map when needed).
+ */
+export async function findTransactionRecordById(txId: string): Promise<TransactionRecord | undefined> {
+  if (txId.startsWith("pending:")) {
+    const map = mergedTransactionMapWithRows([], await listOutboxOrdered());
+    const r = map.get(txId);
+    return r ? { ...r, tags: [...(r.tags ?? [])] } : undefined;
+  }
+  const rows = await offlineDb.caches.toArray();
+  for (const row of rows) {
+    if (!row.id.startsWith(TXLIST_CACHE_PREFIX)) {
+      continue;
+    }
+    if (!Array.isArray(row.payload)) {
+      continue;
+    }
+    let rawFilters: Record<string, unknown>;
+    try {
+      rawFilters = JSON.parse(row.id.slice(TXLIST_CACHE_PREFIX.length)) as Record<string, unknown>;
+    } catch {
+      continue;
+    }
+    const merged = await applyTransactionOutboxToList(row.payload as TransactionRecord[], rawFilters);
+    const hit = merged.find((t) => t.tx_id === txId);
+    if (hit) {
+      return { ...hit, tags: [...(hit.tags ?? [])] };
+    }
+  }
+  return undefined;
+}
+
 /** Merge pending transaction outbox ops into a list response (FIFO). */
 export async function applyTransactionOutboxToList(
   base: TransactionRecord[],
@@ -583,17 +627,6 @@ async function computeExpenseByCategory(
     .sort((a, b) => b.value - a.value);
 }
 
-function sourcesToSnapshotRows(sources: Map<string, MutableSource>): SnapshotResponse["source_balances"] {
-  return [...sources.values()]
-    .map((s) => ({
-      source: s.source,
-      acc_type: s.acc_type,
-      amount: s.amount.toFixed(2),
-      currency: s.currency,
-    }))
-    .sort((a, b) => a.source.localeCompare(b.source));
-}
-
 /** Merge pending transaction outbox into a cached or live snapshot (month-scoped list + derived totals). */
 export async function applyTransactionOutboxToSnapshot(
   base: SnapshotResponse,
@@ -622,7 +655,19 @@ export async function applyTransactionOutboxToSnapshot(
     sourceReplayMap.set(r.tx_id, { ...r, tags: [...(r.tags ?? [])] });
   }
   await applyOutboxToTxMapAndSourcesAsync(sourceReplayMap, sourcesClone, outboxRows, cv);
-  const source_balances = sourcesToSnapshotRows(sourcesClone);
+  const sourceRowsForOverlay: SourceRow[] = [...sourcesClone.values()].map((s) => ({
+    source: s.source,
+    acc_type: s.acc_type,
+    amount: s.amount.toFixed(2),
+    currency: s.currency,
+  }));
+  const mergedSources = await applySourceOutboxToList(sourceRowsForOverlay);
+  const source_balances = mergedSources.map((s) => ({
+    source: s.source,
+    acc_type: s.acc_type,
+    amount: s.amount,
+    currency: s.currency,
+  }));
 
   return {
     ...base,

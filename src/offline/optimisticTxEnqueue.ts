@@ -50,3 +50,44 @@ export async function mergePendingPostIntoTxListCaches(body: unknown, idempotenc
     }
   }
 }
+
+/**
+ * Replace synthetic `pending:<idempotencyKey>*` rows in every `txlist:*` cache after an
+ * outbox POST body edit so cache-first reads match the updated draft.
+ */
+export async function replacePendingPostInTxListCaches(idempotencyKey: string, body: unknown): Promise<void> {
+  const prefix = `pending:${idempotencyKey}`;
+  const rows = await offlineDb.caches.toArray();
+  for (const row of rows) {
+    if (!row.id.startsWith(TXLIST_PREFIX)) {
+      continue;
+    }
+    let rawFilters: Record<string, unknown>;
+    try {
+      rawFilters = JSON.parse(row.id.slice(TXLIST_PREFIX.length)) as Record<string, unknown>;
+    } catch {
+      continue;
+    }
+    if (!Array.isArray(row.payload)) {
+      continue;
+    }
+    const list = row.payload as TransactionRecord[];
+    const filtered = list.filter((t) => !t.tx_id.startsWith(prefix));
+    let changed = filtered.length !== list.length;
+    const pending = buildPendingTransactionRecordsFromPostBody(body, idempotencyKey);
+    for (const rec of pending) {
+      if (!transactionMatchesTxListQuery(rec, rawFilters)) {
+        continue;
+      }
+      if (filtered.some((r) => r.tx_id === rec.tx_id)) {
+        continue;
+      }
+      filtered.push({ ...rec, tags: [...(rec.tags ?? [])] });
+      changed = true;
+    }
+    if (changed) {
+      filtered.sort(sortLedgerTransactionsByDate);
+      await offlineDb.caches.put({ id: row.id, payload: filtered, fetchedAt: row.fetchedAt });
+    }
+  }
+}

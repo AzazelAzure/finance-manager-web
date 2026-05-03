@@ -3,6 +3,7 @@ import { readCachePayload, writeCachePayload } from "../offline/cache";
 import { offlineDb } from "../offline/db";
 import { isPwaBackgroundStale, schedulePwaBackgroundWork } from "../offline/pwaLocalFirstBg";
 import { shouldBypassPwaDataCache, type PwaReadBypassOpts } from "../offline/pwaReadBypass";
+import { applyUpcomingOutboxToList } from "../offline/upcomingOutboxOverlay";
 import { api } from "./client";
 import {
   isOfflineQueued,
@@ -21,7 +22,7 @@ type UpcomingExpenseListResponse =
 
 export const UPCOMING_LIST_CACHE_ID = "upcoming:list";
 
-function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpenseRecord {
+export function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpenseRecord {
   const isRecur = (row as { is_recurring?: boolean }).is_recurring;
   return {
     name: String(row.name ?? "").trim(),
@@ -40,11 +41,12 @@ export async function listUpcomingExpenses(opts?: PwaReadBypassOpts): Promise<Up
   if (preferOfflineCaches()) {
     const raw = await readCachePayload(UPCOMING_LIST_CACHE_ID);
     if (Array.isArray(raw)) {
-      return raw
+      const base = raw
         .map((r) => normalizeUpcomingRow(r as Partial<UpcomingExpenseRecord>))
         .filter((r) => Boolean(r.name));
+      return applyUpcomingOutboxToList(base);
     }
-    return [];
+    return applyUpcomingOutboxToList([]);
   }
   if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
     const row = await offlineDb.caches.get(UPCOMING_LIST_CACHE_ID);
@@ -63,9 +65,11 @@ export async function listUpcomingExpenses(opts?: PwaReadBypassOpts): Promise<Up
           await queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"], refetchType: "all" });
         });
       }
-      return raw
-        .map((r) => normalizeUpcomingRow(r as Partial<UpcomingExpenseRecord>))
-        .filter((r) => Boolean(r.name));
+      return applyUpcomingOutboxToList(
+        raw
+          .map((r) => normalizeUpcomingRow(r as Partial<UpcomingExpenseRecord>))
+          .filter((r) => Boolean(r.name)),
+      );
     }
   }
   const { data } = await api.get<UpcomingExpenseListResponse>("/finance/upcoming_expenses/");
@@ -74,7 +78,7 @@ export async function listUpcomingExpenses(opts?: PwaReadBypassOpts): Promise<Up
     .map((row) => normalizeUpcomingRow(row))
     .filter((row) => Boolean(row.name));
   void writeCachePayload(UPCOMING_LIST_CACHE_ID, normalized, Date.now()).catch(() => undefined);
-  return normalized;
+  return applyUpcomingOutboxToList(normalized);
 }
 
 export async function createUpcomingExpense(

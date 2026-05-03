@@ -11,6 +11,7 @@ import { formatMoney } from "../../lib/money";
 import { ChartFrame } from "../../components/dashboard/ChartFrame";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { tr, useLocale } from "../../lib/i18n";
+import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 
 function formatLocalIso(date: Date): string {
   const y = date.getFullYear();
@@ -93,13 +94,16 @@ export function CalendarPage(): ReactNode {
 
   const query = useQuery({
     queryKey: ["transactions-calendar", startDate, endDate, displayCurrencyMode, heatMetricMode] as const,
-    queryFn: () =>
-      getTransactionsCalendar({
-        start_date: startDate,
-        end_date: endDate,
-        display_currency_mode: displayCurrencyMode,
-        heat_metric_mode: heatMetricMode,
-      }),
+    queryFn: (ctx) =>
+      getTransactionsCalendar(
+        {
+          start_date: startDate,
+          end_date: endDate,
+          display_currency_mode: displayCurrencyMode,
+          heat_metric_mode: heatMetricMode,
+        },
+        readOptsFromQuery(ctx),
+      ),
   });
 
   const dayDrillRows = useMemo(() => {
@@ -121,7 +125,7 @@ export function CalendarPage(): ReactNode {
   }, [query.data?.due_events, selectedDayResolved]);
   const selectedDayTransactionsQuery = useQuery({
     queryKey: ["transactions-by-day", selectedDayResolved] as const,
-    queryFn: () => listTransactions({ date: selectedDayResolved }),
+    queryFn: (ctx) => listTransactions({ date: selectedDayResolved }, readOptsFromQuery(ctx)),
     enabled: Boolean(selectedDayResolved),
   });
   const selectedDayTransactions = useMemo(() => {

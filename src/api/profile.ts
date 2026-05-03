@@ -3,8 +3,15 @@ import { readCachePayload, writeCachePayload } from "../offline/cache";
 import { offlineDb } from "../offline/db";
 import { isPwaBackgroundStale, schedulePwaBackgroundWork } from "../offline/pwaLocalFirstBg";
 import { shouldBypassPwaDataCache, type PwaReadBypassOpts } from "../offline/pwaReadBypass";
+import { applyProfileOutboxToProfile } from "../offline/profileOutboxOverlay";
 import { api } from "./client";
-import type { AppProfileResponse, AppProfileUpdateRequest, AppProfileUpdateResponse } from "./types";
+import {
+  isOfflineQueued,
+  type AppProfileResponse,
+  type AppProfileUpdateRequest,
+  type AppProfileUpdateResponse,
+  type OfflineQueuedResult,
+} from "./types";
 
 const PROFILE_CACHE_ID = "appprofile:root";
 
@@ -21,9 +28,9 @@ export async function getAppProfile(opts?: PwaReadBypassOpts): Promise<AppProfil
   if (preferOfflineCaches()) {
     const raw = await readCachePayload(PROFILE_CACHE_ID);
     if (raw && typeof raw === "object" && "base_currency" in raw) {
-      return raw as AppProfileResponse;
+      return applyProfileOutboxToProfile(raw as AppProfileResponse);
     }
-    return offlineFallbackProfile();
+    return applyProfileOutboxToProfile(offlineFallbackProfile());
   }
   if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
     const row = await offlineDb.caches.get(PROFILE_CACHE_ID);
@@ -38,15 +45,20 @@ export async function getAppProfile(opts?: PwaReadBypassOpts): Promise<AppProfil
           await queryClient.invalidateQueries({ queryKey: ["app-profile"], refetchType: "all" });
         });
       }
-      return raw as AppProfileResponse;
+      return applyProfileOutboxToProfile(raw as AppProfileResponse);
     }
   }
   const { data } = await api.get<AppProfileResponse>("/finance/appprofile/");
   await writeCachePayload(PROFILE_CACHE_ID, data, Date.now());
-  return data;
+  return applyProfileOutboxToProfile(data);
 }
 
-export async function updateAppProfile(payload: AppProfileUpdateRequest): Promise<AppProfileUpdateResponse> {
-  const { data } = await api.patch<AppProfileUpdateResponse>("/finance/appprofile/", payload);
-  return data;
+export async function updateAppProfile(
+  payload: AppProfileUpdateRequest,
+): Promise<AppProfileUpdateResponse | OfflineQueuedResult> {
+  const res = await api.patch<AppProfileUpdateResponse | OfflineQueuedResult>("/finance/appprofile/", payload);
+  if (res.status === 202 && isOfflineQueued(res.data)) {
+    return res.data;
+  }
+  return res.data as AppProfileUpdateResponse;
 }

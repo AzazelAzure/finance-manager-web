@@ -4,13 +4,40 @@ import type { LoginResponse } from "../api/types";
 import { queryClient } from "../lib/queryClient";
 import { dispatchClientBuildUnsupported } from "../lib/clientBuildUpgradeEvents";
 import { AUTH_CHANGED_EVENT, getRefreshToken, setSession } from "../state/auth";
-import { isApiMarkedUnreachable, probeApiReachability } from "./connectivity";
+import {
+  FM_API_REACHABLE_EVENT,
+  type ApiReachableDetail,
+  isApiMarkedUnreachable,
+  probeApiReachability,
+} from "./connectivity";
 import { clearOutbox, listOutboxOrdered, removeOutboxEntry } from "./outbox";
 import { emitSyncState } from "./syncEvents";
 import { syncMinimalExchangeRates } from "./exchangeRates";
 import { requestPwaReadBypassAfterMutation } from "./pwaReadBypass";
 
 let drainInFlight: Promise<void> | null = null;
+
+/** After a transient drain failure, retry once when the API is reachable again. */
+let wantsRetryAfterReachableError = false;
+let drainRetryListenerInstalled = false;
+
+function ensureDrainRetryOnReachableListener(): void {
+  if (drainRetryListenerInstalled || typeof window === "undefined") {
+    return;
+  }
+  drainRetryListenerInstalled = true;
+  window.addEventListener(FM_API_REACHABLE_EVENT, (e: Event) => {
+    const ce = e as CustomEvent<ApiReachableDetail>;
+    const d = ce.detail;
+    if (!d?.ok || !wantsRetryAfterReachableError) {
+      return;
+    }
+    wantsRetryAfterReachableError = false;
+    void drainOutbox();
+  });
+}
+
+ensureDrainRetryOnReachableListener();
 
 export async function drainOutbox(): Promise<void> {
   if (drainInFlight) {
@@ -83,6 +110,7 @@ export async function drainOutbox(): Promise<void> {
           emitSyncState({ phase: "error", detail: "Upgrade required — sync paused." });
           return;
         }
+        wantsRetryAfterReachableError = true;
         emitSyncState({
           phase: "error",
           detail: "Sync hit a network or server error; will retry when online.",
@@ -107,6 +135,7 @@ export async function drainOutbox(): Promise<void> {
     } catch {
       /* ignore refetch failures after successful upload */
     }
+    wantsRetryAfterReachableError = false;
     emitSyncState({ phase: "idle" });
   })().finally(() => {
     drainInFlight = null;
