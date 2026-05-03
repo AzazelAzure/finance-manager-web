@@ -1,6 +1,6 @@
 {
-  "name": "Finance Manager",
-  "short_name": "Finance Manager",
+  "name": "Hive Financial Manager",
+  "short_name": "Hive FM",
   "description": "Personal budgeting and bills for Filipino households.",
   "start_url": "/",
   "scope": "/",

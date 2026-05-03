@@ -26,11 +26,11 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
+            /** SPA shell: serve cached HTML/entry immediately (fast offline reload), refresh in background when online. */
             urlPattern: ({ request }) => request.mode === "navigate",
-            handler: "NetworkFirst",
+            handler: "StaleWhileRevalidate",
             options: {
               cacheName: "pages",
-              networkTimeoutSeconds: 5,
               expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 },
             },
           },

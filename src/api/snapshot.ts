@@ -1,8 +1,13 @@
-import { preferOfflineCaches } from "../offline/connectivity";
+import { preferOfflineCaches, preferPwaLocalFirstReads } from "../offline/connectivity";
 import { readCachePayload, snapshotParamsCacheKey, writeCachePayload } from "../offline/cache";
+import { offlineDb } from "../offline/db";
+import { isPwaBackgroundStale, schedulePwaBackgroundWork } from "../offline/pwaLocalFirstBg";
+import { shouldBypassPwaDataCache, type PwaReadBypassOpts } from "../offline/pwaReadBypass";
 import { applyTransactionOutboxToSnapshot } from "../offline/transactionOutboxOverlay";
 import { api } from "./client";
 import type { SnapshotResponse } from "./types";
+
+export type FetchAppSnapshotOptions = PwaReadBypassOpts;
 
 /** Safe shell when no snapshot row exists offline (empty dashboard, no crash). */
 export function emptyDashboardSnapshot(): SnapshotResponse {
@@ -22,7 +27,10 @@ export function emptyDashboardSnapshot(): SnapshotResponse {
   };
 }
 
-export async function fetchAppSnapshot(params: Record<string, string> = {}): Promise<SnapshotResponse> {
+export async function fetchAppSnapshot(
+  params: Record<string, string> = {},
+  opts?: FetchAppSnapshotOptions,
+): Promise<SnapshotResponse> {
   const cacheId = snapshotParamsCacheKey(params);
   let base: SnapshotResponse;
   if (preferOfflineCaches()) {
@@ -31,6 +39,29 @@ export async function fetchAppSnapshot(params: Record<string, string> = {}): Pro
       base = raw as SnapshotResponse;
     } else {
       base = emptyDashboardSnapshot();
+    }
+  } else if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
+    const row = await offlineDb.caches.get(cacheId);
+    const raw = row?.payload;
+    const fetchedAt = row?.fetchedAt ?? 0;
+    if (raw && typeof raw === "object" && "flow_series" in raw) {
+      base = raw as SnapshotResponse;
+      if (isPwaBackgroundStale(fetchedAt)) {
+        schedulePwaBackgroundWork(cacheId, async () => {
+          const { data } = await api.get<SnapshotResponse>("/finance/appprofile/snapshot/", {
+            params,
+          });
+          await writeCachePayload(cacheId, data, Date.now());
+          const { queryClient } = await import("../lib/queryClient");
+          await queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+        });
+      }
+    } else {
+      const { data } = await api.get<SnapshotResponse>("/finance/appprofile/snapshot/", {
+        params,
+      });
+      await writeCachePayload(cacheId, data, Date.now());
+      base = data;
     }
   } else {
     const { data } = await api.get<SnapshotResponse>("/finance/appprofile/snapshot/", {

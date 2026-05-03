@@ -20,6 +20,7 @@ import { isOfflineQueued, type UpcomingExpenseMutationPayload, type UpcomingExpe
 import { formatMoney } from "../../lib/money";
 import { useBreakpoint } from "../../lib/breakpoints";
 import { tr, useLocale } from "../../lib/i18n";
+import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 
 type RecurringFilter = "both" | "yes" | "no";
 type PaidFilter = "both" | "yes" | "no";
@@ -119,12 +120,18 @@ export function UpcomingExpensesPage(): ReactNode {
 
   const upcomingQuery = useQuery({
     queryKey: ["upcoming-expenses", "all"] as const,
-    queryFn: listUpcomingExpenses,
+    queryFn: (ctx) => listUpcomingExpenses(readOptsFromQuery(ctx)),
     placeholderData: keepPreviousData,
   });
 
-  const profileQuery = useQuery({ queryKey: ["app-profile"] as const, queryFn: getAppProfile });
-  const sourcesQuery = useQuery({ queryKey: ["sources", "all"] as const, queryFn: listSourceNames });
+  const profileQuery = useQuery({
+    queryKey: ["app-profile"] as const,
+    queryFn: (ctx) => getAppProfile(readOptsFromQuery(ctx)),
+  });
+  const sourcesQuery = useQuery({
+    queryKey: ["sources", "all"] as const,
+    queryFn: (ctx) => listSourceNames(readOptsFromQuery(ctx)),
+  });
   const baseCurrency = (profileQuery.data?.base_currency ?? "USD").trim().toUpperCase() || "USD";
   const sourceCurrencyOptions = useMemo(() => {
     const set = new Set<string>();
@@ -164,8 +171,10 @@ export function UpcomingExpensesPage(): ReactNode {
     },
     onMutate: () => setEditorError(""),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"] });
-      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      requestPwaReadBypassAfterMutation();
+      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses", "unpaid-names"], refetchType: "all" });
       setEditorOpen(false);
       setEditingName(null);
       setDraft(emptyUpcomingDraft(baseCurrency));
@@ -182,8 +191,10 @@ export function UpcomingExpensesPage(): ReactNode {
       return "ok" as const;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"] });
-      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      requestPwaReadBypassAfterMutation();
+      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses", "unpaid-names"], refetchType: "all" });
     },
   });
 

@@ -8,6 +8,7 @@ import { isApiMarkedUnreachable, probeApiReachability } from "./connectivity";
 import { clearOutbox, listOutboxOrdered, removeOutboxEntry } from "./outbox";
 import { emitSyncState } from "./syncEvents";
 import { syncMinimalExchangeRates } from "./exchangeRates";
+import { requestPwaReadBypassAfterMutation } from "./pwaReadBypass";
 
 let drainInFlight: Promise<void> | null = null;
 
@@ -91,12 +92,16 @@ export async function drainOutbox(): Promise<void> {
     }
     emitSyncState({ phase: "syncing", detail: "Refreshing data from the server…" });
     try {
-      await queryClient.invalidateQueries({ queryKey: ["snapshot"] });
-      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      await queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
-      await queryClient.invalidateQueries({ queryKey: ["app-profile"] });
-      await queryClient.invalidateQueries({ queryKey: ["tags", "all"] });
-      await queryClient.invalidateQueries({ queryKey: ["categories", "all"] });
+      requestPwaReadBypassAfterMutation();
+      await queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["app-profile"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["tags", "all"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["categories", "all"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
       await queryClient.refetchQueries({ type: "active" });
       void syncMinimalExchangeRates(true);
     } catch {

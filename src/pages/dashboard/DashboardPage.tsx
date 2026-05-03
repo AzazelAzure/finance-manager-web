@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient, type QueryFunctionContext } from "@tanstack/react-query";
 import { useCallback, useMemo, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getAppProfile } from "../../api/profile";
@@ -30,6 +30,7 @@ import {
 } from "../../lib/dashboardQueryParams";
 import { firstCurrency } from "./dashboardUtil";
 import { tr, useLocale } from "../../lib/i18n";
+import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 
 function balanceCurrency(data: SnapshotResponse | undefined, profile: { base_currency: string } | undefined): string {
   if (profile?.base_currency) {
@@ -59,6 +60,7 @@ function appendDrill(
 
 export function DashboardPage(): ReactNode {
   const locale = useLocale();
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const nav = useNavigate();
   const searchString = searchParams.toString();
@@ -76,34 +78,47 @@ export function DashboardPage(): ReactNode {
     [searchString],
   );
 
-  const loadSnapshot = useCallback(() => {
-    return fetchAppSnapshot(snapshotParams);
-  }, [snapshotParams]);
+  const loadSnapshot = useCallback(
+    ({ meta }: QueryFunctionContext<readonly ["snapshot", string]>) =>
+      fetchAppSnapshot(snapshotParams, {
+        forceNetwork: Boolean((meta as { forceNetwork?: boolean } | undefined)?.forceNetwork),
+      }),
+    [snapshotParams],
+  );
 
-  const { data, isError, isLoading, error, refetch, isFetching } = useQuery({
+  const { data, isError, isLoading, error, isFetching } = useQuery({
     queryKey: ["snapshot", appliedKey] as const,
     queryFn: loadSnapshot,
     placeholderData: keepPreviousData,
   });
 
+  const refetchSnapshotForced = useCallback(
+    () =>
+      void queryClient.fetchQuery({
+        queryKey: ["snapshot", appliedKey] as const,
+        queryFn: () => fetchAppSnapshot(snapshotParams, { forceNetwork: true }),
+      }),
+    [queryClient, appliedKey, snapshotParams],
+  );
+
   const profileQuery = useQuery({
     queryKey: ["app-profile"] as const,
-    queryFn: getAppProfile,
+    queryFn: (ctx) => getAppProfile(readOptsFromQuery(ctx)),
   });
 
   const tagsQuery = useQuery({
     queryKey: ["tags", "all"] as const,
-    queryFn: listTags,
+    queryFn: (ctx) => listTags(readOptsFromQuery(ctx)),
   });
 
   const catQuery = useQuery({
     queryKey: ["categories", "all"] as const,
-    queryFn: listCategories,
+    queryFn: (ctx) => listCategories(readOptsFromQuery(ctx)),
   });
 
   const sourceQuery = useQuery({
     queryKey: ["sources", "all"] as const,
-    queryFn: listSourceNames,
+    queryFn: (ctx) => listSourceNames(readOptsFromQuery(ctx)),
   });
 
   const currency = balanceCurrency(data, profileQuery.data);
@@ -169,7 +184,7 @@ export function DashboardPage(): ReactNode {
         <ErrorState
           title={tr("dashboard.error.title", locale)}
           description={`${tr("dashboard.error.description", locale)}: ${errMsg}.`}
-          onRetry={() => void refetch()}
+          onRetry={() => void refetchSnapshotForced()}
         />
       </div>
     );
@@ -184,7 +199,13 @@ export function DashboardPage(): ReactNode {
   }
 
   if (!data) {
-    return <ErrorState title={tr("dashboard.noData.title", locale)} onRetry={() => void refetch()} description={tr("dashboard.noData.description", locale)} />;
+    return (
+      <ErrorState
+        title={tr("dashboard.noData.title", locale)}
+        onRetry={() => void refetchSnapshotForced()}
+        description={tr("dashboard.noData.description", locale)}
+      />
+    );
   }
 
   return (
@@ -198,7 +219,7 @@ export function DashboardPage(): ReactNode {
             {tr("dashboard.subtitle", locale)}
           </p>
         </div>
-        <Button type="button" variant="secondary" onClick={() => void refetch()}>
+        <Button type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
           {tr("dashboard.refresh", locale)}
         </Button>
       </div>
@@ -223,7 +244,7 @@ export function DashboardPage(): ReactNode {
           key={appliedKey}
           initialDraft={initialFilterDraft}
           onApply={onApply}
-          onRefresh={() => void refetch()}
+          onRefresh={() => void refetchSnapshotForced()}
           onReset={onReset}
           topTagNames={topTagNames}
           allTagNames={tagsQuery.data ?? []}
@@ -242,7 +263,7 @@ export function DashboardPage(): ReactNode {
               baseCurrency={currency}
               isLoading={chartLoading}
               isError={isError}
-              onRetry={() => void refetch()}
+              onRetry={() => void refetchSnapshotForced()}
             />
             <SpendChart
               dailySpend={data.daily_spend}
@@ -250,14 +271,14 @@ export function DashboardPage(): ReactNode {
               baseCurrency={currency}
               isLoading={chartLoading}
               isError={isError}
-              onRetry={() => void refetch()}
+              onRetry={() => void refetchSnapshotForced()}
             />
             <CategoryPie
               expenseByCategory={data.expense_by_category}
               baseCurrency={currency}
               isLoading={chartLoading}
               isError={isError}
-              onRetry={() => void refetch()}
+              onRetry={() => void refetchSnapshotForced()}
               onSelectCategory={onDrillCategory}
             />
             <TagPie
@@ -265,7 +286,7 @@ export function DashboardPage(): ReactNode {
               baseCurrency={currency}
               isLoading={chartLoading}
               isError={isError}
-              onRetry={() => void refetch()}
+              onRetry={() => void refetchSnapshotForced()}
               onSelectTag={onDrillTag}
             />
           </div>

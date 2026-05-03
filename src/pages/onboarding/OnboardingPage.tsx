@@ -23,6 +23,7 @@ import {
   setOnboardingProgress,
 } from "../../state/onboarding";
 import { tr, useLocale } from "../../lib/i18n";
+import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -94,12 +95,12 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
 
   const sourcesQuery = useQuery({
     queryKey: ["lookups", "sources"] as const,
-    queryFn: listSourceNames,
+    queryFn: (ctx) => listSourceNames(readOptsFromQuery(ctx)),
     enabled: step === 4,
   });
   const categoriesQuery = useQuery({
     queryKey: ["lookups", "categories"] as const,
-    queryFn: listCategories,
+    queryFn: (ctx) => listCategories(readOptsFromQuery(ctx)),
     enabled: step === 4,
   });
 
