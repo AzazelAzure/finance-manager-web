@@ -104,8 +104,18 @@ function randomIdempotencyKeyForOnlineWrite(): string {
   return `idem-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-api.interceptors.request.use((config) => {
-  const token = getEffectiveAccessTokenForSession();
+api.interceptors.request.use(async (config) => {
+  let token = getEffectiveAccessTokenForSession();
+  if (!token) {
+    const refresh = getRefreshToken();
+    const url = String(config.url ?? "");
+    if (refresh && !url.includes("/api/token/refresh")) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        token = refreshed;
+      }
+    }
+  }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
