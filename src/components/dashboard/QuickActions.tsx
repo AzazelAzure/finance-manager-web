@@ -16,7 +16,7 @@ import { SourceSelect } from "../transactions/SourceSelect";
 type QuickActionType = "INCOME" | "EXPENSE" | "XFER" | "BILL";
 
 // +Bill / KNOWN_ISSUES #2: disabled until Quick pay bill ships. Staged design (transaction + bill, v1 fields):
-// Parent workspace: plans/cursor/s1b/quick-pay-bill-design/DESIGN_DECISION.md
+// Parent workspace: plans/S1/S1.B/quick-pay-bill-design/DESIGN_DECISION.md
 const items = [
   { type: "INCOME" as QuickActionType },
   { type: "EXPENSE" as QuickActionType },
