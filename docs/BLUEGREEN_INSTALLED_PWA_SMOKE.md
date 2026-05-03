@@ -21,5 +21,5 @@
 
 ## Related
 
-- Research checklist (parent **finance_manager** workspace): `plans/cursor/s1b/pwa-install-offline-sync-research/README.md` §3.1  
-- D4 execution template (same): `plans/cursor/s1b/pwa-install-offline-sync-research/D4_SMOKE_CHECKLIST_AND_ADR.md` §3.6
+- Research checklist (parent **finance_manager** workspace): `plans/S1/S1.B/pwa-install-offline-sync-research/README.md` §3.1  
+- D4 execution template (same): `plans/S1/S1.B/pwa-install-offline-sync-research/D4_SMOKE_CHECKLIST_AND_ADR.md` §3.6
