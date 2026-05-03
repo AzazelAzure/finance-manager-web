@@ -63,7 +63,7 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "signup.submitting": "Creating account…",
     "signup.haveAccount": "Already have an account?",
     "signup.backHome": "Back home",
-    "shell.subtitle": "Hive Manager",
+    "shell.subtitle": "Hive Financial Manager",
     "shell.logout.confirm": "Log out now?",
     "shell.logout.outboxPrompt":
       "You have changes saved only on this device. Sync now, discard them, or go back to keep editing.",
@@ -364,7 +364,7 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "signup.submitting": "Gumagawa ng account…",
     "signup.haveAccount": "May account ka na ba?",
     "signup.backHome": "Bumalik sa home",
-    "shell.subtitle": "Hive Manager",
+    "shell.subtitle": "Hive Financial Manager",
     "shell.logout.confirm": "Mag-log out na ba ngayon?",
     "shell.logout.outboxPrompt":
       "May mga binago ka na naka-save lang sa device na ito. I-sync, itapon, o bumalik para magpatuloy.",

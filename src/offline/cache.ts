@@ -16,7 +16,7 @@ export async function writeCachePayload(id: string, payload: unknown, fetchedAt:
   await offlineDb.caches.put({ id, payload, fetchedAt });
 }
 
-function cacheKeyForTxFilters(filters: Record<string, unknown>): string {
+export function txListCacheKey(filters: Record<string, unknown>): string {
   const entries = Object.entries(filters).filter(
     ([, v]) => v !== undefined && v !== null && v !== "",
   );
@@ -29,11 +29,11 @@ export async function writeTxListCache(
   rows: unknown[],
   fetchedAt: number,
 ): Promise<void> {
-  await writeCachePayload(cacheKeyForTxFilters(filters), rows, fetchedAt);
+  await writeCachePayload(txListCacheKey(filters), rows, fetchedAt);
 }
 
 export async function readTxListCache(filters: Record<string, unknown>): Promise<unknown[] | null> {
-  const raw = await readCachePayload(cacheKeyForTxFilters(filters));
+  const raw = await readCachePayload(txListCacheKey(filters));
   return Array.isArray(raw) ? raw : null;
 }
 

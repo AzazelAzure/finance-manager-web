@@ -1,6 +1,6 @@
 # finance_manager_web
 
-React + TypeScript + Vite frontend for Finance Manager (beta rollout track).
+React + TypeScript + Vite frontend for **Hive Financial Manager** (beta rollout track).
 
 ## Environment
 

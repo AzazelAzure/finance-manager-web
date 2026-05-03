@@ -1,4 +1,4 @@
-import { preferOfflineCaches } from "../offline/connectivity";
+import { preferOfflineCaches, preferPwaLocalFirstReads } from "../offline/connectivity";
 import {
   calendarParamsCacheKey,
   readCachePayload,
@@ -6,7 +6,11 @@ import {
   writeCachePayload,
   readTxListCache,
   writeTxListCache,
+  txListCacheKey,
 } from "../offline/cache";
+import { offlineDb } from "../offline/db";
+import { isPwaBackgroundStale, schedulePwaBackgroundWork } from "../offline/pwaLocalFirstBg";
+import { shouldBypassPwaDataCache, type PwaReadBypassOpts } from "../offline/pwaReadBypass";
 import { buildCalendarResponseFromTransactions } from "../offline/calendarOffline";
 import { loadCurrencyConverter } from "../offline/exchangeRates";
 import { buildVisualizationFromTransactions } from "../offline/visualizationOffline";
@@ -39,12 +43,41 @@ export type TransactionFilters = {
   previous_week?: string;
 };
 
-export async function listTransactions(filters: TransactionFilters = {}): Promise<TransactionRecord[]> {
+export async function listTransactions(
+  filters: TransactionFilters = {},
+  opts?: PwaReadBypassOpts,
+): Promise<TransactionRecord[]> {
   const filterRecord = filters as Record<string, unknown>;
   let rows: TransactionRecord[];
   if (preferOfflineCaches()) {
     const cached = await readTxListCache(filterRecord);
     rows = cached ? (cached as TransactionRecord[]) : [];
+  } else if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
+    const cacheId = txListCacheKey(filterRecord);
+    const row = await offlineDb.caches.get(cacheId);
+    const raw = row?.payload;
+    const fetchedAt = row?.fetchedAt ?? 0;
+    if (Array.isArray(raw)) {
+      rows = raw as TransactionRecord[];
+      if (isPwaBackgroundStale(fetchedAt)) {
+        schedulePwaBackgroundWork(cacheId, async () => {
+          const { data } = await api.get<TransactionRecord[] | TransactionsListResponse>("/finance/transactions/", {
+            params: filters,
+          });
+          const parsed = Array.isArray(data) ? data : (data.transactions ?? []);
+          await writeTxListCache(filterRecord, parsed as unknown[], Date.now());
+          const { queryClient } = await import("../lib/queryClient");
+          await queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
+        });
+      }
+    } else {
+      const { data } = await api.get<TransactionRecord[] | TransactionsListResponse>("/finance/transactions/", {
+        params: filters,
+      });
+      const parsed = Array.isArray(data) ? data : (data.transactions ?? []);
+      rows = parsed;
+      void writeTxListCache(filterRecord, rows as unknown[], Date.now()).catch(() => undefined);
+    }
   } else {
     const { data } = await api.get<TransactionRecord[] | TransactionsListResponse>("/finance/transactions/", {
       params: filters,
@@ -104,12 +137,15 @@ export async function deleteTransaction(
   return res.data as TransactionMutationResult;
 }
 
-export async function getTransactionsCalendar(params: {
-  start_date: string;
-  end_date: string;
-  display_currency_mode: "base" | "original";
-  heat_metric_mode: "net" | "expense_only" | "count";
-}): Promise<CalendarResponse> {
+export async function getTransactionsCalendar(
+  params: {
+    start_date: string;
+    end_date: string;
+    display_currency_mode: "base" | "original";
+    heat_metric_mode: "net" | "expense_only" | "count";
+  },
+  opts?: PwaReadBypassOpts,
+): Promise<CalendarResponse> {
   const cacheId = calendarParamsCacheKey(params as unknown as Record<string, string>);
   if (preferOfflineCaches()) {
     const raw = await readCachePayload(cacheId);
@@ -123,16 +159,36 @@ export async function getTransactionsCalendar(params: {
     });
     return buildCalendarResponseFromTransactions(rows, params, cv);
   }
+  if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
+    const row = await offlineDb.caches.get(cacheId);
+    const raw = row?.payload;
+    const fetchedAt = row?.fetchedAt ?? 0;
+    if (raw && typeof raw === "object" && "daily" in raw) {
+      if (isPwaBackgroundStale(fetchedAt)) {
+        schedulePwaBackgroundWork(cacheId, async () => {
+          const { data } = await api.get<CalendarResponse>("/finance/transactions/calendar/", { params });
+          const payload = data ?? {};
+          await writeCachePayload(cacheId, payload, Date.now());
+          const { queryClient } = await import("../lib/queryClient");
+          await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+        });
+      }
+      return raw as CalendarResponse;
+    }
+  }
   const { data } = await api.get<CalendarResponse>("/finance/transactions/calendar/", { params });
   const payload = data ?? {};
   void writeCachePayload(cacheId, payload, Date.now()).catch(() => undefined);
   return payload;
 }
 
-export async function getTransactionsVisualization(params: {
-  start_date: string;
-  end_date: string;
-}): Promise<VisualizationResponse> {
+export async function getTransactionsVisualization(
+  params: {
+    start_date: string;
+    end_date: string;
+  },
+  opts?: PwaReadBypassOpts,
+): Promise<VisualizationResponse> {
   const cacheId = visualizationParamsCacheKey(params);
   if (preferOfflineCaches()) {
     const raw = await readCachePayload(cacheId);
@@ -145,6 +201,25 @@ export async function getTransactionsVisualization(params: {
       end_date: params.end_date,
     });
     return buildVisualizationFromTransactions(rows, params, cv);
+  }
+  if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
+    const row = await offlineDb.caches.get(cacheId);
+    const raw = row?.payload;
+    const fetchedAt = row?.fetchedAt ?? 0;
+    if (raw && typeof raw === "object" && "flow_daily" in raw) {
+      if (isPwaBackgroundStale(fetchedAt)) {
+        schedulePwaBackgroundWork(cacheId, async () => {
+          const { data } = await api.get<VisualizationResponse>("/finance/transactions/visualization/", {
+            params,
+          });
+          const payload = data ?? {};
+          await writeCachePayload(cacheId, payload, Date.now());
+          const { queryClient } = await import("../lib/queryClient");
+          await queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+        });
+      }
+      return raw as VisualizationResponse;
+    }
   }
   const { data } = await api.get<VisualizationResponse>("/finance/transactions/visualization/", {
     params,

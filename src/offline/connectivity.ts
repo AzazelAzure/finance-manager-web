@@ -1,4 +1,5 @@
 import type { AxiosError } from "axios";
+import { isPwaStandaloneDisplay } from "../lib/pwaDisplay";
 import { resolveApiBaseUrl } from "../lib/apiBaseUrl";
 
 /** `null` = unknown (assume reachable until a probe or request proves otherwise). */
@@ -35,6 +36,14 @@ export function preferOfflineCaches(): boolean {
 /** True when allowlisted writes should go to the outbox instead of the network adapter. */
 export function shouldTreatAsDisconnectedForMutations(): boolean {
   return preferOfflineCaches();
+}
+
+/**
+ * Phase 1 (installed PWA only): reads may return IndexedDB first while online, then revalidate in background.
+ * Browser `/app` tabs stay API-first unless {@link preferOfflineCaches} is true.
+ */
+export function preferPwaLocalFirstReads(): boolean {
+  return isPwaStandaloneDisplay();
 }
 
 /** No HTTP response from server (typical for DNS, TCP, CORS, or offline). */

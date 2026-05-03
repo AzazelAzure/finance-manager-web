@@ -8,6 +8,7 @@ import axios, {
 import { CLIENT_BUILD } from "../lib/clientBuild";
 import { isLikelyNetworkFailure, markApiReachable } from "../offline/connectivity";
 import { enqueueOfflineAxiosWrite, shouldQueueOfflineWrite } from "../offline/queueMutating";
+import { requestPwaReadBypassAfterMutation } from "../offline/pwaReadBypass";
 import { queryClient } from "../lib/queryClient";
 import { resolveApiBaseUrl } from "../lib/apiBaseUrl";
 import { clearSession, getEffectiveAccessTokenForSession, getRefreshToken, setSession } from "../state/auth";
@@ -34,10 +35,11 @@ api.defaults.adapter = async (config) => {
     const idempotency_key = await enqueueOfflineAxiosWrite(config);
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("fm-offline-queued"));
-      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
-      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      void queryClient.invalidateQueries({ queryKey: ["transactions-calendar"] });
-      void queryClient.invalidateQueries({ queryKey: ["transactions-viz"] });
+      requestPwaReadBypassAfterMutation();
+      void queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
     }
     const headers = new AxiosHeaders();
     return {

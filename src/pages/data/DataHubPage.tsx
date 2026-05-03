@@ -24,6 +24,7 @@ import {
 } from "../../api/lookups";
 import type { SourceRow, TransactionRecord } from "../../api/types";
 import { tr, useLocale } from "../../lib/i18n";
+import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 
 type EntityType = "source" | "category" | "tag";
 
@@ -116,15 +117,15 @@ export function DataHubPage(): ReactNode {
 
   const categoriesQuery = useQuery({
     queryKey: ["lookups", "categories"] as const,
-    queryFn: listCategories,
+    queryFn: (ctx) => listCategories(readOptsFromQuery(ctx)),
   });
   const tagsQuery = useQuery({
     queryKey: ["lookups", "tags"] as const,
-    queryFn: listTags,
+    queryFn: (ctx) => listTags(readOptsFromQuery(ctx)),
   });
   const sourcesQuery = useQuery({
     queryKey: ["lookups", "sources"] as const,
-    queryFn: listSourceNames,
+    queryFn: (ctx) => listSourceNames(readOptsFromQuery(ctx)),
   });
   const txForTotalsQuery = useQuery({
     queryKey: ["transactions", "category-totals"] as const,

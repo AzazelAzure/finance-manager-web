@@ -24,6 +24,7 @@ import { SuccessState } from "../../components/ui/SuccessState";
 import { formatMoney } from "../../lib/money";
 import { categoryInitialValueForEditor } from "../../lib/transactionCategoryEdit";
 import { tr, useLocale } from "../../lib/i18n";
+import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 import { SourceSelect } from "../../components/transactions/SourceSelect";
 import {
   transactionFilterSignature,
@@ -167,7 +168,10 @@ export function TransactionsPage(): ReactNode {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const searchString = searchParams.toString();
-  const profileQuery = useQuery({ queryKey: ["app-profile"] as const, queryFn: getAppProfile });
+  const profileQuery = useQuery({
+    queryKey: ["app-profile"] as const,
+    queryFn: (ctx) => getAppProfile(readOptsFromQuery(ctx)),
+  });
   const baseCurrency = (profileQuery.data?.base_currency ?? "USD").trim().toUpperCase() || "USD";
   const filters = useMemo<TransactionFilters>(
     () => searchParamsToTransactionFilters(new URLSearchParams(searchString)),
@@ -196,13 +200,22 @@ export function TransactionsPage(): ReactNode {
 
   const txQuery = useQuery({
     queryKey: ["transactions", signature] as const,
-    queryFn: () => listTransactions(filters),
+    queryFn: (ctx) => listTransactions(filters, readOptsFromQuery(ctx)),
     placeholderData: keepPreviousData,
   });
 
-  const tagsQuery = useQuery({ queryKey: ["tags", "all"] as const, queryFn: listTags });
-  const categoriesQuery = useQuery({ queryKey: ["categories", "all"] as const, queryFn: listCategories });
-  const sourcesQuery = useQuery({ queryKey: ["sources", "all"] as const, queryFn: listSourceNames });
+  const tagsQuery = useQuery({
+    queryKey: ["tags", "all"] as const,
+    queryFn: (ctx) => listTags(readOptsFromQuery(ctx)),
+  });
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", "all"] as const,
+    queryFn: (ctx) => listCategories(readOptsFromQuery(ctx)),
+  });
+  const sourcesQuery = useQuery({
+    queryKey: ["sources", "all"] as const,
+    queryFn: (ctx) => listSourceNames(readOptsFromQuery(ctx)),
+  });
   const unpaidBillsQuery = useQuery({
     queryKey: ["upcoming-expenses", "unpaid-names"] as const,
     queryFn: listUnpaidExpenseNames,
@@ -305,6 +318,7 @@ export function TransactionsPage(): ReactNode {
     },
     onSuccess: () => {
       void (async () => {
+        requestPwaReadBypassAfterMutation();
         await queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
         await queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
         await queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });
@@ -336,6 +350,7 @@ export function TransactionsPage(): ReactNode {
     },
     onSuccess: () => {
       void (async () => {
+        requestPwaReadBypassAfterMutation();
         await queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
         await queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
         await queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });

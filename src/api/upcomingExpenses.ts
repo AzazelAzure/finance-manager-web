@@ -1,5 +1,8 @@
-import { preferOfflineCaches } from "../offline/connectivity";
+import { preferOfflineCaches, preferPwaLocalFirstReads } from "../offline/connectivity";
 import { readCachePayload, writeCachePayload } from "../offline/cache";
+import { offlineDb } from "../offline/db";
+import { isPwaBackgroundStale, schedulePwaBackgroundWork } from "../offline/pwaLocalFirstBg";
+import { shouldBypassPwaDataCache, type PwaReadBypassOpts } from "../offline/pwaReadBypass";
 import { api } from "./client";
 import {
   isOfflineQueued,
@@ -33,7 +36,7 @@ function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpe
   };
 }
 
-export async function listUpcomingExpenses(): Promise<UpcomingExpenseRecord[]> {
+export async function listUpcomingExpenses(opts?: PwaReadBypassOpts): Promise<UpcomingExpenseRecord[]> {
   if (preferOfflineCaches()) {
     const raw = await readCachePayload(UPCOMING_LIST_CACHE_ID);
     if (Array.isArray(raw)) {
@@ -42,6 +45,28 @@ export async function listUpcomingExpenses(): Promise<UpcomingExpenseRecord[]> {
         .filter((r) => Boolean(r.name));
     }
     return [];
+  }
+  if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
+    const row = await offlineDb.caches.get(UPCOMING_LIST_CACHE_ID);
+    const raw = row?.payload;
+    const fetchedAt = row?.fetchedAt ?? 0;
+    if (Array.isArray(raw)) {
+      if (isPwaBackgroundStale(fetchedAt)) {
+        schedulePwaBackgroundWork(UPCOMING_LIST_CACHE_ID, async () => {
+          const { data } = await api.get<UpcomingExpenseListResponse>("/finance/upcoming_expenses/");
+          const rows = Array.isArray(data) ? data : data.expenses ?? data.items ?? data.results ?? [];
+          const normalized = rows
+            .map((row) => normalizeUpcomingRow(row))
+            .filter((row) => Boolean(row.name));
+          await writeCachePayload(UPCOMING_LIST_CACHE_ID, normalized, Date.now());
+          const { queryClient } = await import("../lib/queryClient");
+          await queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"], refetchType: "all" });
+        });
+      }
+      return raw
+        .map((r) => normalizeUpcomingRow(r as Partial<UpcomingExpenseRecord>))
+        .filter((r) => Boolean(r.name));
+    }
   }
   const { data } = await api.get<UpcomingExpenseListResponse>("/finance/upcoming_expenses/");
   const rows = Array.isArray(data) ? data : data.expenses ?? data.items ?? data.results ?? [];
