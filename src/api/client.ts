@@ -7,7 +7,11 @@ import axios, {
 } from "axios";
 import { CLIENT_BUILD } from "../lib/clientBuild";
 import { isLikelyNetworkFailure, markApiReachable } from "../offline/connectivity";
-import { enqueueOfflineAxiosWrite, shouldQueueOfflineWrite } from "../offline/queueMutating";
+import {
+  canRetroactivelyQueue,
+  enqueueOfflineAxiosWrite,
+  shouldQueueOfflineWrite,
+} from "../offline/queueMutating";
 import { requestPwaReadBypassAfterMutation } from "../offline/pwaReadBypass";
 import { queryClient } from "../lib/queryClient";
 import { resolveApiBaseUrl } from "../lib/apiBaseUrl";
@@ -113,6 +117,31 @@ api.interceptors.response.use(
   async (err: AxiosError) => {
     if (isLikelyNetworkFailure(err)) {
       markApiReachable(false);
+
+      // Retroactively queue allowlisted writes that failed due to network error.
+      // This closes the gap where the first write after connectivity loss was
+      // always lost because shouldTreatAsDisconnectedForMutations() had not yet
+      // detected the outage.
+      const failedConfig = err.config as ConfigWithRetry | undefined;
+      if (failedConfig && canRetroactivelyQueue(failedConfig)) {
+        const idempotency_key = await enqueueOfflineAxiosWrite(failedConfig);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("fm-offline-queued"));
+          requestPwaReadBypassAfterMutation();
+          void queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+          void queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
+          void queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+          void queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+        }
+        const headers = new AxiosHeaders();
+        return {
+          data: { offline_queued: true, idempotency_key },
+          status: 202,
+          statusText: "Accepted",
+          headers,
+          config: failedConfig,
+        };
+      }
     }
     const original = err.config as ConfigWithRetry | undefined;
     if (!original) {
