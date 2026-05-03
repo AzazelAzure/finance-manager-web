@@ -1,5 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { ClientBuildUpgradeGate } from "./components/ClientBuildUpgradeGate";
 import { CookieBanner } from "./components/CookieBanner";
+import { SwUpdateBanner } from "./components/SwUpdateBanner";
+import { SyncStatusBar } from "./components/SyncStatusBar";
 import { PublicShell } from "./layout/PublicShell";
 import { ProtectedShell } from "./layout/ProtectedShell";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
@@ -26,7 +29,10 @@ function WildcardRedirect(): ReactNode {
 export default function App(): ReactNode {
   return (
     <div className="app-root">
+      <SyncStatusBar />
+      <ClientBuildUpgradeGate />
       <CookieBanner />
+      <SwUpdateBanner />
       <Routes>
         <Route element={<PublicShell />}>
           <Route path="/" element={<LandingPage />} />

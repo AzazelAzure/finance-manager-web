@@ -65,6 +65,11 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "signup.backHome": "Back home",
     "shell.subtitle": "Hive Manager",
     "shell.logout.confirm": "Log out now?",
+    "shell.logout.outboxPrompt":
+      "You have changes saved only on this device. Sync now, discard them, or go back to keep editing.",
+    "shell.logout.back": "Back",
+    "shell.logout.syncNow": "Sync now",
+    "shell.logout.discard": "Discard unsynced and sign out",
     "shell.nav.dashboard": "Dashboard",
     "shell.nav.transactions": "Transactions",
     "shell.nav.calendar": "Calendar",
@@ -348,6 +353,11 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "signup.backHome": "Bumalik sa home",
     "shell.subtitle": "Hive Manager",
     "shell.logout.confirm": "Mag-log out na ba ngayon?",
+    "shell.logout.outboxPrompt":
+      "May mga binago ka na naka-save lang sa device na ito. I-sync, itapon, o bumalik para magpatuloy.",
+    "shell.logout.back": "Bumalik",
+    "shell.logout.syncNow": "I-sync ngayon",
+    "shell.logout.discard": "Itapon ang hindi pa naka-sync at mag-log out",
     "shell.nav.dashboard": "Dashboard",
     "shell.nav.transactions": "Mga transaksyon",
     "shell.nav.calendar": "Kalendaryo",

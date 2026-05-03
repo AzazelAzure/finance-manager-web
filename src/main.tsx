@@ -6,14 +6,18 @@ import "./index.css";
 import App from "./App";
 import { queryClient } from "./lib/queryClient";
 import { initDataThemeFromStorage } from "./lib/theme";
+import { OfflineRoot } from "./offline/OfflineRoot";
+import { registerPwaServiceWorker } from "./registerPwa";
 import { SessionProvider } from "./state/SessionContext";
 
 initDataThemeFromStorage();
+registerPwaServiceWorker();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
+        <OfflineRoot />
         <BrowserRouter>
           <App />
         </BrowserRouter>

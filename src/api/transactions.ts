@@ -1,12 +1,15 @@
+import { readTxListCache, writeTxListCache } from "../offline/cache";
 import { api } from "./client";
-import type {
-  CalendarResponse,
-  TransactionCreateRequest,
-  TransactionMutationResult,
-  TransactionPatchRequest,
-  TransactionRecord,
-  TransactionsListResponse,
-  VisualizationResponse,
+import {
+  isOfflineQueued,
+  type CalendarResponse,
+  type OfflineQueuedResult,
+  type TransactionCreateRequest,
+  type TransactionMutationResult,
+  type TransactionPatchRequest,
+  type TransactionRecord,
+  type TransactionsListResponse,
+  type VisualizationResponse,
 } from "./types";
 
 export type TransactionFilters = {
@@ -24,13 +27,22 @@ export type TransactionFilters = {
 };
 
 export async function listTransactions(filters: TransactionFilters = {}): Promise<TransactionRecord[]> {
+  const filterRecord = filters as Record<string, unknown>;
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    const cached = await readTxListCache(filterRecord);
+    if (cached) {
+      return cached as TransactionRecord[];
+    }
+    return [];
+  }
   const { data } = await api.get<TransactionRecord[] | TransactionsListResponse>("/finance/transactions/", {
     params: filters,
   });
-  if (Array.isArray(data)) {
-    return data;
+  const rows = Array.isArray(data) ? data : (data.transactions ?? []);
+  if (typeof navigator !== "undefined" && navigator.onLine) {
+    void writeTxListCache(filterRecord, rows as unknown[], Date.now()).catch(() => undefined);
   }
-  return data.transactions ?? [];
+  return rows;
 }
 
 export async function getTransaction(txId: string): Promise<TransactionRecord> {
@@ -45,22 +57,33 @@ export async function getTransaction(txId: string): Promise<TransactionRecord> {
 
 export async function createTransactions(
   payload: TransactionCreateRequest | TransactionCreateRequest[],
-): Promise<TransactionMutationResult> {
-  const { data } = await api.post<TransactionMutationResult>("/finance/transactions/", payload);
-  return data;
+): Promise<TransactionMutationResult | OfflineQueuedResult> {
+  const res = await api.post<TransactionMutationResult | OfflineQueuedResult>("/finance/transactions/", payload);
+  if (res.status === 202 && isOfflineQueued(res.data)) {
+    return res.data;
+  }
+  return res.data as TransactionMutationResult;
 }
 
 export async function updateTransaction(
   txId: string,
   payload: TransactionPatchRequest,
-): Promise<TransactionRecord> {
-  const { data } = await api.patch<TransactionRecord>(`/finance/transactions/${txId}/`, payload);
-  return data;
+): Promise<TransactionRecord | OfflineQueuedResult> {
+  const res = await api.patch<TransactionRecord | OfflineQueuedResult>(`/finance/transactions/${txId}/`, payload);
+  if (res.status === 202 && isOfflineQueued(res.data)) {
+    return res.data;
+  }
+  return res.data as TransactionRecord;
 }
 
-export async function deleteTransaction(txId: string): Promise<TransactionMutationResult> {
-  const { data } = await api.delete<TransactionMutationResult>(`/finance/transactions/${txId}/`);
-  return data;
+export async function deleteTransaction(
+  txId: string,
+): Promise<TransactionMutationResult | OfflineQueuedResult> {
+  const res = await api.delete<TransactionMutationResult | OfflineQueuedResult>(`/finance/transactions/${txId}/`);
+  if (res.status === 202 && isOfflineQueued(res.data)) {
+    return res.data;
+  }
+  return res.data as TransactionMutationResult;
 }
 
 export async function getTransactionsCalendar(params: {

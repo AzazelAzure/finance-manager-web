@@ -1,5 +1,11 @@
+import { offlineDb } from "../offline/db";
 import { api } from "./client";
-import type { UpcomingExpenseMutationPayload, UpcomingExpenseRecord } from "./types";
+import {
+  isOfflineQueued,
+  type OfflineQueuedResult,
+  type UpcomingExpenseMutationPayload,
+  type UpcomingExpenseRecord,
+} from "./types";
 
 type UpcomingExpenseListResponse =
   | UpcomingExpenseRecord[]
@@ -25,28 +31,58 @@ function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpe
 }
 
 export async function listUpcomingExpenses(): Promise<UpcomingExpenseRecord[]> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    const row = await offlineDb.caches.get("upcoming:list");
+    const raw = row?.payload;
+    if (Array.isArray(raw)) {
+      return raw
+        .map((r) => normalizeUpcomingRow(r as Partial<UpcomingExpenseRecord>))
+        .filter((r) => Boolean(r.name));
+    }
+    return [];
+  }
   const { data } = await api.get<UpcomingExpenseListResponse>("/finance/upcoming_expenses/");
   const rows = Array.isArray(data) ? data : data.expenses ?? data.items ?? data.results ?? [];
-  return rows
+  const normalized = rows
     .map((row) => normalizeUpcomingRow(row))
     .filter((row) => Boolean(row.name));
+  if (typeof navigator !== "undefined" && navigator.onLine) {
+    void offlineDb.caches
+      .put({ id: "upcoming:list", payload: normalized, fetchedAt: Date.now() })
+      .catch(() => undefined);
+  }
+  return normalized;
 }
 
-export async function createUpcomingExpense(payload: UpcomingExpenseMutationPayload): Promise<UpcomingExpenseRecord> {
-  const { data } = await api.post<UpcomingExpenseRecord>("/finance/upcoming_expenses/", payload);
-  return normalizeUpcomingRow(data);
+export async function createUpcomingExpense(
+  payload: UpcomingExpenseMutationPayload,
+): Promise<UpcomingExpenseRecord | OfflineQueuedResult> {
+  const res = await api.post<UpcomingExpenseRecord | OfflineQueuedResult>("/finance/upcoming_expenses/", payload);
+  if (res.status === 202 && isOfflineQueued(res.data)) {
+    return res.data;
+  }
+  return normalizeUpcomingRow(res.data as UpcomingExpenseRecord);
 }
 
 export async function updateUpcomingExpense(
   originalName: string,
   payload: Partial<UpcomingExpenseMutationPayload>,
-): Promise<UpcomingExpenseRecord> {
+): Promise<UpcomingExpenseRecord | OfflineQueuedResult> {
   const safeName = encodeURIComponent(originalName);
-  const { data } = await api.patch<UpcomingExpenseRecord>(`/finance/upcoming_expenses/${safeName}/`, payload);
-  return normalizeUpcomingRow(data);
+  const res = await api.patch<UpcomingExpenseRecord | OfflineQueuedResult>(
+    `/finance/upcoming_expenses/${safeName}/`,
+    payload,
+  );
+  if (res.status === 202 && isOfflineQueued(res.data)) {
+    return res.data;
+  }
+  return normalizeUpcomingRow(res.data as UpcomingExpenseRecord);
 }
 
-export async function deleteUpcomingExpense(name: string): Promise<void> {
+export async function deleteUpcomingExpense(name: string): Promise<void | OfflineQueuedResult> {
   const safeName = encodeURIComponent(name);
-  await api.delete(`/finance/upcoming_expenses/${safeName}/`);
+  const res = await api.delete<OfflineQueuedResult | void>(`/finance/upcoming_expenses/${safeName}/`);
+  if (res.status === 202 && isOfflineQueued(res.data)) {
+    return res.data;
+  }
 }

@@ -23,6 +23,7 @@ import { deleteCurrentUser, getCurrentUserEmail, patchCurrentUserPassword } from
 import { formatMoney } from "../../lib/money";
 import { getThemePreference, setThemePreference, type ThemePreference } from "../../lib/theme";
 import { useSession } from "../../state/SessionContext";
+import { clearOutbox } from "../../offline/outbox";
 import { tr, useLocale } from "../../lib/i18n";
 
 const settingsSchema = z.object({
@@ -196,6 +197,7 @@ export function SettingsProfilePage(): ReactNode {
     },
     onSuccess: () => {
       setDeleteOpen(false);
+      void clearOutbox().catch(() => undefined);
       logout();
       navigate("/", { replace: true });
     },

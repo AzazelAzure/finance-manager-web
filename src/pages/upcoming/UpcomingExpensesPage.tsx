@@ -16,7 +16,7 @@ import {
 } from "../../api/upcomingExpenses";
 import { listSourceNames } from "../../api/lookups";
 import { getAppProfile } from "../../api/profile";
-import type { UpcomingExpenseMutationPayload, UpcomingExpenseRecord } from "../../api/types";
+import { isOfflineQueued, type UpcomingExpenseMutationPayload, type UpcomingExpenseRecord } from "../../api/types";
 import { formatMoney } from "../../lib/money";
 import { useBreakpoint } from "../../lib/breakpoints";
 import { tr, useLocale } from "../../lib/i18n";
@@ -151,9 +151,15 @@ export function UpcomingExpensesPage(): ReactNode {
     mutationFn: async () => {
       const payload = toPayload(draft);
       if (editingName) {
-        await updateUpcomingExpense(editingName, payload);
+        const u = await updateUpcomingExpense(editingName, payload);
+        if (isOfflineQueued(u)) {
+          return;
+        }
       } else {
-        await createUpcomingExpense(payload);
+        const c = await createUpcomingExpense(payload);
+        if (isOfflineQueued(c)) {
+          return;
+        }
       }
     },
     onMutate: () => setEditorError(""),
@@ -168,7 +174,13 @@ export function UpcomingExpensesPage(): ReactNode {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (name: string) => deleteUpcomingExpense(name),
+    mutationFn: async (name: string) => {
+      const r = await deleteUpcomingExpense(name);
+      if (isOfflineQueued(r)) {
+        return "queued" as const;
+      }
+      return "ok" as const;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"] });
       void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
