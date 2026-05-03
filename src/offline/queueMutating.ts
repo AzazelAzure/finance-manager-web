@@ -8,6 +8,7 @@ import {
   mergeLookupsDexieCachesAfterOutboxEnqueue,
   mergeUpcomingListDexieCacheAfterOutboxEnqueue,
 } from "./optimisticLookupsEnqueue";
+import { mergeProfileDexieAfterOutboxEnqueue } from "./optimisticProfileEnqueue";
 import { mergePendingPostIntoTxListCaches } from "./optimisticTxEnqueue";
 import { enqueueOutboxEntry } from "./outbox";
 
@@ -40,6 +41,10 @@ function isUpcomingOutboxEnqueue(method: string, pathNorm: string): boolean {
     return true;
   }
   return false;
+}
+
+function isProfileOutboxEnqueue(method: string, pathNorm: string): boolean {
+  return method.toUpperCase() === "PATCH" && /^\/finance\/appprofile\/?$/.test(pathNorm);
 }
 
 export function shouldQueueOfflineWrite(config: InternalAxiosRequestConfig): boolean {
@@ -79,6 +84,9 @@ export async function enqueueOfflineAxiosWrite(config: InternalAxiosRequestConfi
   }
   if (isUpcomingOutboxEnqueue(method, pathNorm)) {
     await mergeUpcomingListDexieCacheAfterOutboxEnqueue().catch(() => undefined);
+  }
+  if (isProfileOutboxEnqueue(method, pathNorm)) {
+    await mergeProfileDexieAfterOutboxEnqueue().catch(() => undefined);
   }
   return idempotencyKey;
 }

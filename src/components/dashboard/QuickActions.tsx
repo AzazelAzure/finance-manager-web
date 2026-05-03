@@ -87,8 +87,11 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
         categoryOptions.some((name) => name.trim().toLowerCase() === categoryRaw.toLowerCase());
       if (!hasExistingCategory) {
         try {
-          await createCategory(categoryRaw);
+          const catRes = await createCategory(categoryRaw);
           void queryClient.invalidateQueries({ queryKey: ["categories", "all"] });
+          if (isOfflineQueued(catRes)) {
+            requestPwaReadBypassAfterMutation();
+          }
         } catch (error) {
           if (!axios.isAxiosError(error) || (error.response?.status !== 400 && error.response?.status !== 409)) {
             throw error;

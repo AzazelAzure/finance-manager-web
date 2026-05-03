@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import type { TransactionRecord } from "../api/types";
 import type { OutboxRow } from "./db";
 import { mergeCategoryOutboxFifo, mergeSourceOutboxFifo, mergeTagOutboxFifo } from "./lookupsOutboxOverlay";
+import { applyPendingLookupRenamesToTransactionRecords } from "./transactionOutboxOverlay";
 
 function row(partial: Omit<OutboxRow, "id" | "createdAt"> & { id?: number }): OutboxRow {
   return {
@@ -67,5 +69,29 @@ describe("lookupsOutboxOverlay FIFO", () => {
     const out = mergeSourceOutboxFifo([], rows);
     expect(out.map((s) => s.source)).toContain("New");
     expect(out.map((s) => s.source)).not.toContain("Old");
+  });
+
+  it("category rename outbox rows rewrite matching transaction rows (ledger overlay)", () => {
+    const rows: OutboxRow[] = [
+      row({
+        method: "PATCH",
+        url: "/finance/categories/Groceries/",
+        body: { name: "Food" },
+        idempotencyKey: "r1",
+        id: 10,
+      }),
+    ];
+    const tx: TransactionRecord = {
+      tx_id: "srv-1",
+      date: "2026-02-01",
+      amount: "-12.00",
+      source: "Cash",
+      currency: "USD",
+      tags: [],
+      tx_type: "EXPENSE",
+      category: "Groceries",
+    };
+    const [merged] = applyPendingLookupRenamesToTransactionRecords([tx], rows);
+    expect(merged!.category).toBe("Food");
   });
 });
