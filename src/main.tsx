@@ -17,8 +17,8 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
-        <OfflineRoot />
         <BrowserRouter>
+          <OfflineRoot />
           <App />
         </BrowserRouter>
       </SessionProvider>

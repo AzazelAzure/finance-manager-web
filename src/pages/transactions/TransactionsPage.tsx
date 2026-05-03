@@ -304,8 +304,13 @@ export function TransactionsPage(): ReactNode {
       setEditorError("");
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      void (async () => {
+        await queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+      })();
       setEditorOpen(false);
       setEditingTxId(null);
       setEditorMode("single");
@@ -330,9 +335,13 @@ export function TransactionsPage(): ReactNode {
       return "ok" as const;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
-      void queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
+      void (async () => {
+        await queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+        await queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+      })();
     },
   });
 

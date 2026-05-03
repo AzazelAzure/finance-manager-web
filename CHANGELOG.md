@@ -22,6 +22,8 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- **Sync UX on public routes + dashboard totals after ledger saves:** **`OfflineRoot`** mount/visibility/online handlers no longer run outbox drain or seed on marketing routes (`/` etc.)—only under `/app` or in an **installed PWA**—so a session with a non-empty outbox does not open **`SyncProgressOverlay`** on the landing page. **`SyncProgressOverlay`** is limited to **standalone / installed PWA** display modes; **`SyncStatusBar`** remains on `/app` in the browser. Transaction save/delete mutations now **`invalidateQueries` with `refetchType: "all"`** for snapshot, transactions, sources, and calendar/viz keys so KPI totals refresh reliably when returning to the dashboard.
+
 - **Docker production image:** copy `.npmrc` into the build stage **before** `npm ci` so the same `legacy-peer-deps` policy as local dev applies when building the static SPA image (Vite 8 + `vite-plugin-pwa` peer range).
 
 - **KNOWN_ISSUES #8 (source balances after delete):** after transaction delete, the client **invalidates `sources`** so balances refetch; the API **reverses the transaction with the same currency rules as apply-on-create** and refreshes the snapshot so source balances stay consistent (including cross-currency).
