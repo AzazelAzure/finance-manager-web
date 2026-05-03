@@ -6,6 +6,11 @@
   margin: 0 auto;
 }
 
+/* KNOWN_ISSUES #6: quick-add above KPIs/charts on all breakpoints (PH mobile-first wedge) */
+.dashboard-root__quick {
+  min-width: 0;
+}
+
 .dashboard-header {
   display: flex;
   flex-wrap: wrap;

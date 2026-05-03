@@ -5,10 +5,10 @@ import { Card } from "../ui/Card";
 import { tr, useLocale } from "../../lib/i18n";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
-import { createTransactions } from "../../api/transactions";
+import { createTransactions, listUnpaidExpenseNames } from "../../api/transactions";
 import { createUpcomingExpense } from "../../api/upcomingExpenses";
 import { ErrorState } from "../ui/ErrorState";
-import { createCategory, listCategories } from "../../api/lookups";
+import { createCategory, listCategories, listTags } from "../../api/lookups";
 import type { SourceRow } from "../../api/types";
 
 type QuickActionType = "INCOME" | "EXPENSE" | "XFER" | "BILL";
@@ -37,13 +37,21 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
     queryKey: ["categories", "all"] as const,
     queryFn: listCategories,
   });
+  const tagsQuery = useQuery({ queryKey: ["tags", "all"] as const, queryFn: listTags });
+  const unpaidBillsQuery = useQuery({
+    queryKey: ["upcoming-expenses", "unpaid-names"] as const,
+    queryFn: listUnpaidExpenseNames,
+  });
   const categoryOptions = categoriesQuery.data ?? [];
+  const tagOptions = tagsQuery.data ?? [];
   const currencyOptions = Array.from(
     new Set([
       baseCurrency,
       ...sources.map((row) => String(row.currency ?? "").trim().toUpperCase()).filter(Boolean),
     ]),
   ).sort((a, b) => a.localeCompare(b));
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [pendingTag, setPendingTag] = useState("");
   const [draft, setDraft] = useState({
     date: today,
     amount: "",
@@ -51,6 +59,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
     currency: baseCurrency,
     category: "",
     description: "",
+    bill: "",
     dueDate: today,
     toSource: "",
     sentAmount: "",
@@ -92,6 +101,8 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
         });
         return;
       }
+      const tagPayload = selectedTags.length > 0 ? selectedTags : undefined;
+      const billPayload = draft.bill.trim() ? draft.bill.trim() : undefined;
       if (activeType === "XFER") {
         const transferCategory = categoryRaw;
         await createTransactions([
@@ -103,6 +114,8 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
             tx_type: "XFER_OUT",
             description: draft.description,
             ...(transferCategory ? { category: transferCategory } : {}),
+            ...(billPayload ? { bill: billPayload } : {}),
+            ...(tagPayload ? { tags: tagPayload } : {}),
           },
           {
             date: draft.date,
@@ -112,6 +125,8 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
             tx_type: "XFER_IN",
             description: draft.description,
             ...(transferCategory ? { category: transferCategory } : {}),
+            ...(billPayload ? { bill: billPayload } : {}),
+            ...(tagPayload ? { tags: tagPayload } : {}),
           },
         ]);
         return;
@@ -125,6 +140,8 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
           tx_type: activeType,
           description: draft.description,
           ...(draft.category.trim() ? { category: draft.category.trim() } : {}),
+          ...(billPayload ? { bill: billPayload } : {}),
+          ...(tagPayload ? { tags: tagPayload } : {}),
         },
       ]);
     },
@@ -132,8 +149,12 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
       void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      void queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
+      void queryClient.invalidateQueries({ queryKey: ["tags", "all"] });
       void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"] });
       setActiveType(null);
+      setSelectedTags([]);
+      setPendingTag("");
       setDraft({
         date: today,
         amount: "",
@@ -141,6 +162,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
         currency: baseCurrency,
         category: "",
         description: "",
+        bill: "",
         dueDate: today,
         toSource: "",
         sentAmount: "",
@@ -255,6 +277,59 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
               <input className="ui-input" list="quick-category-list" value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))} />
             </label>
           )}
+          {activeType !== "BILL" ? (
+            <>
+              <label className="ui-field">
+                <span className="ui-label">{tr("dashboard.quick.linkBill", locale)}</span>
+                <input
+                  className="ui-input"
+                  list="quick-bill-list"
+                  value={draft.bill}
+                  onChange={(e) => setDraft((d) => ({ ...d, bill: e.target.value }))}
+                />
+              </label>
+              <datalist id="quick-bill-list">
+                {(unpaidBillsQuery.data ?? []).map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+              <div className="ui-field">
+                <span className="ui-label">{tr("dashboard.quick.tags", locale)}</span>
+                {selectedTags.length > 0 ? (
+                  <p className="muted" style={{ margin: "0 0 0.35rem", fontSize: "0.85rem" }}>
+                    {selectedTags.join(", ")}
+                  </p>
+                ) : null}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <input
+                    className="ui-input"
+                    style={{ flex: "1 1 140px", minWidth: 0 }}
+                    value={pendingTag}
+                    onChange={(e) => setPendingTag(e.target.value)}
+                    placeholder={tr("dashboard.quick.tagPlaceholder", locale)}
+                    list="quick-tags-datalist"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      const next = pendingTag.trim();
+                      if (!next || selectedTags.includes(next)) return;
+                      setSelectedTags((prev) => [...prev, next]);
+                      setPendingTag("");
+                    }}
+                  >
+                    {tr("dashboard.quick.addTag", locale)}
+                  </Button>
+                </div>
+                <datalist id="quick-tags-datalist">
+                  {tagOptions.map((t) => (
+                    <option key={t} value={t} />
+                  ))}
+                </datalist>
+              </div>
+            </>
+          ) : null}
           <label className="ui-field">
             <span className="ui-label">Description</span>
             <input className="ui-input" value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} />

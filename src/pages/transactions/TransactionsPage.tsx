@@ -313,6 +313,7 @@ export function TransactionsPage(): ReactNode {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
       void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      void queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
     },
   });
 
