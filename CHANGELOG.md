@@ -28,6 +28,8 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- **PWA offline after clearing site data / SW reset:** removed the extra Workbox **`navigate` + StaleWhileRevalidate** runtime route so only the generated **`NavigationRoute` → precached `index.html`** handles document loads. The duplicate SWR route could run on an empty `pages` cache and hit the network while offline, causing a hard navigation failure (**ERR_ADDRESS_UNREACHABLE**) instead of serving the precached shell. **`probeApiReachability`** now skips the cross-origin fetch when `navigator.onLine` is false and marks the API unreachable immediately.
+
 - **Offline Quick add / ledger when creating categories, tags, or sources:** mutating `POST`/`PATCH`/`DELETE` to **`/finance/categories/`**, **`/finance/tags/`**, and **`/finance/sources/`** are now on the same offline outbox allowlist as transactions and upcoming expenses, so a **new category** (or tag/source mutation) queued before a transaction no longer fails the whole save with a non-allowlisted network error.
 
 - **Offline / PWA transaction create “missing from list”:** `txlist:*` Dexie cache keys use `JSON.parse`, which produced numeric `current_month` / flag values; list overlay used strict string checks (`=== "1"`), so pending rows were filtered out. Filters are now coerced consistently. Offline mutating queue accepts **either** refresh or access token (drain still requires refresh to upload). Queued transaction POSTs **merge synthetic pending rows** into matching `txlist:*` cache payloads for cache-first reads.
