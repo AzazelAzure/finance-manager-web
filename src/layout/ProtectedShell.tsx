@@ -11,7 +11,8 @@ import {
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { setLocale, tr, trFmt, useLocale } from "../lib/i18n";
 import { useSession } from "../state/SessionContext";
-import { useMemo, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { useHelpMode } from "../components/tours/TourProvider";
 import { OfflineHistoryBanner } from "../components/OfflineHistoryBanner";
 import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
@@ -99,55 +100,12 @@ export function ProtectedShell(): ReactNode {
   const loc = useLocation();
   const navigate = useNavigate();
   const { logout } = useSession();
-  const [guideOpen, setGuideOpen] = useState(false);
+  const { isHelpModeActive, toggleHelpMode } = useHelpMode();
+  
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [logoutOutboxStep, setLogoutOutboxStep] = useState(false);
   const [logoutOutboxCount, setLogoutOutboxCount] = useState(0);
   const title = tr(TITLE[loc.pathname] ?? "shell.title.app", locale);
-  const guideSteps = useMemo(() => {
-    if (loc.pathname.startsWith("/app/dashboard")) {
-      return [
-        "Use KPI cards to spot period trends quickly.",
-        "Apply filters first, then refresh to compare snapshots.",
-        "Quick add supports income, expense, transfer, and bill flows.",
-        "Chart slices drill to detailed transactions.",
-      ];
-    }
-    if (loc.pathname.startsWith("/app/transactions/calendar")) {
-      return [
-        "Use month arrows to switch periods.",
-        "Click a day to inspect transactions and due expenses.",
-        "Heat intensity increases with spending magnitude.",
-        "Use display/metric controls to compare views.",
-      ];
-    }
-    if (loc.pathname.startsWith("/app/transactions")) {
-      return [
-        "Filter by period/type/source and apply to reload results.",
-        "Use Add transaction or Add transfer for proper payloads.",
-        "Edit and delete actions are in-line per row.",
-      ];
-    }
-    if (loc.pathname.startsWith("/app/upcoming-expenses")) {
-      return [
-        "Track due expenses and recurring bills by date window.",
-        "Use status and recurrence filters to focus follow-up work.",
-        "Deep dive view gives timeline and KPI summaries.",
-      ];
-    }
-    if (loc.pathname.startsWith("/app/data")) {
-      return [
-        "Manage Sources, Categories, and Tags from one page.",
-        "Keep names consistent to improve dashboard filters and charts.",
-        "Source currency/amount updates affect downstream displays.",
-      ];
-    }
-    return [
-      "Use the left nav icons to switch between app surfaces.",
-      "Locale chips in the header switch EN/TL language instantly.",
-      "Use Guide on any page to see context-specific tips.",
-    ];
-  }, [loc.pathname]);
 
   function onLogout(): void {
     logout();
@@ -167,7 +125,7 @@ export function ProtectedShell(): ReactNode {
           ))}
         </div>
         <div className="protected-bottom-bar">
-          <button type="button" className="shell-nav-link" onClick={() => setGuideOpen(true)}>
+          <button type="button" className={`shell-nav-link ${isHelpModeActive ? "shell-nav-link--active" : ""}`} onClick={toggleHelpMode}>
             <BookOpen size={20} className="shell-nav-icon" />
             <span className="shell-nav-label">{tr("shell.nav.guide", locale)}</span>
           </button>
@@ -228,6 +186,15 @@ export function ProtectedShell(): ReactNode {
           ))}
           <button
             type="button"
+            className={`shell-nav-link ${isHelpModeActive ? "shell-nav-link--active" : ""}`}
+            onClick={toggleHelpMode}
+            aria-label={tr("shell.nav.guide", locale)}
+          >
+            <BookOpen size={20} />
+            <span className="sr-only">{tr("shell.nav.guide", locale)}</span>
+          </button>
+          <button
+            type="button"
             className="shell-nav-link shell-nav-link--danger"
             onClick={() => {
               setLogoutOutboxStep(false);
@@ -241,15 +208,6 @@ export function ProtectedShell(): ReactNode {
           </button>
         </nav>
       </div>
-      <Modal open={guideOpen} onClose={() => setGuideOpen(false)} title={`${tr("shell.nav.guide", locale)} - ${title}`}>
-        <div className="stack" style={{ marginTop: 12 }}>
-          {guideSteps.map((step, idx) => (
-            <p key={step} className="muted-text" style={{ margin: 0 }}>
-              {idx + 1}. {step}
-            </p>
-          ))}
-        </div>
-      </Modal>
       <Modal
         open={logoutOpen}
         onClose={() => {

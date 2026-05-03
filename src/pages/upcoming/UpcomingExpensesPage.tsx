@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import { HelpCircle } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { DataTable, type ColumnDef } from "../../components/ui/DataTable";
@@ -117,6 +118,7 @@ export function UpcomingExpensesPage(): ReactNode {
   const [draft, setDraft] = useState<UpcomingDraft>(() => emptyUpcomingDraft("USD"));
   const [editorError, setEditorError] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Record<string, boolean>>({});
+  const [showFormHelp, setShowFormHelp] = useState(false);
 
   const upcomingQuery = useQuery({
     queryKey: ["upcoming-expenses", "all"] as const,
@@ -448,6 +450,29 @@ export function UpcomingExpensesPage(): ReactNode {
         title={editingName ? tr("upcoming.editExpense", locale) : tr("upcoming.addExpense", locale)}
       >
         <div className="stack" style={{ marginTop: 12 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button 
+              type="button" 
+              className="ui-btn ui-btn--ghost" 
+              onClick={() => setShowFormHelp(!showFormHelp)}
+              title="Show guide"
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px" }}
+            >
+              <HelpCircle size={16} /> {showFormHelp ? "Hide guide" : "Guide"}
+            </button>
+          </div>
+          {showFormHelp ? (
+            <div className="ui-state" style={{ textAlign: "left", fontSize: "0.9rem" }}>
+              <strong>Upcoming Expense Guide</strong>
+              <ul style={{ paddingLeft: 20, margin: "8px 0 0 0" }}>
+                <li><strong>Name:</strong> A descriptive name for the expense.</li>
+                <li><strong>Due date:</strong> When the expense needs to be paid.</li>
+                <li><strong>Recurring:</strong> Check if this repeats periodically.</li>
+                <li><strong>Use start / end window:</strong> Specify the coverage period for this bill.</li>
+              </ul>
+            </div>
+          ) : null}
+
           {editorError ? <ErrorState title={tr("common.saveFailed", locale)} description={editorError} /> : null}
           {(invalidAmount || invalidWindow) && !saveMutation.isPending ? (
             <div className="ui-state" role="status">

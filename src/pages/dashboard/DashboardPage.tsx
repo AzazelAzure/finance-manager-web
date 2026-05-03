@@ -32,6 +32,7 @@ import { firstCurrency } from "./dashboardUtil";
 import { tr, useLocale } from "../../lib/i18n";
 import { preferOfflineCaches } from "../../offline/connectivity";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
+import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
 
 function balanceCurrency(data: SnapshotResponse | undefined, profile: { base_currency: string } | undefined): string {
   if (profile?.base_currency) {
@@ -64,6 +65,7 @@ export function DashboardPage(): ReactNode {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const nav = useNavigate();
+  const { startTour } = useTour();
   const searchString = searchParams.toString();
   const appliedKey = useMemo(
     () => appliedSnapshotKey(new URLSearchParams(searchString)),
@@ -212,6 +214,14 @@ export function DashboardPage(): ReactNode {
     );
   }
 
+  // Trigger linear tour when data is loaded
+  startTour('dashboard_linear_tour', [
+    { target: '#tour-kpis', content: 'Use KPI cards to spot period trends quickly.', disableBeacon: true, title: 'KPI Cards' },
+    { target: '#tour-filters', content: 'Apply filters first, then refresh to compare snapshots.', title: 'Dashboard Filters' },
+    { target: '#tour-quick-actions', content: 'Quick add supports income, expense, transfer, and bill flows.', title: 'Quick Add' },
+    { target: '#tour-charts', content: 'Chart slices drill to detailed transactions.', title: 'Charts' }
+  ]);
+
   return (
     <div className="stack dashboard-page">
       <div className="dashboard-header">
@@ -229,39 +239,45 @@ export function DashboardPage(): ReactNode {
       </div>
 
       <div className="dashboard-root__quick">
-        <QuickActions baseCurrency={currency} sources={sourceQuery.data ?? []} />
+        <HelpModeWrapper id="tour-quick-actions" title="Quick Add" content="Quick add supports income, expense, transfer, and bill flows.">
+          <QuickActions baseCurrency={currency} sources={sourceQuery.data ?? []} />
+        </HelpModeWrapper>
       </div>
 
       <section className="dashboard-section" aria-label={tr("dashboard.section.kpis", locale)}>
-        <KPIRow
-          currency={currency}
-          summary={summary}
-          totalIncome={data.total_income_for_month}
-          totalExpenses={data.total_expenses_for_month}
-          totalLeaks={data.total_leaks_for_month}
-          transactionCount={txRows.length}
-        />
+        <HelpModeWrapper id="tour-kpis" title="KPI Cards" content="Use KPI cards to spot period trends quickly.">
+          <KPIRow
+            currency={currency}
+            summary={summary}
+            totalIncome={data.total_income_for_month}
+            totalExpenses={data.total_expenses_for_month}
+            totalLeaks={data.total_leaks_for_month}
+            transactionCount={txRows.length}
+          />
+        </HelpModeWrapper>
       </section>
 
       <section className="dashboard-section" aria-label={tr("dashboard.section.filters", locale)}>
-        <FilterRow
-          key={appliedKey}
-          initialDraft={initialFilterDraft}
-          onApply={onApply}
-          onRefresh={() => void refetchSnapshotForced()}
-          onReset={onReset}
-          topTagNames={topTagNames}
-          allTagNames={tagsQuery.data ?? []}
-          categoryNames={catQuery.data ?? []}
-          sourceNames={sourceNameList}
-          currencyOptions={currencyOptions}
-          isRefetching={isFetching}
-        />
+        <HelpModeWrapper id="tour-filters" title="Dashboard Filters" content="Apply filters first, then refresh to compare snapshots.">
+          <FilterRow
+            key={appliedKey}
+            initialDraft={initialFilterDraft}
+            onApply={onApply}
+            onRefresh={() => void refetchSnapshotForced()}
+            onReset={onReset}
+            topTagNames={topTagNames}
+            allTagNames={tagsQuery.data ?? []}
+            categoryNames={catQuery.data ?? []}
+            sourceNames={sourceNameList}
+            currencyOptions={currencyOptions}
+            isRefetching={isFetching}
+          />
+        </HelpModeWrapper>
       </section>
 
       <div className="dashboard-root">
         <div className="dashboard-root__row">
-          <div className="dashboard-root__main dashboard-col">
+          <HelpModeWrapper id="tour-charts" className="dashboard-root__main dashboard-col" title="Charts" content="Chart slices drill to detailed transactions.">
             <FlowChart
               data={data.flow_series}
               baseCurrency={currency}
@@ -293,7 +309,7 @@ export function DashboardPage(): ReactNode {
               onRetry={() => void refetchSnapshotForced()}
               onSelectTag={onDrillTag}
             />
-          </div>
+          </HelpModeWrapper>
           <aside className="dashboard-root__side dashboard-col">
             <SourceBalances rows={data.source_balances} />
             <ProfileOverview profile={profileQuery.data} isError={profileQuery.isError} />

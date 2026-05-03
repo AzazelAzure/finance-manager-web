@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { HelpCircle } from "lucide-react";
 import axios from "axios";
 import {
   createTransactions,
@@ -33,6 +34,7 @@ import {
   searchParamsToTransactionFilters,
   type TransactionsFilterDraft,
 } from "../../lib/transactionsQueryParams";
+import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
 
 type DeleteState = Record<string, number>;
 type EditorMode = "single" | "transfer";
@@ -167,6 +169,7 @@ export function TransactionsPage(): ReactNode {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { startTour } = useTour();
   const searchString = searchParams.toString();
   const profileQuery = useQuery({
     queryKey: ["app-profile"] as const,
@@ -197,6 +200,7 @@ export function TransactionsPage(): ReactNode {
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [isLoadingEditor, setIsLoadingEditor] = useState(false);
   const [editorError, setEditorError] = useState("");
+  const [showFormHelp, setShowFormHelp] = useState(false);
 
   const txQuery = useQuery({
     queryKey: ["transactions", signature] as const,
@@ -493,6 +497,15 @@ export function TransactionsPage(): ReactNode {
     setSearchParams(transactionsDraftToSearchParams(localDraft), { replace: true });
   };
 
+  useEffect(() => {
+    // Start the linear tour when the page loads
+    startTour('transactions_linear_tour', [
+      { target: '#tx-filters', content: 'Filter by period, type, or source and apply to reload results.', title: 'Filters' },
+      { target: '#tx-add', content: 'Use Add transaction or Add transfer for proper payloads.', title: 'Add Transactions' },
+      { target: '#tx-table', content: 'Edit and delete actions are in-line per row.', title: 'Transaction List' }
+    ]);
+  }, [startTour]);
+
   return (
     <div className="stack">
       <div className="app-toolbar app-surface">
@@ -506,10 +519,14 @@ export function TransactionsPage(): ReactNode {
           <Link to="/app/transactions/deep-dive" className="ui-btn ui-btn--secondary">
             Deep dive
           </Link>
-          <Button onClick={() => openEditorForCreate("single")}>Add transaction</Button>
-          <Button variant="secondary" onClick={() => openEditorForCreate("transfer")}>
-            Add transfer
-          </Button>
+          <HelpModeWrapper id="tx-add" title="Add Transactions" content="Use Add transaction or Add transfer for proper payloads.">
+            <div style={{ display: "flex", gap: "8px" }}>
+              <Button onClick={() => openEditorForCreate("single")}>Add transaction</Button>
+              <Button variant="secondary" onClick={() => openEditorForCreate("transfer")}>
+                Add transfer
+              </Button>
+            </div>
+          </HelpModeWrapper>
         </div>
       </div>
 
@@ -532,8 +549,9 @@ export function TransactionsPage(): ReactNode {
         </Card>
       ) : null}
 
-      <Card>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+      <HelpModeWrapper id="tx-filters" title="Filters" content="Filter by period, type, or source and apply to reload results.">
+        <Card>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
           <label className="ui-field">
             <span className="ui-label">Period</span>
             <select
@@ -608,15 +626,18 @@ export function TransactionsPage(): ReactNode {
           </Button>
         </div>
       </Card>
+      </HelpModeWrapper>
 
       {txQuery.isError ? (
         <ErrorState title="Transactions failed to load" onRetry={() => void txQuery.refetch()} />
       ) : txQuery.isLoading && !txQuery.data ? (
         <LoadingState label="Loading transactions..." />
       ) : (
-        <Card>
-          <DataTable columns={columns} data={txQuery.data ?? []} keyField="tx_id" emptyTitle="No transactions in this range" />
-        </Card>
+        <HelpModeWrapper id="tx-table" title="Transaction List" content="Edit and delete actions are in-line per row.">
+          <Card>
+            <DataTable columns={columns} data={txQuery.data ?? []} keyField="tx_id" emptyTitle="No transactions in this range" />
+          </Card>
+        </HelpModeWrapper>
       )}
 
       <Modal
@@ -631,6 +652,40 @@ export function TransactionsPage(): ReactNode {
         title={editingTxId ? "Edit transaction" : editorMode === "single" ? "Add transaction" : "Add transfer pair"}
       >
         <div className="stack" style={{ marginTop: 12 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button 
+              type="button" 
+              className="ui-btn ui-btn--ghost" 
+              onClick={() => setShowFormHelp(!showFormHelp)}
+              title="Show guide"
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px" }}
+            >
+              <HelpCircle size={16} /> {showFormHelp ? "Hide guide" : "Guide"}
+            </button>
+          </div>
+          {showFormHelp && editorMode === "single" ? (
+            <div className="ui-state" style={{ textAlign: "left", fontSize: "0.9rem" }}>
+              <strong>Single Transaction Guide</strong>
+              <ul style={{ paddingLeft: 20, margin: "8px 0 0 0" }}>
+                <li><strong>Amount:</strong> The absolute value of the transaction.</li>
+                <li><strong>Source:</strong> The account involved.</li>
+                <li><strong>Type:</strong> Expense (money out) or Income (money in).</li>
+                <li><strong>Category:</strong> E.g. "Food" or "Salary" to group spending.</li>
+              </ul>
+            </div>
+          ) : null}
+          {showFormHelp && editorMode === "transfer" ? (
+            <div className="ui-state" style={{ textAlign: "left", fontSize: "0.9rem" }}>
+              <strong>Transfer Guide & Leak Tracking</strong>
+              <ul style={{ paddingLeft: 20, margin: "8px 0 0 0" }}>
+                <li><strong>From source:</strong> The account the money left.</li>
+                <li><strong>To source:</strong> The account the money entered.</li>
+                <li><strong>Sent amount:</strong> How much left the <em>From source</em>.</li>
+                <li><strong>Received amount:</strong> How much entered the <em>To source</em>. If this differs from Sent amount, the system will track the difference as a <strong>Leak</strong> automatically (e.g., fees, forex differences).</li>
+              </ul>
+            </div>
+          ) : null}
+
           {editorError ? (
             <ErrorState title="Save failed" description={editorError} />
           ) : null}

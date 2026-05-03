@@ -22,6 +22,7 @@ import { SettingsProfilePage } from "./pages/settings/SettingsProfilePage";
 import { OnboardingPage } from "./pages/onboarding/OnboardingPage";
 import { RequireAuth } from "./routes/RequireAuth";
 import { useSession } from "./state/SessionContext";
+import { TourProvider } from "./components/tours/TourProvider";
 
 function WildcardRedirect(): ReactNode {
   const { isAuthenticated } = useSession();
@@ -83,7 +84,7 @@ export default function App(): ReactNode {
           <Route path="/signup" element={<SignupPage />} />
         </Route>
         <Route element={<RequireAuth />}>
-          <Route path="/app" element={<ProtectedShell />}>
+          <Route path="/app" element={<TourProvider><ProtectedShell /></TourProvider>}>
             <Route path="dashboard" element={<DashboardPage />} />
             <Route
               path="transactions"

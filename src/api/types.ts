@@ -51,13 +51,15 @@ export type AppProfileResponse = {
   base_currency: string;
   timezone: string;
   start_of_week: number;
+  completed_tours?: string[];
 };
 
 export type AppProfileUpdateRequest = {
-  spend_accounts: string[];
-  base_currency: string;
-  timezone: string;
-  start_week: number;
+  spend_accounts?: string[];
+  base_currency?: string;
+  timezone?: string;
+  start_week?: number;
+  completed_tours?: string[];
 };
 
 export type AppProfileUpdateResponse = {
