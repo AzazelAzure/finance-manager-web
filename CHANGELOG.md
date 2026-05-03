@@ -16,6 +16,8 @@ All notable changes to this project are documented in this file.
 - **PWA client build header + force-upgrade UX (D2 / T03):** Vite injects `__FM_CLIENT_BUILD__` from `VITE_CLIENT_BUILD`, `GITHUB_SHA`, or `dev`. The shared Axios client sends **`X-Client-Build` on POST/PUT/PATCH/DELETE** to the API. **409** responses with `code: CLIENT_BUILD_UNSUPPORTED` open a blocking **Reload app** dialog (optional doc link) so users are not stuck in silent retry loops.
 - **Staging API host for pre-cutover full-stack tests** — on `jsdevtesting.thehivemanager.com` the app uses `VITE_STAGING_API_BASE_URL` (default `https://api-jsdevtesting.thehivemanager.com`, see `src/lib/apiBaseUrl.ts`) so Nginx can route the inactive `api-*` with the inactive web; production hostnames still use `VITE_API_BASE_URL` only.
 
+- **Vitest + offline golden tests:** `npm test` runs `vitest`; initial coverage in `src/offline/transactionOutboxOverlay.test.ts` (filter coercion + pending id shapes). Parent plan stub: `plans/cursor/s1b/pwa-standalone-brain-d/` (`README.md`, draft `SYNC_PROTOCOL.md`).
+
 ### Changed
 
 - **Product branding (user-visible):** the flagship web product name is **Hive Financial Manager** (`index.html` title, Open Graph/Twitter, JSON-LD `SoftwareApplication`, `public/manifest.webmanifest`, authenticated shell subtitle in `i18n`, and public shell header/footer).
@@ -25,6 +27,8 @@ All notable changes to this project are documented in this file.
 - **Tunnel / dev hostname** — Vite `server` / `preview` `allowedHosts` uses `api-jsdevtesting.thehivemanager.com` instead of the retired `jsdevprodtest` hostname, matching proxy and API CORS defaults.
 
 ### Fixed
+
+- **Offline / PWA transaction create “missing from list”:** `txlist:*` Dexie cache keys use `JSON.parse`, which produced numeric `current_month` / flag values; list overlay used strict string checks (`=== "1"`), so pending rows were filtered out. Filters are now coerced consistently. Offline mutating queue accepts **either** refresh or access token (drain still requires refresh to upload). Queued transaction POSTs **merge synthetic pending rows** into matching `txlist:*` cache payloads for cache-first reads.
 
 - **Sync UX on public routes + dashboard totals after ledger saves:** **`OfflineRoot`** mount/visibility/online handlers no longer run outbox drain or seed on marketing routes (`/` etc.)—only under `/app` or in an **installed PWA**—so a session with a non-empty outbox does not open **`SyncProgressOverlay`** on the landing page. **`SyncProgressOverlay`** is limited to **standalone / installed PWA** display modes; **`SyncStatusBar`** remains on `/app` in the browser. Transaction save/delete mutations now **`invalidateQueries` with `refetchType: "all"`** for snapshot, transactions, sources, and calendar/viz keys so KPI totals refresh reliably when returning to the dashboard.
 
