@@ -582,11 +582,6 @@ function mergedTransactionMapWithRows(base: TransactionRecord[], rows: OutboxRow
   return map;
 }
 
-async function mergedTransactionMap(base: TransactionRecord[]): Promise<Map<string, TransactionRecord>> {
-  const rows = await listOutboxOrdered();
-  return mergedTransactionMapWithRows(base, rows);
-}
-
 const TXLIST_CACHE_PREFIX = "txlist:";
 
 /**
