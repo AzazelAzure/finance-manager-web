@@ -6,6 +6,8 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- **PWA calendar / deep-dive charts vs outbox:** **`getTransactionsCalendar`** and **`getTransactionsVisualization`** no longer return **server-only** Dexie payloads under **`preferPwaLocalFirstReads()`** (installed PWA). They always **rebuild from `listTransactions`** (which already merges the transaction outbox) whenever **offline** or **PWA local-first** reads are active, so heatmaps and flow charts include **queued creates/edits/deletes** without waiting for sync.
+
 - **PWA online sync loop:** `OfflineRoot` no longer runs **`drainOutbox()`** / **`syncMinimalExchangeRates()`** on every **`FM_API_REACHABLE_EVENT`** with `ok: true` (each routine Axios success called **`markApiReachable(true)`** with `previous: true`, which had caused continuous draining and refetch). Recovery-only gating uses **`isApiReachabilityRecovery()`** (`previous === false` or `null`). **`window.online`** / tab visibility now only **probe** reachability; **`SyncStatusBar`** `online` handler no longer unconditionally drains after probe.
 
 ### Added
