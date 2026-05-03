@@ -19,6 +19,7 @@ import type {
   TransactionPatchRequest,
   TransactionRecord,
 } from "../api/types";
+import { PROFILE_CACHE_ID } from "../api/profile";
 import type { OutboxRow } from "./db";
 import { readCachePayload } from "./cache";
 import type { CurrencyConverter } from "./exchangeRates";
@@ -29,8 +30,6 @@ import { listOutboxOrdered } from "./outbox";
 
 const TX_LIST = /^\/finance\/transactions\/?$/;
 const TX_DETAIL = /^\/finance\/transactions\/([^/]+)\/?$/;
-
-const PROFILE_CACHE_ID = "appprofile:root";
 
 function parseAmount(n: string | number): number {
   if (typeof n === "number") {
@@ -346,6 +345,85 @@ function isPendingTxId(txId: string): boolean {
   return txId.startsWith("pending:");
 }
 
+type LookupRenameOp =
+  | { kind: "cat"; fromLc: string; to: string }
+  | { kind: "src"; fromLc: string; to: string }
+  | { kind: "tag"; fromLc: string; to: string };
+
+function collectLookupRenameOps(rows: OutboxRow[]): LookupRenameOp[] {
+  const ops: LookupRenameOp[] = [];
+  for (const row of rows) {
+    if (row.id === undefined) {
+      continue;
+    }
+    const method = row.method.toUpperCase();
+    const path = row.url.split("?")[0];
+    const norm = path.endsWith("/") || path.length === 0 ? path : `${path}/`;
+
+    const catM = norm.match(/^\/finance\/categories\/([^/]+)\/?$/);
+    if (method === "PATCH" && catM && row.body && typeof row.body === "object" && "name" in row.body) {
+      const fromName = decodeURIComponent(catM[1] ?? "");
+      const toName = String((row.body as { name?: string }).name ?? "").trim();
+      if (toName) {
+        ops.push({ kind: "cat", fromLc: fromName.trim().toLowerCase(), to: toName });
+      }
+      continue;
+    }
+
+    const srcM = norm.match(/^\/finance\/sources\/([^/]+)\/?$/);
+    if (method === "PATCH" && srcM && row.body && typeof row.body === "object") {
+      const fromName = decodeURIComponent(srcM[1] ?? "");
+      const b = row.body as Partial<{ source: string }>;
+      if (b.source !== undefined) {
+        const toName = String(b.source).trim();
+        if (toName) {
+          ops.push({ kind: "src", fromLc: fromName.trim().toLowerCase(), to: toName });
+        }
+      }
+      continue;
+    }
+
+    if (method === "PATCH" && /^\/finance\/tags\/?$/.test(norm) && row.body && typeof row.body === "object") {
+      const tags = (row.body as { tags?: Record<string, string> }).tags;
+      if (tags && typeof tags === "object") {
+        for (const [from, toRaw] of Object.entries(tags)) {
+          const to = String(toRaw ?? "").trim();
+          if (to && to.toLowerCase() !== "delete") {
+            ops.push({ kind: "tag", fromLc: from.trim().toLowerCase(), to });
+          }
+        }
+      }
+    }
+  }
+  return ops;
+}
+
+/** Apply queued category/source/tag renames so historical tx rows match pickers before sync. */
+export function applyPendingLookupRenamesToTransactionRecords(
+  records: TransactionRecord[],
+  rows: OutboxRow[],
+): TransactionRecord[] {
+  const ops = collectLookupRenameOps(rows);
+  if (ops.length === 0) {
+    return records;
+  }
+  return records.map((r) => {
+    let category = r.category;
+    let source = r.source;
+    let tags = r.tags ? [...r.tags] : r.tags;
+    for (const op of ops) {
+      if (op.kind === "cat" && category.trim().toLowerCase() === op.fromLc) {
+        category = op.to;
+      } else if (op.kind === "src" && source.trim().toLowerCase() === op.fromLc) {
+        source = op.to;
+      } else if (op.kind === "tag" && Array.isArray(tags)) {
+        tags = tags.map((t) => (t.trim().toLowerCase() === op.fromLc ? op.to : t));
+      }
+    }
+    return { ...r, category, source, tags: tags ?? r.tags };
+  });
+}
+
 /** Replay outbox onto tx map only (list reads). */
 function applyOutboxToTxMapOnly(map: Map<string, TransactionRecord>, rows: OutboxRow[]): void {
   for (const row of rows) {
@@ -549,8 +627,10 @@ export async function applyTransactionOutboxToList(
   base: TransactionRecord[],
   filterRecord: Record<string, unknown>,
 ): Promise<TransactionRecord[]> {
-  const map = await mergedTransactionMap(base);
-  const out = [...map.values()].filter((r) => transactionMatchesTxListQuery(r, filterRecord));
+  const rows = await listOutboxOrdered();
+  const map = mergedTransactionMapWithRows(base, rows);
+  const renamed = applyPendingLookupRenamesToTransactionRecords([...map.values()], rows);
+  const out = renamed.filter((r) => transactionMatchesTxListQuery(r, filterRecord));
   out.sort(sortLedgerTransactionsByDate);
   return out;
 }
@@ -643,7 +723,8 @@ export async function applyTransactionOutboxToSnapshot(
   const baseRecords = base.transactions_for_month.map(snapshotRowToRecord);
   const outboxRows = await listOutboxOrdered();
   const map = mergedTransactionMapWithRows(baseRecords, outboxRows);
-  const mergedRows = [...map.values()].filter((r) => transactionMatchesTxListQuery(r, params));
+  const renamed = applyPendingLookupRenamesToTransactionRecords([...map.values()], outboxRows);
+  const mergedRows = renamed.filter((r) => transactionMatchesTxListQuery(r, params));
   mergedRows.sort(sortLedgerTransactionsByDate);
   const snapRows = mergedRows.map(recordToSnapshotRow);
 

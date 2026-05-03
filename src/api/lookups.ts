@@ -10,7 +10,14 @@ import {
 } from "../offline/lookupsOutboxOverlay";
 import { listTransactions, type TransactionFilters } from "./transactions";
 import { api } from "./client";
-import type { CategoryRow, SourceRow, TagsListResponse, TransactionRecord } from "./types";
+import {
+  isOfflineQueued,
+  type CategoryRow,
+  type OfflineQueuedResult,
+  type SourceRow,
+  type TagsListResponse,
+  type TransactionRecord,
+} from "./types";
 
 export const TAGS_CACHE_ID = "lookups:tags:all";
 export const CATEGORIES_CACHE_ID = "lookups:categories:all";
@@ -107,9 +114,12 @@ export async function listSourceNames(opts?: PwaReadBypassOpts): Promise<SourceR
   return applySourceOutboxToList(rows);
 }
 
-export async function createCategory(name: string): Promise<CategoryRow> {
-  const { data } = await api.post<CategoryRow>("/finance/categories/", { name });
-  return data;
+export async function createCategory(name: string): Promise<CategoryRow | OfflineQueuedResult> {
+  const res = await api.post<CategoryRow | OfflineQueuedResult>("/finance/categories/", { name });
+  if (res.status === 202 && isOfflineQueued(res.data)) {
+    return res.data;
+  }
+  return res.data as CategoryRow;
 }
 
 export async function renameCategory(currentName: string, nextName: string): Promise<void> {
@@ -127,8 +137,12 @@ export type SourceMutationPayload = {
   currency: string;
 };
 
-export async function createSource(payload: SourceMutationPayload): Promise<void> {
-  await api.post("/finance/sources/", payload);
+export async function createSource(payload: SourceMutationPayload): Promise<void | OfflineQueuedResult> {
+  const res = await api.post<void | OfflineQueuedResult>("/finance/sources/", payload);
+  if (res.status === 202 && isOfflineQueued(res.data)) {
+    return res.data;
+  }
+  return;
 }
 
 export async function updateSource(currentName: string, payload: Partial<SourceMutationPayload>): Promise<void> {
@@ -139,8 +153,12 @@ export async function deleteSource(sourceName: string): Promise<void> {
   await api.delete(`/finance/sources/${encodeURIComponent(sourceName)}/`);
 }
 
-export async function createTag(name: string): Promise<void> {
-  await api.post("/finance/tags/", { tags: [name] });
+export async function createTag(name: string): Promise<void | OfflineQueuedResult> {
+  const res = await api.post<void | OfflineQueuedResult>("/finance/tags/", { tags: [name] });
+  if (res.status === 202 && isOfflineQueued(res.data)) {
+    return res.data;
+  }
+  return;
 }
 
 export async function renameTag(currentName: string, nextName: string): Promise<void> {

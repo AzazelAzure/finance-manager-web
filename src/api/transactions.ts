@@ -100,6 +100,12 @@ export async function getTransaction(txId: string): Promise<TransactionRecord> {
       throw new Error("Queued transaction draft was not found (it may have already synced).");
     }
   }
+  if (preferPwaLocalFirstReads()) {
+    const local = await findTransactionRecordById(txId);
+    if (local) {
+      return local;
+    }
+  }
   const { data } = await api.get<{ transaction?: TransactionRecord } | TransactionRecord>(
     `/finance/transactions/${encodeURIComponent(txId)}/`,
   );

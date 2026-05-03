@@ -30,6 +30,7 @@ import {
 } from "../../lib/dashboardQueryParams";
 import { firstCurrency } from "./dashboardUtil";
 import { tr, useLocale } from "../../lib/i18n";
+import { preferOfflineCaches } from "../../offline/connectivity";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 
 function balanceCurrency(data: SnapshotResponse | undefined, profile: { base_currency: string } | undefined): string {
@@ -96,7 +97,10 @@ export function DashboardPage(): ReactNode {
     () =>
       void queryClient.fetchQuery({
         queryKey: ["snapshot", appliedKey] as const,
-        queryFn: () => fetchAppSnapshot(snapshotParams, { forceNetwork: true }),
+        queryFn: () =>
+          fetchAppSnapshot(snapshotParams, {
+            forceNetwork: !preferOfflineCaches(),
+          }),
       }),
     [queryClient, appliedKey, snapshotParams],
   );

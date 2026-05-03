@@ -178,6 +178,11 @@ export function DataHubPage(): ReactNode {
     onMutate: () => setEditorError(""),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["lookups"] });
+      void queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
+      void queryClient.invalidateQueries({ queryKey: ["categories", "all"] });
+      void queryClient.invalidateQueries({ queryKey: ["tags", "all"] });
+      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
       setEditor(null);
       setTextDraft("");
       setSourceDraft(DEFAULT_SOURCE_DRAFT);
@@ -197,6 +202,11 @@ export function DataHubPage(): ReactNode {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["lookups"] });
+      void queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
+      void queryClient.invalidateQueries({ queryKey: ["categories", "all"] });
+      void queryClient.invalidateQueries({ queryKey: ["tags", "all"] });
+      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 

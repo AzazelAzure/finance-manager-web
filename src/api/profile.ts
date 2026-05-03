@@ -13,7 +13,8 @@ import {
   type OfflineQueuedResult,
 } from "./types";
 
-const PROFILE_CACHE_ID = "appprofile:root";
+/** Dexie `caches` row id for the app profile payload (offline merge + cold read). */
+export const PROFILE_CACHE_ID = "appprofile:root";
 
 function offlineFallbackProfile(): AppProfileResponse {
   return {
