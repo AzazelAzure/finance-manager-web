@@ -41,19 +41,23 @@ type SessionValue = {
 const SessionContext = createContext<SessionValue | null>(null);
 
 function CrossTabLogoutHandler(): null {
-  const { logout, isAuthenticated } = useSession();
+  const queryClient = useQueryClient();
+  const isAuthenticated = useSyncExternalStore(subscribeAccess, () => Boolean(getAccessSnapshot()), () =>
+    Boolean(getAccessSnapshot()),
+  );
   useEffect(() => {
     if (!isAuthenticated) {
       return;
     }
     const onStorage = (e: StorageEvent): void => {
       if (e.key === ACCESS_TOKEN_KEY && !e.newValue) {
-        logout();
+        clearSession();
+        queryClient.clear();
       }
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, [isAuthenticated, logout]);
+  }, [isAuthenticated, queryClient]);
   return null;
 }
 

@@ -9,6 +9,7 @@ import { z } from "zod";
 import { createCategory, createSource, listCategories, listSourceNames } from "../../api/lookups";
 import { updateAppProfile } from "../../api/profile";
 import { createTransactions } from "../../api/transactions";
+import { isOfflineQueued } from "../../api/types";
 import { AppForm } from "../../components/Form/FormProvider";
 import { SelectField } from "../../components/Form/SelectField";
 import { TextField } from "../../components/Form/TextField";
@@ -191,7 +192,10 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
         description: values.tx_description.trim(),
         ...(values.tx_category.trim() ? { category: values.tx_category.trim() } : {}),
       };
-      await createTransactions(payload);
+      const created = await createTransactions(payload);
+      if (isOfflineQueued(created)) {
+        return;
+      }
     },
     onSuccess: () => {
       clearForceOnboardingNextLogin();

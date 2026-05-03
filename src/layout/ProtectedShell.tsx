@@ -12,8 +12,11 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { setLocale, tr, useLocale } from "../lib/i18n";
 import { useSession } from "../state/SessionContext";
 import { useMemo, useState, type ReactNode } from "react";
+import { OfflineHistoryBanner } from "../components/OfflineHistoryBanner";
 import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
+import { discardOutboxAndClear, drainOutbox } from "../offline/drain";
+import { outboxDepth } from "../offline/outbox";
 
 const PRIMARY_NAV: Array<{
   to: string;
@@ -98,6 +101,7 @@ export function ProtectedShell(): ReactNode {
   const { logout } = useSession();
   const [guideOpen, setGuideOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [logoutOutboxStep, setLogoutOutboxStep] = useState(false);
   const title = tr(TITLE[loc.pathname] ?? "shell.title.app", locale);
   const guideSteps = useMemo(() => {
     if (loc.pathname.startsWith("/app/dashboard")) {
@@ -166,7 +170,14 @@ export function ProtectedShell(): ReactNode {
             <BookOpen size={20} className="shell-nav-icon" />
             <span className="shell-nav-label">{tr("shell.nav.guide", locale)}</span>
           </button>
-          <button className="shell-nav-link shell-nav-link--danger" type="button" onClick={() => setLogoutOpen(true)}>
+          <button
+            className="shell-nav-link shell-nav-link--danger"
+            type="button"
+            onClick={() => {
+              setLogoutOutboxStep(false);
+              setLogoutOpen(true);
+            }}
+          >
             <LogOut size={20} className="shell-nav-icon" />
             <span className="shell-nav-label">{tr("shell.nav.logout", locale)}</span>
           </button>
@@ -199,6 +210,7 @@ export function ProtectedShell(): ReactNode {
             </button>
           </div>
         </header>
+        <OfflineHistoryBanner />
         <main className="protected-main-inner" aria-labelledby="app-page-title">
           <Outlet />
         </main>
@@ -215,7 +227,10 @@ export function ProtectedShell(): ReactNode {
           <button
             type="button"
             className="shell-nav-link shell-nav-link--danger"
-            onClick={() => setLogoutOpen(true)}
+            onClick={() => {
+              setLogoutOutboxStep(false);
+              setLogoutOpen(true);
+            }}
             aria-label={tr("shell.nav.logout", locale)}
           >
             <LogOut size={20} />
@@ -232,25 +247,99 @@ export function ProtectedShell(): ReactNode {
           ))}
         </div>
       </Modal>
-      <Modal open={logoutOpen} onClose={() => setLogoutOpen(false)} title={tr("shell.nav.logout", locale)}>
+      <Modal
+        open={logoutOpen}
+        onClose={() => {
+          setLogoutOpen(false);
+          setLogoutOutboxStep(false);
+        }}
+        title={tr("shell.nav.logout", locale)}
+      >
         <div className="stack" style={{ marginTop: 12 }}>
-          <p className="muted-text" style={{ margin: 0 }}>
-            {tr("shell.logout.confirm", locale)}
-          </p>
-          <div style={{ display: "flex", gap: 8 }}>
-            <Button type="button" variant="secondary" onClick={() => setLogoutOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={() => {
-                setLogoutOpen(false);
-                onLogout();
-              }}
-            >
-              {tr("shell.nav.logout", locale)}
-            </Button>
-          </div>
+          {!logoutOutboxStep ? (
+            <>
+              <p className="muted-text" style={{ margin: 0 }}>
+                {tr("shell.logout.confirm", locale)}
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setLogoutOpen(false);
+                    setLogoutOutboxStep(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    void (async () => {
+                      const depth = await outboxDepth();
+                      if (depth > 0) {
+                        setLogoutOutboxStep(true);
+                        return;
+                      }
+                      setLogoutOpen(false);
+                      setLogoutOutboxStep(false);
+                      onLogout();
+                    })();
+                  }}
+                >
+                  {tr("shell.nav.logout", locale)}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="muted-text" style={{ margin: 0 }}>
+                {tr("shell.logout.outboxPrompt", locale)}
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setLogoutOutboxStep(false);
+                  }}
+                >
+                  {tr("shell.logout.back", locale)}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    void (async () => {
+                      await drainOutbox();
+                      const depth = await outboxDepth();
+                      if (depth === 0) {
+                        setLogoutOpen(false);
+                        setLogoutOutboxStep(false);
+                        onLogout();
+                      }
+                    })();
+                  }}
+                >
+                  {tr("shell.logout.syncNow", locale)}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    void (async () => {
+                      await discardOutboxAndClear();
+                      setLogoutOpen(false);
+                      setLogoutOutboxStep(false);
+                      onLogout();
+                    })();
+                  }}
+                >
+                  {tr("shell.logout.discard", locale)}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
     </div>

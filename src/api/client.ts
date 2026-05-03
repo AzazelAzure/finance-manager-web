@@ -1,5 +1,11 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
+import axios, {
+  AxiosHeaders,
+  getAdapter,
+  type AxiosError,
+  type InternalAxiosRequestConfig,
+} from "axios";
 import { CLIENT_BUILD } from "../lib/clientBuild";
+import { enqueueOfflineAxiosWrite, shouldQueueOfflineWrite } from "../offline/queueMutating";
 import { queryClient } from "../lib/queryClient";
 import { resolveApiBaseUrl } from "../lib/apiBaseUrl";
 import { clearSession, getEffectiveAccessTokenForSession, getRefreshToken, setSession } from "../state/auth";
@@ -18,6 +24,26 @@ export const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+const browserAdapter = getAdapter(axios.defaults.adapter);
+
+api.defaults.adapter = async (config) => {
+  if (shouldQueueOfflineWrite(config)) {
+    await enqueueOfflineAxiosWrite(config);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("fm-offline-queued"));
+    }
+    const headers = new AxiosHeaders();
+    return {
+      data: { offline_queued: true },
+      status: 202,
+      statusText: "Accepted",
+      headers,
+      config,
+    };
+  }
+  return browserAdapter(config);
+};
 
 type ConfigWithRetry = InternalAxiosRequestConfig & { _retry?: boolean };
 

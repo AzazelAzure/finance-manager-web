@@ -13,7 +13,7 @@ import {
 } from "../../api/transactions";
 import { createCategory, listCategories, listSourceNames, listTags } from "../../api/lookups";
 import { getAppProfile } from "../../api/profile";
-import type { TransactionRecord } from "../../api/types";
+import { isOfflineQueued, type TransactionRecord } from "../../api/types";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { DataTable, type ColumnDef } from "../../components/ui/DataTable";
@@ -226,7 +226,7 @@ export function TransactionsPage(): ReactNode {
       if (editingTxId) {
         const txType = singleDraft.tx_type;
         const category = normalizedCategory(singleDraft.category);
-        await updateTransaction(editingTxId, {
+        const updated = await updateTransaction(editingTxId, {
           date: singleDraft.date,
           amount: singleDraft.amount,
           source: singleDraft.source,
@@ -237,6 +237,9 @@ export function TransactionsPage(): ReactNode {
           bill: singleDraft.bill,
           tags: selectedTags,
         });
+        if (isOfflineQueued(updated)) {
+          return;
+        }
         return;
       }
       if (editorMode === "single") {
@@ -255,6 +258,9 @@ export function TransactionsPage(): ReactNode {
             tags: selectedTags,
           },
         ]);
+        if (isOfflineQueued(result)) {
+          return;
+        }
         const accepted = (result.accepted?.length ?? 0) + (result.updated?.length ?? 0);
         if (accepted < 1) {
           throw new Error(mutationFailureMessage(result));
@@ -286,6 +292,9 @@ export function TransactionsPage(): ReactNode {
           tags: selectedTags,
         },
       ]);
+      if (isOfflineQueued(result)) {
+        return;
+      }
       const accepted = (result.accepted?.length ?? 0) + (result.updated?.length ?? 0);
       if (accepted < 2) {
         throw new Error(mutationFailureMessage(result));
@@ -313,7 +322,13 @@ export function TransactionsPage(): ReactNode {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (txId: string) => deleteTransaction(txId),
+    mutationFn: async (txId: string) => {
+      const r = await deleteTransaction(txId);
+      if (isOfflineQueued(r)) {
+        return "queued" as const;
+      }
+      return "ok" as const;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
       void queryClient.invalidateQueries({ queryKey: ["snapshot"] });

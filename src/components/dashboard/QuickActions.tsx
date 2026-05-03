@@ -9,7 +9,7 @@ import { createTransactions, listUnpaidExpenseNames } from "../../api/transactio
 import { createUpcomingExpense } from "../../api/upcomingExpenses";
 import { ErrorState } from "../ui/ErrorState";
 import { createCategory, listCategories, listTags } from "../../api/lookups";
-import type { SourceRow } from "../../api/types";
+import { isOfflineQueued, type SourceRow } from "../../api/types";
 import { SourceSelect } from "../transactions/SourceSelect";
 
 type QuickActionType = "INCOME" | "EXPENSE" | "XFER" | "BILL";
@@ -90,7 +90,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
         }
       }
       if (activeType === "BILL") {
-        await createUpcomingExpense({
+        const billRes = await createUpcomingExpense({
           name: draft.description || "Quick bill",
           amount: draft.amount,
           currency: draft.currency,
@@ -99,13 +99,16 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
           paid_flag: false,
           recurring_flag: false,
         });
+        if (isOfflineQueued(billRes)) {
+          return;
+        }
         return;
       }
       const tagPayload = selectedTags.length > 0 ? selectedTags : undefined;
       const billPayload = draft.bill.trim() ? draft.bill.trim() : undefined;
       if (activeType === "XFER") {
         const transferCategory = categoryRaw;
-        await createTransactions([
+        const xferRes = await createTransactions([
           {
             date: draft.date,
             amount: draft.sentAmount,
@@ -129,9 +132,12 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
             ...(tagPayload ? { tags: tagPayload } : {}),
           },
         ]);
+        if (isOfflineQueued(xferRes)) {
+          return;
+        }
         return;
       }
-      await createTransactions([
+      const singleRes = await createTransactions([
         {
           date: draft.date,
           amount: draft.amount,
@@ -144,6 +150,9 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
           ...(tagPayload ? { tags: tagPayload } : {}),
         },
       ]);
+      if (isOfflineQueued(singleRes)) {
+        return;
+      }
     },
     onMutate: () => setError(""),
     onSuccess: () => {
