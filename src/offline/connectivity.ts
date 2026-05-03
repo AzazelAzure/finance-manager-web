@@ -62,6 +62,10 @@ export function isLikelyNetworkFailure(err: AxiosError): boolean {
  * Uses the same API base URL as the SPA (including staging host split).
  */
 export async function probeApiReachability(): Promise<boolean> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    markApiReachable(false);
+    return false;
+  }
   const base = resolveApiBaseUrl().replace(/\/$/, "");
   try {
     const ac = new AbortController();
