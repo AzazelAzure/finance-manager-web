@@ -1,5 +1,6 @@
 import { preferOfflineCaches } from "../offline/connectivity";
-import { readCachePayload, writeCachePayload } from "../offline/cache";
+import { readCachePayload, readTxListCache, writeCachePayload, writeTxListCache } from "../offline/cache";
+import { applyTransactionOutboxToList } from "../offline/transactionOutboxOverlay";
 import { api } from "./client";
 import type {
   CategoryRow,
@@ -92,11 +93,23 @@ export async function deleteTag(name: string): Promise<void> {
   await api.delete("/finance/tags/", { data: { tags: { [name]: "delete" } } });
 }
 
+const TOTALS_TX_FILTERS: Record<string, string> = {
+  start_date: "2000-01-01",
+  end_date: "2100-01-01",
+};
+
 export async function listTransactionsForTotals(): Promise<TransactionRecord[]> {
+  if (preferOfflineCaches()) {
+    const cached = await readTxListCache(TOTALS_TX_FILTERS);
+    const rows = cached ? (cached as TransactionRecord[]) : [];
+    return applyTransactionOutboxToList(rows, TOTALS_TX_FILTERS);
+  }
   const params = new URLSearchParams({
-    start_date: "2000-01-01",
-    end_date: "2100-01-01",
+    start_date: TOTALS_TX_FILTERS.start_date,
+    end_date: TOTALS_TX_FILTERS.end_date,
   });
   const { data } = await api.get<TransactionsListResponse>(`/finance/transactions/?${params.toString()}`);
-  return data.transactions ?? [];
+  const rows = data.transactions ?? [];
+  void writeTxListCache(TOTALS_TX_FILTERS, rows as unknown[], Date.now()).catch(() => undefined);
+  return applyTransactionOutboxToList(rows, TOTALS_TX_FILTERS);
 }

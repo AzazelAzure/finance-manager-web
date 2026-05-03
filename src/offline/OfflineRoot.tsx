@@ -4,6 +4,7 @@ import { probeApiReachability } from "./connectivity";
 import { drainOutbox } from "./drain";
 import { outboxDepth } from "./outbox";
 import { seedOfflineWindow } from "./seed";
+import { syncMinimalExchangeRates } from "./exchangeRates";
 
 /** Mount-time hooks: seed window, probe API reachability, drain on reconnect/focus. */
 export function OfflineRoot(): ReactNode {
@@ -13,6 +14,7 @@ export function OfflineRoot(): ReactNode {
     const onOnline = (): void => {
       void probeApiReachability().then((ok) => {
         if (ok) {
+          void syncMinimalExchangeRates();
           void drainOutbox();
         }
       });
@@ -20,6 +22,7 @@ export function OfflineRoot(): ReactNode {
     window.addEventListener("online", onOnline);
     void (async () => {
       await probeApiReachability();
+      void syncMinimalExchangeRates();
       if ((await outboxDepth()) > 0) {
         await drainOutbox();
       }
@@ -47,6 +50,7 @@ export function OfflineRoot(): ReactNode {
       if (document.visibilityState === "visible") {
         void probeApiReachability().then((ok) => {
           if (ok) {
+            void syncMinimalExchangeRates();
             void drainOutbox();
           }
         });

@@ -110,7 +110,7 @@ export type TransactionMutationResult = {
 };
 
 /** Offline outbox accepted the write locally (HTTP 202 shim from Axios adapter). */
-export type OfflineQueuedResult = { offline_queued: true };
+export type OfflineQueuedResult = { offline_queued: true; idempotency_key?: string };
 
 export function isOfflineQueued(x: unknown): x is OfflineQueuedResult {
   return Boolean(x && typeof x === "object" && "offline_queued" in x && (x as OfflineQueuedResult).offline_queued === true);
@@ -163,6 +163,10 @@ export type CalendarDueEventRow = {
 };
 
 export type CalendarResponse = {
+  start_date?: string;
+  end_date?: string;
+  display_currency_mode?: "base" | "original";
+  heat_metric_mode?: "net" | "expense_only" | "count";
   daily?: CalendarDailyRow[];
   weekly?: Array<Record<string, unknown>>;
   monthly?: Array<Record<string, unknown>>;
@@ -173,7 +177,9 @@ export type CalendarResponse = {
 };
 
 export type VisualizationResponse = {
-  flow_daily?: Array<{ date: string; income: number; expense: number }>;
+  start_date?: string;
+  end_date?: string;
+  flow_daily?: Array<{ date: string; income: number; expense: number; net?: number; tx_count?: number }>;
   tx_type_totals?: Array<{ tx_type: string; amount: number }>;
   top_expense_categories?: Array<{ category: string; amount: number }>;
 };

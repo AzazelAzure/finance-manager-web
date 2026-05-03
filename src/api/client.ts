@@ -31,13 +31,17 @@ const browserAdapter = getAdapter(axios.defaults.adapter);
 
 api.defaults.adapter = async (config) => {
   if (shouldQueueOfflineWrite(config)) {
-    await enqueueOfflineAxiosWrite(config);
+    const idempotency_key = await enqueueOfflineAxiosWrite(config);
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("fm-offline-queued"));
+      void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      void queryClient.invalidateQueries({ queryKey: ["transactions-calendar"] });
+      void queryClient.invalidateQueries({ queryKey: ["transactions-viz"] });
     }
     const headers = new AxiosHeaders();
     return {
-      data: { offline_queued: true },
+      data: { offline_queued: true, idempotency_key },
       status: 202,
       statusText: "Accepted",
       headers,

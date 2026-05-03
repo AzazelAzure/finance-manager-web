@@ -36,3 +36,17 @@ export async function readTxListCache(filters: Record<string, unknown>): Promise
   const raw = await readCachePayload(cacheKeyForTxFilters(filters));
   return Array.isArray(raw) ? raw : null;
 }
+
+/** Stable id for calendar GET params. */
+export function calendarParamsCacheKey(params: Record<string, string>): string {
+  const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "");
+  entries.sort((a, b) => a[0].localeCompare(b[0]));
+  return `calendar:${JSON.stringify(Object.fromEntries(entries))}`;
+}
+
+/** Stable id for visualization GET params. */
+export function visualizationParamsCacheKey(params: Record<string, string>): string {
+  const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "");
+  entries.sort((a, b) => a[0].localeCompare(b[0]));
+  return `txviz:${JSON.stringify(Object.fromEntries(entries))}`;
+}

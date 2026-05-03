@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { ClientBuildUpgradeGate } from "./components/ClientBuildUpgradeGate";
 import { CookieBanner } from "./components/CookieBanner";
 import { SwUpdateBanner } from "./components/SwUpdateBanner";
+import { SyncProgressOverlay } from "./components/SyncProgressOverlay";
 import { SyncStatusBar } from "./components/SyncStatusBar";
 import { PublicShell } from "./layout/PublicShell";
 import { ProtectedShell } from "./layout/ProtectedShell";
@@ -29,6 +30,7 @@ function WildcardRedirect(): ReactNode {
 export default function App(): ReactNode {
   return (
     <div className="app-root">
+      <SyncProgressOverlay />
       <SyncStatusBar />
       <ClientBuildUpgradeGate />
       <CookieBanner />

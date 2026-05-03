@@ -322,8 +322,8 @@ export function TransactionsPage(): ReactNode {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (txId: string) => {
-      const r = await deleteTransaction(txId);
+    mutationFn: async (payload: { txId: string; echo?: TransactionRecord }) => {
+      const r = await deleteTransaction(payload.txId, payload.echo ? { echo: payload.echo } : undefined);
       if (isOfflineQueued(r)) {
         return "queued" as const;
       }
@@ -373,6 +373,10 @@ export function TransactionsPage(): ReactNode {
   }, [editingTxId, editorMode, isLoadingEditor, saveMutation.isPending, singleDraft, transferDraft]);
 
   async function openEditorForEdit(txId: string): Promise<void> {
+    if (txId.startsWith("pending:")) {
+      setEditorError(tr("tx.pendingEditBlocked", locale));
+      return;
+    }
     setIsLoadingEditor(true);
     setEditorError("");
     try {
@@ -427,11 +431,15 @@ export function TransactionsPage(): ReactNode {
         header: "Actions",
         cell: (r) => {
           const isConfirm = (pendingDelete[r.tx_id] ?? 0) > Date.now();
+          const queuedLocal = r.tx_id.startsWith("pending:");
+          const pendingTitle = queuedLocal ? tr("tx.pendingActions", locale) : undefined;
           return (
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 className="ui-btn ui-btn--secondary"
                 type="button"
+                disabled={queuedLocal}
+                title={pendingTitle}
                 onClick={() => {
                   void openEditorForEdit(r.tx_id);
                 }}
@@ -441,12 +449,14 @@ export function TransactionsPage(): ReactNode {
               <button
                 className="ui-btn ui-btn--ghost"
                 type="button"
+                disabled={queuedLocal}
+                title={pendingTitle}
                 onClick={() => {
                   if (!isConfirm) {
                     setPendingDelete((prev) => ({ ...prev, [r.tx_id]: Date.now() + 5000 }));
                     return;
                   }
-                  deleteMutation.mutate(r.tx_id);
+                  deleteMutation.mutate({ txId: r.tx_id, echo: r });
                 }}
               >
                 {isConfirm ? "Confirm delete?" : "Delete"}
@@ -456,7 +466,7 @@ export function TransactionsPage(): ReactNode {
         },
       },
     ],
-    [pendingDelete, deleteMutation],
+    [pendingDelete, deleteMutation, locale],
   );
 
   const fromDashboard = searchParams.get("fromDashboard") === "1";
