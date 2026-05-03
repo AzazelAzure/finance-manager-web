@@ -3,16 +3,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   ACCESS_TOKEN_KEY,
   AUTH_CHANGED_EVENT,
+  REFRESH_TOKEN_KEY,
   clearSession,
   getEffectiveAccessTokenForSession,
+  hasOfflineSession,
 } from "./auth";
 
-function subscribeAccess(cb: () => void): () => void {
+function subscribeSession(cb: () => void): () => void {
   if (typeof window === "undefined") {
     return () => undefined;
   }
   const onStorage = (e: StorageEvent): void => {
-    if (e.key === ACCESS_TOKEN_KEY) {
+    if (e.key === ACCESS_TOKEN_KEY || e.key === REFRESH_TOKEN_KEY) {
       cb();
     }
   };
@@ -25,11 +27,11 @@ function subscribeAccess(cb: () => void): () => void {
   };
 }
 
-function getAccessSnapshot(): string {
+function getSessionAuthenticatedSnapshot(): boolean {
   if (typeof window === "undefined") {
-    return "";
+    return false;
   }
-  return getEffectiveAccessTokenForSession();
+  return hasOfflineSession();
 }
 
 type SessionValue = {
@@ -42,15 +44,25 @@ const SessionContext = createContext<SessionValue | null>(null);
 
 function CrossTabLogoutHandler(): null {
   const queryClient = useQueryClient();
-  const isAuthenticated = useSyncExternalStore(subscribeAccess, () => Boolean(getAccessSnapshot()), () =>
-    Boolean(getAccessSnapshot()),
+  const isAuthenticated = useSyncExternalStore(
+    subscribeSession,
+    getSessionAuthenticatedSnapshot,
+    getSessionAuthenticatedSnapshot,
   );
   useEffect(() => {
     if (!isAuthenticated) {
       return;
     }
     const onStorage = (e: StorageEvent): void => {
-      if (e.key === ACCESS_TOKEN_KEY && !e.newValue) {
+      if (e.key !== ACCESS_TOKEN_KEY && e.key !== REFRESH_TOKEN_KEY) {
+        return;
+      }
+      if (e.key === REFRESH_TOKEN_KEY && !e.newValue) {
+        clearSession();
+        queryClient.clear();
+        return;
+      }
+      if (e.key === ACCESS_TOKEN_KEY && !e.newValue && !localStorage.getItem(REFRESH_TOKEN_KEY)) {
         clearSession();
         queryClient.clear();
       }
@@ -62,9 +74,17 @@ function CrossTabLogoutHandler(): null {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }): ReactNode {
-  /** Same snapshot on server and client avoids useSyncExternalStore consistency issues in CSR. */
-  const accessToken = useSyncExternalStore(subscribeAccess, getAccessSnapshot, getAccessSnapshot);
-  const isAuthenticated = Boolean(accessToken);
+  /** Effective access for display; may be empty while refresh-only until first lazy refresh. */
+  const accessToken = useSyncExternalStore(
+    subscribeSession,
+    () => (typeof window === "undefined" ? "" : getEffectiveAccessTokenForSession()),
+    () => (typeof window === "undefined" ? "" : getEffectiveAccessTokenForSession()),
+  );
+  const isAuthenticated = useSyncExternalStore(
+    subscribeSession,
+    getSessionAuthenticatedSnapshot,
+    getSessionAuthenticatedSnapshot,
+  );
   const queryClient = useQueryClient();
 
   const logout = useCallback((): void => {

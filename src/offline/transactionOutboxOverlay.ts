@@ -178,16 +178,6 @@ function truthyApiFlag(v: string | undefined): boolean {
   return s === "1" || s === "true" || s === "yes";
 }
 
-function hasExplicitPeriod(params: Record<string, string | undefined>): boolean {
-  return (
-    truthyApiFlag(params.last_month) ||
-    truthyApiFlag(params.previous_week) ||
-    !!(params.start_date && params.end_date) ||
-    Boolean(params.date) ||
-    truthyApiFlag(params.current_month)
-  );
-}
-
 /** Whether a transaction row belongs to the same period as snapshot / list API params. */
 export function transactionRecordMatchesParams(
   r: TransactionRecord,
@@ -195,9 +185,8 @@ export function transactionRecordMatchesParams(
 ): boolean {
   const p = coerceTxListFilterParams(params as Record<string, unknown>);
   const txDate = (r.date || "").trim();
-  const treatAsCurrent = truthyApiFlag(p.current_month) || !hasExplicitPeriod(p);
 
-  if (treatAsCurrent) {
+  if (truthyApiFlag(p.current_month)) {
     return inCurrentMonth(txDate);
   }
   if (truthyApiFlag(p.last_month)) {
@@ -211,6 +200,11 @@ export function transactionRecordMatchesParams(
   }
   if (p.date) {
     return txDate === p.date;
+  }
+  // No explicit period: server default is current calendar month, but queued `pending:*` rows
+  // must still appear on dashboard / default list after reload.
+  if (r.tx_id.startsWith("pending:")) {
+    return true;
   }
   return inCurrentMonth(txDate);
 }
@@ -606,6 +600,20 @@ async function computeTotalsFromSnapshotRows(
   };
 }
 
+async function totalAssetsFromSourceBalances(
+  rows: Array<{ amount: string | number; currency: string }>,
+  baseCurrency: string,
+  cv: CurrencyConverter,
+): Promise<number> {
+  let sum = 0;
+  for (const r of rows) {
+    const amt = parseAmount(String(r.amount ?? "0"));
+    const ccy = (r.currency || baseCurrency).toUpperCase();
+    sum += await cv.toBase(amt, ccy, baseCurrency);
+  }
+  return round2(sum);
+}
+
 async function computeExpenseByCategory(
   rows: SnapshotTransactionRow[],
   baseCurrency: string,
@@ -669,6 +677,12 @@ export async function applyTransactionOutboxToSnapshot(
     currency: s.currency,
   }));
 
+  let snapshot = base.snapshot;
+  if (snapshot && typeof snapshot === "object") {
+    const total_assets = await totalAssetsFromSourceBalances(source_balances, baseCurrency, cv);
+    snapshot = { ...snapshot, total_assets };
+  }
+
   return {
     ...base,
     transactions_for_month: snapRows,
@@ -678,5 +692,6 @@ export async function applyTransactionOutboxToSnapshot(
     daily_spend,
     daily_income,
     source_balances,
+    snapshot,
   };
 }

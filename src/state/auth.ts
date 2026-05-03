@@ -66,6 +66,11 @@ export function getRefreshToken(): string {
   return localStorage.getItem(REFRESH_TOKEN_KEY) ?? "";
 }
 
+/** True when the user should be treated as signed in for routing / offline shell (refresh may still refresh access lazily). */
+export function hasOfflineSession(): boolean {
+  return Boolean(getRefreshToken()) || Boolean(getEffectiveAccessTokenForSession());
+}
+
 export function setSession(tokens: { access: string; refresh: string }): void {
   localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
   localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh);

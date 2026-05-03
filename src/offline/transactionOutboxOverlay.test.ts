@@ -32,6 +32,40 @@ describe("transactionOutboxOverlay (offline / D golden)", () => {
     expect(transactionMatchesTxListQuery(rec!, { current_month: 1 })).toBe(true);
   });
 
+  it("includes backdated pending rows when no explicit period params (default dashboard / list)", () => {
+    const [rec] = buildPendingTransactionRecordsFromPostBody(
+      [
+        {
+          date: "2020-01-01",
+          amount: "99",
+          source: "Cash",
+          currency: "USD",
+          tx_type: "EXPENSE",
+          description: "Old pending",
+        },
+      ],
+      "backdated",
+    );
+    expect(rec).toBeDefined();
+    expect(rec!.tx_id.startsWith("pending:")).toBe(true);
+    expect(transactionRecordMatchesParams(rec!, {})).toBe(true);
+    expect(transactionMatchesTxListQuery(rec!, {})).toBe(true);
+  });
+
+  it("still scopes server rows to current month when no explicit period", () => {
+    const rec: import("../api/types").TransactionRecord = {
+      tx_id: "server-1",
+      date: "2020-01-01",
+      amount: "-10.00",
+      source: "Cash",
+      currency: "USD",
+      tags: [],
+      tx_type: "EXPENSE",
+      category: "",
+    };
+    expect(transactionRecordMatchesParams(rec, {})).toBe(false);
+  });
+
   it("assigns stable pending ids for single and paired transfer creates", () => {
     const single = buildPendingTransactionRecordsFromPostBody(
       [{ date: "2026-01-15", amount: "10", source: "A", currency: "USD", tx_type: "INCOME", description: "" }],
