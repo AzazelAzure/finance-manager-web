@@ -1,6 +1,7 @@
 import type { InternalAxiosRequestConfig } from "axios";
 import { getRefreshToken } from "../state/auth";
 import { isOutboxAllowlisted } from "./allowlist";
+import { shouldTreatAsDisconnectedForMutations } from "./connectivity";
 import { enqueueOutboxEntry } from "./outbox";
 
 function resolveUrlPath(config: InternalAxiosRequestConfig): string {
@@ -16,7 +17,7 @@ function resolveUrlPath(config: InternalAxiosRequestConfig): string {
 }
 
 export function shouldQueueOfflineWrite(config: InternalAxiosRequestConfig): boolean {
-  if (typeof navigator === "undefined" || navigator.onLine) {
+  if (typeof navigator === "undefined" || !shouldTreatAsDisconnectedForMutations()) {
     return false;
   }
   const method = (config.method ?? "get").toUpperCase();

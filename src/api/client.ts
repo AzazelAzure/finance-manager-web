@@ -2,15 +2,17 @@ import axios, {
   AxiosHeaders,
   getAdapter,
   type AxiosError,
+  type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from "axios";
 import { CLIENT_BUILD } from "../lib/clientBuild";
+import { isLikelyNetworkFailure, markApiReachable } from "../offline/connectivity";
 import { enqueueOfflineAxiosWrite, shouldQueueOfflineWrite } from "../offline/queueMutating";
 import { queryClient } from "../lib/queryClient";
 import { resolveApiBaseUrl } from "../lib/apiBaseUrl";
 import { clearSession, getEffectiveAccessTokenForSession, getRefreshToken, setSession } from "../state/auth";
 import { postRefresh } from "./refreshClient";
-import type { LoginResponse } from "./types";
+import { isOfflineQueued, type LoginResponse } from "./types";
 import {
   dispatchClientBuildUnsupported,
   type ClientBuildUnsupportedDetail,
@@ -91,9 +93,21 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+function isOfflineQueuedResponse(r: AxiosResponse): boolean {
+  return r.status === 202 && isOfflineQueued(r.data);
+}
+
 api.interceptors.response.use(
-  (r) => r,
+  (r) => {
+    if (!isOfflineQueuedResponse(r)) {
+      markApiReachable(true);
+    }
+    return r;
+  },
   async (err: AxiosError) => {
+    if (isLikelyNetworkFailure(err)) {
+      markApiReachable(false);
+    }
     const original = err.config as ConfigWithRetry | undefined;
     if (!original) {
       return Promise.reject(err);

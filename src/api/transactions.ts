@@ -1,3 +1,4 @@
+import { preferOfflineCaches } from "../offline/connectivity";
 import { readTxListCache, writeTxListCache } from "../offline/cache";
 import { api } from "./client";
 import {
@@ -28,7 +29,7 @@ export type TransactionFilters = {
 
 export async function listTransactions(filters: TransactionFilters = {}): Promise<TransactionRecord[]> {
   const filterRecord = filters as Record<string, unknown>;
-  if (typeof navigator !== "undefined" && !navigator.onLine) {
+  if (preferOfflineCaches()) {
     const cached = await readTxListCache(filterRecord);
     if (cached) {
       return cached as TransactionRecord[];
@@ -39,7 +40,7 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
     params: filters,
   });
   const rows = Array.isArray(data) ? data : (data.transactions ?? []);
-  if (typeof navigator !== "undefined" && navigator.onLine) {
+  if (!preferOfflineCaches()) {
     void writeTxListCache(filterRecord, rows as unknown[], Date.now()).catch(() => undefined);
   }
   return rows;
