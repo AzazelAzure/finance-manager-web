@@ -3,6 +3,7 @@ import { postRefresh } from "../api/refreshClient";
 import type { LoginResponse } from "../api/types";
 import { dispatchClientBuildUnsupported } from "../lib/clientBuildUpgradeEvents";
 import { AUTH_CHANGED_EVENT, getRefreshToken, setSession } from "../state/auth";
+import { isApiMarkedUnreachable, probeApiReachability } from "./connectivity";
 import { clearOutbox, listOutboxOrdered, removeOutboxEntry } from "./outbox";
 import { emitSyncState } from "./syncEvents";
 
@@ -17,7 +18,13 @@ export async function drainOutbox(): Promise<void> {
     const onAuth = (): void => ac.abort();
     window.addEventListener(AUTH_CHANGED_EVENT, onAuth, { once: true });
 
-    if (!navigator.onLine) {
+    let canReach = typeof navigator !== "undefined" && navigator.onLine;
+    if (!canReach) {
+      canReach = await probeApiReachability();
+    } else if (isApiMarkedUnreachable()) {
+      canReach = await probeApiReachability();
+    }
+    if (!canReach) {
       emitSyncState({ phase: "idle" });
       return;
     }

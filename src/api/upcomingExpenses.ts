@@ -1,3 +1,4 @@
+import { preferOfflineCaches } from "../offline/connectivity";
 import { offlineDb } from "../offline/db";
 import { api } from "./client";
 import {
@@ -31,7 +32,7 @@ function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpe
 }
 
 export async function listUpcomingExpenses(): Promise<UpcomingExpenseRecord[]> {
-  if (typeof navigator !== "undefined" && !navigator.onLine) {
+  if (preferOfflineCaches()) {
     const row = await offlineDb.caches.get("upcoming:list");
     const raw = row?.payload;
     if (Array.isArray(raw)) {
@@ -46,7 +47,7 @@ export async function listUpcomingExpenses(): Promise<UpcomingExpenseRecord[]> {
   const normalized = rows
     .map((row) => normalizeUpcomingRow(row))
     .filter((row) => Boolean(row.name));
-  if (typeof navigator !== "undefined" && navigator.onLine) {
+  if (!preferOfflineCaches()) {
     void offlineDb.caches
       .put({ id: "upcoming:list", payload: normalized, fetchedAt: Date.now() })
       .catch(() => undefined);

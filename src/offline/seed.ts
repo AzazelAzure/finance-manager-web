@@ -1,6 +1,7 @@
 import { listTransactions } from "../api/transactions";
 import { listUpcomingExpenses } from "../api/upcomingExpenses";
 import { writeTxListCache } from "./cache";
+import { preferOfflineCaches } from "./connectivity";
 import { offlineDb } from "./db";
 
 const SEED_META_KEY = "offline_seed_v1";
@@ -9,7 +10,7 @@ const SEED_META_KEY = "offline_seed_v1";
  * ~3 month window of list reads for offline UX (D1 seeding doc). Runs once per browser profile.
  */
 export async function seedOfflineWindow(): Promise<void> {
-  if (typeof navigator === "undefined" || !navigator.onLine) {
+  if (typeof navigator === "undefined" || preferOfflineCaches()) {
     return;
   }
   const done = await offlineDb.meta.get(SEED_META_KEY);
