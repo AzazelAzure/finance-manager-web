@@ -1,7 +1,6 @@
 import { preferOfflineCaches, preferPwaLocalFirstReads } from "../offline/connectivity";
 import {
   calendarParamsCacheKey,
-  readCachePayload,
   visualizationParamsCacheKey,
   writeCachePayload,
   readTxListCache,
@@ -189,35 +188,37 @@ export async function getTransactionsCalendar(
   opts?: PwaReadBypassOpts,
 ): Promise<CalendarResponse> {
   const cacheId = calendarParamsCacheKey(params as unknown as Record<string, string>);
-  if (preferOfflineCaches()) {
-    const raw = await readCachePayload(cacheId);
-    if (raw && typeof raw === "object" && "daily" in raw) {
-      return raw as CalendarResponse;
-    }
-    const cv = await loadCurrencyConverter();
-    const rows = await listTransactions({
-      start_date: params.start_date,
-      end_date: params.end_date,
-    });
-    return buildCalendarResponseFromTransactions(rows, params, cv);
-  }
-  if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
+  const bypass = shouldBypassPwaDataCache(opts);
+  const aggregateFromMergedList =
+    !bypass && (preferOfflineCaches() || preferPwaLocalFirstReads());
+
+  if (preferPwaLocalFirstReads() && !bypass) {
     const row = await offlineDb.caches.get(cacheId);
     const raw = row?.payload;
     const fetchedAt = row?.fetchedAt ?? 0;
-    if (raw && typeof raw === "object" && "daily" in raw) {
-      if (isPwaBackgroundStale(fetchedAt)) {
-        schedulePwaBackgroundWork(cacheId, async () => {
-          const { data } = await api.get<CalendarResponse>("/finance/transactions/calendar/", { params });
-          const payload = data ?? {};
-          await writeCachePayload(cacheId, payload, Date.now());
-          const { queryClient } = await import("../lib/queryClient");
-          await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
-        });
-      }
-      return raw as CalendarResponse;
+    if (raw && typeof raw === "object" && "daily" in raw && isPwaBackgroundStale(fetchedAt)) {
+      schedulePwaBackgroundWork(cacheId, async () => {
+        const { data } = await api.get<CalendarResponse>("/finance/transactions/calendar/", { params });
+        const payload = data ?? {};
+        await writeCachePayload(cacheId, payload, Date.now());
+        const { queryClient } = await import("../lib/queryClient");
+        await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
+      });
     }
   }
+
+  if (aggregateFromMergedList) {
+    const cv = await loadCurrencyConverter();
+    const rows = await listTransactions(
+      {
+        start_date: params.start_date,
+        end_date: params.end_date,
+      },
+      opts,
+    );
+    return buildCalendarResponseFromTransactions(rows, params, cv);
+  }
+
   const { data } = await api.get<CalendarResponse>("/finance/transactions/calendar/", { params });
   const payload = data ?? {};
   void writeCachePayload(cacheId, payload, Date.now()).catch(() => undefined);
@@ -232,37 +233,39 @@ export async function getTransactionsVisualization(
   opts?: PwaReadBypassOpts,
 ): Promise<VisualizationResponse> {
   const cacheId = visualizationParamsCacheKey(params);
-  if (preferOfflineCaches()) {
-    const raw = await readCachePayload(cacheId);
-    if (raw && typeof raw === "object" && "flow_daily" in raw) {
-      return raw as VisualizationResponse;
-    }
-    const cv = await loadCurrencyConverter();
-    const rows = await listTransactions({
-      start_date: params.start_date,
-      end_date: params.end_date,
-    });
-    return buildVisualizationFromTransactions(rows, params, cv);
-  }
-  if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
+  const bypass = shouldBypassPwaDataCache(opts);
+  const aggregateFromMergedList =
+    !bypass && (preferOfflineCaches() || preferPwaLocalFirstReads());
+
+  if (preferPwaLocalFirstReads() && !bypass) {
     const row = await offlineDb.caches.get(cacheId);
     const raw = row?.payload;
     const fetchedAt = row?.fetchedAt ?? 0;
-    if (raw && typeof raw === "object" && "flow_daily" in raw) {
-      if (isPwaBackgroundStale(fetchedAt)) {
-        schedulePwaBackgroundWork(cacheId, async () => {
-          const { data } = await api.get<VisualizationResponse>("/finance/transactions/visualization/", {
-            params,
-          });
-          const payload = data ?? {};
-          await writeCachePayload(cacheId, payload, Date.now());
-          const { queryClient } = await import("../lib/queryClient");
-          await queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+    if (raw && typeof raw === "object" && "flow_daily" in raw && isPwaBackgroundStale(fetchedAt)) {
+      schedulePwaBackgroundWork(cacheId, async () => {
+        const { data } = await api.get<VisualizationResponse>("/finance/transactions/visualization/", {
+          params,
         });
-      }
-      return raw as VisualizationResponse;
+        const payload = data ?? {};
+        await writeCachePayload(cacheId, payload, Date.now());
+        const { queryClient } = await import("../lib/queryClient");
+        await queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+      });
     }
   }
+
+  if (aggregateFromMergedList) {
+    const cv = await loadCurrencyConverter();
+    const rows = await listTransactions(
+      {
+        start_date: params.start_date,
+        end_date: params.end_date,
+      },
+      opts,
+    );
+    return buildVisualizationFromTransactions(rows, params, cv);
+  }
+
   const { data } = await api.get<VisualizationResponse>("/finance/transactions/visualization/", {
     params,
   });
