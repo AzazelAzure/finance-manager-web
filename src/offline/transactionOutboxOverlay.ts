@@ -147,66 +147,111 @@ function inPreviousWeek(txDate: string): boolean {
   return t >= prevMonday && t <= prevSunday;
 }
 
+/** Coerce URL / JSON-parsed filter objects (Dexie keys may use numeric flags). */
+export function coerceTxListFilterParams(raw: Record<string, unknown>): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (v === undefined || v === null || v === "") {
+      continue;
+    }
+    if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
+      out[k] = String(v);
+    }
+  }
+  return out;
+}
+
+function truthyApiFlag(v: string | undefined): boolean {
+  if (v === undefined) {
+    return false;
+  }
+  const s = v.trim().toLowerCase();
+  return s === "1" || s === "true" || s === "yes";
+}
+
 function hasExplicitPeriod(params: Record<string, string | undefined>): boolean {
   return (
-    params.last_month === "1" ||
-    params.previous_week === "1" ||
+    truthyApiFlag(params.last_month) ||
+    truthyApiFlag(params.previous_week) ||
     !!(params.start_date && params.end_date) ||
     Boolean(params.date) ||
-    params.current_month === "1"
+    truthyApiFlag(params.current_month)
   );
 }
 
 /** Whether a transaction row belongs to the same period as snapshot / list API params. */
 export function transactionRecordMatchesParams(
   r: TransactionRecord,
-  params: Record<string, string | undefined>,
+  params: Record<string, unknown> | Record<string, string | undefined>,
 ): boolean {
+  const p = coerceTxListFilterParams(params as Record<string, unknown>);
   const txDate = (r.date || "").trim();
-  const treatAsCurrent = params.current_month === "1" || !hasExplicitPeriod(params);
+  const treatAsCurrent = truthyApiFlag(p.current_month) || !hasExplicitPeriod(p);
 
   if (treatAsCurrent) {
     return inCurrentMonth(txDate);
   }
-  if (params.last_month === "1") {
+  if (truthyApiFlag(p.last_month)) {
     return inLastMonth(txDate);
   }
-  if (params.previous_week === "1") {
+  if (truthyApiFlag(p.previous_week)) {
     return inPreviousWeek(txDate);
   }
-  if (params.start_date && params.end_date) {
-    return txDate >= params.start_date && txDate <= params.end_date;
+  if (p.start_date && p.end_date) {
+    return txDate >= p.start_date && txDate <= p.end_date;
   }
-  if (params.date) {
-    return txDate === params.date;
+  if (p.date) {
+    return txDate === p.date;
   }
   return inCurrentMonth(txDate);
 }
 
-function matchesDimensionFilters(r: TransactionRecord, params: Record<string, string | undefined>): boolean {
-  if (params.tx_type && String(params.tx_type) !== String(r.tx_type ?? "")) {
+function matchesDimensionFilters(
+  r: TransactionRecord,
+  params: Record<string, unknown> | Record<string, string | undefined>,
+): boolean {
+  const p = coerceTxListFilterParams(params as Record<string, unknown>);
+  if (p.tx_type && String(p.tx_type) !== String(r.tx_type ?? "")) {
     return false;
   }
-  if (params.category && String(params.category) !== String(r.category ?? "")) {
+  if (p.category && String(p.category) !== String(r.category ?? "")) {
     return false;
   }
-  if (params.source && String(params.source) !== String(r.source ?? "")) {
+  if (p.source && String(p.source) !== String(r.source ?? "")) {
     return false;
   }
-  if (params.currency_code) {
-    const want = String(params.currency_code).trim().toUpperCase();
+  if (p.currency_code) {
+    const want = String(p.currency_code).trim().toUpperCase();
     const got = String(r.currency ?? "").trim().toUpperCase();
     if (want && got !== want) {
       return false;
     }
   }
-  if (params.tag_name) {
-    const want = String(params.tag_name);
+  if (p.tag_name) {
+    const want = String(p.tag_name);
     if (!(r.tags ?? []).some((t) => t === want)) {
       return false;
     }
   }
   return true;
+}
+
+/** Row is included in a transactions list response for these API-style filters. */
+export function transactionMatchesTxListQuery(
+  r: TransactionRecord,
+  params: Record<string, unknown> | Record<string, string | undefined>,
+): boolean {
+  return transactionRecordMatchesParams(r, params) && matchesDimensionFilters(r, params);
+}
+
+/** Synthetic rows for queued POST /finance/transactions/ (matches outbox replay ids). */
+export function buildPendingTransactionRecordsFromPostBody(body: unknown, idempotencyKey: string): TransactionRecord[] {
+  const bodies = normalizeTransactionPostBody(body);
+  const keyBase = `pending:${idempotencyKey}`;
+  return bodies.map((req, idx) => {
+    const txId = bodies.length === 1 ? keyBase : `${keyBase}:${idx}`;
+    return createRequestToRecord(req, txId);
+  });
 }
 
 function normalizeTransactionPostBody(body: unknown): TransactionCreateRequest[] {
@@ -285,7 +330,7 @@ function mergePatch(record: TransactionRecord, patch: TransactionPatchRequest): 
   };
 }
 
-function sortRecords(a: TransactionRecord, b: TransactionRecord): number {
+export function sortLedgerTransactionsByDate(a: TransactionRecord, b: TransactionRecord): number {
   const da = a.date || "";
   const db = b.date || "";
   if (da !== db) {
@@ -466,12 +511,9 @@ export async function applyTransactionOutboxToList(
   base: TransactionRecord[],
   filterRecord: Record<string, unknown>,
 ): Promise<TransactionRecord[]> {
-  const params = filterRecord as Record<string, string | undefined>;
   const map = await mergedTransactionMap(base);
-  const out = [...map.values()].filter(
-    (r) => transactionRecordMatchesParams(r, params) && matchesDimensionFilters(r, params),
-  );
-  out.sort(sortRecords);
+  const out = [...map.values()].filter((r) => transactionMatchesTxListQuery(r, filterRecord));
+  out.sort(sortLedgerTransactionsByDate);
   return out;
 }
 
@@ -560,10 +602,8 @@ export async function applyTransactionOutboxToSnapshot(
   const baseRecords = base.transactions_for_month.map(snapshotRowToRecord);
   const outboxRows = await listOutboxOrdered();
   const map = mergedTransactionMapWithRows(baseRecords, outboxRows);
-  const mergedRows = [...map.values()].filter(
-    (r) => transactionRecordMatchesParams(r, params) && matchesDimensionFilters(r, params),
-  );
-  mergedRows.sort(sortRecords);
+  const mergedRows = [...map.values()].filter((r) => transactionMatchesTxListQuery(r, params));
+  mergedRows.sort(sortLedgerTransactionsByDate);
   const snapRows = mergedRows.map(recordToSnapshotRow);
 
   const baseCurrency = await readProfileBaseCurrency();

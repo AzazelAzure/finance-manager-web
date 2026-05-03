@@ -1,9 +1,10 @@
 import type { InternalAxiosRequestConfig } from "axios";
 
 type ConfigWithOfflineEcho = InternalAxiosRequestConfig & { offlineEcho?: unknown };
-import { getRefreshToken } from "../state/auth";
+import { getAccessToken, getRefreshToken } from "../state/auth";
 import { isOutboxAllowlisted } from "./allowlist";
 import { shouldTreatAsDisconnectedForMutations } from "./connectivity";
+import { mergePendingPostIntoTxListCaches } from "./optimisticTxEnqueue";
 import { enqueueOutboxEntry } from "./outbox";
 
 function resolveUrlPath(config: InternalAxiosRequestConfig): string {
@@ -30,17 +31,25 @@ export function shouldQueueOfflineWrite(config: InternalAxiosRequestConfig): boo
   if (!isOutboxAllowlisted(method, path)) {
     return false;
   }
-  // D3: allow queue with refresh even when access JWT is expired in UI.
-  return Boolean(getRefreshToken());
+  // Standalone brain (D): queue whenever we have any session material so the user
+  // can record optimistically offline; drain still requires refresh to hit the API.
+  return Boolean(getRefreshToken().trim() || getAccessToken().trim());
 }
 
 export async function enqueueOfflineAxiosWrite(config: InternalAxiosRequestConfig): Promise<string> {
   const path = resolveUrlPath(config);
   const echo = (config as ConfigWithOfflineEcho).offlineEcho;
-  return enqueueOutboxEntry({
-    method: (config.method ?? "POST").toUpperCase(),
+  const method = (config.method ?? "POST").toUpperCase();
+  const idempotencyKey = await enqueueOutboxEntry({
+    method,
     url: path,
     body: config.data,
     ...(echo !== undefined ? { echo } : {}),
   });
+  const norm = path.split("?")[0];
+  const pathNorm = norm.endsWith("/") || norm.length === 0 ? norm : `${norm}/`;
+  if (method === "POST" && /^\/finance\/transactions\/?$/.test(pathNorm)) {
+    await mergePendingPostIntoTxListCaches(config.data, idempotencyKey).catch(() => undefined);
+  }
+  return idempotencyKey;
 }
