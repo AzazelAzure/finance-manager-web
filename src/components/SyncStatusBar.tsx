@@ -38,9 +38,7 @@ export function SyncStatusBar(): ReactNode {
     refreshDepth();
     const onOnline = (): void => {
       setNavigatorOnline(true);
-      void probeApiReachability().finally(() => {
-        void drainOutbox().finally(refreshDepth);
-      });
+      void probeApiReachability().finally(refreshDepth);
     };
     const onOffline = (): void => {
       setNavigatorOnline(false);

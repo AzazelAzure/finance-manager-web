@@ -9,6 +9,19 @@ export type ApiReachableDetail = { ok: boolean; previous: boolean | null };
 
 export const FM_API_REACHABLE_EVENT = "fm-api-reachable";
 
+/**
+ * True when the API is reachable again from an unknown or bad state — not a routine
+ * `markApiReachable(true)` while already known-good (e.g. every successful Axios response).
+ * Used to avoid repeatedly draining the outbox and refetching while online.
+ */
+export function isApiReachabilityRecovery(detail: ApiReachableDetail | undefined): boolean {
+  if (!detail?.ok) {
+    return false;
+  }
+  return detail.previous === false || detail.previous === null;
+}
+
+
 export function markApiReachable(ok: boolean): void {
   const previous = lastReachable;
   lastReachable = ok;
