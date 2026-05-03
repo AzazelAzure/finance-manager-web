@@ -1,4 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { CLIENT_BUILD } from "../lib/clientBuild";
+import { dismissSwUpdateBannerForBuild } from "../lib/swUpdateAck";
 import { applyServiceWorkerUpdate } from "../registerPwa";
 import { Button } from "./ui/Button";
 
@@ -44,6 +46,7 @@ export function SwUpdateBanner(): ReactNode {
           type="button"
           variant="secondary"
           onClick={() => {
+            dismissSwUpdateBannerForBuild(CLIENT_BUILD);
             setVisible(false);
           }}
         >
@@ -53,6 +56,7 @@ export function SwUpdateBanner(): ReactNode {
           type="button"
           variant="primary"
           onClick={() => {
+            dismissSwUpdateBannerForBuild(CLIENT_BUILD);
             void applyServiceWorkerUpdate?.(true);
           }}
         >
