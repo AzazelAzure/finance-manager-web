@@ -218,7 +218,7 @@ export function TransactionsPage(): ReactNode {
   });
   const unpaidBillsQuery = useQuery({
     queryKey: ["upcoming-expenses", "unpaid-names"] as const,
-    queryFn: listUnpaidExpenseNames,
+    queryFn: (ctx) => listUnpaidExpenseNames(readOptsFromQuery(ctx)),
   });
   const sourceCurrencyOptions = useMemo(() => {
     const set = new Set<string>();
@@ -397,10 +397,6 @@ export function TransactionsPage(): ReactNode {
   }, [editingTxId, editorMode, isLoadingEditor, saveMutation.isPending, singleDraft, transferDraft]);
 
   async function openEditorForEdit(txId: string): Promise<void> {
-    if (txId.startsWith("pending:")) {
-      setEditorError(tr("tx.pendingEditBlocked", locale));
-      return;
-    }
     setIsLoadingEditor(true);
     setEditorError("");
     try {
@@ -462,8 +458,7 @@ export function TransactionsPage(): ReactNode {
               <button
                 className="ui-btn ui-btn--secondary"
                 type="button"
-                disabled={queuedLocal}
-                title={pendingTitle}
+                title={queuedLocal ? tr("tx.pendingEditDraft", locale) : undefined}
                 onClick={() => {
                   void openEditorForEdit(r.tx_id);
                 }}

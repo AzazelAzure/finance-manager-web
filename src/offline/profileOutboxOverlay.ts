@@ -1,0 +1,47 @@
+/**
+ * Merge queued PATCH /finance/appprofile/ outbox rows into cached profile reads (FIFO).
+ */
+
+import type { AppProfileResponse, AppProfileUpdateRequest } from "../api/types";
+import type { OutboxRow } from "./db";
+import { listOutboxOrdered } from "./outbox";
+
+const PROFILE_PATH = /^\/finance\/appprofile\/?$/;
+
+function normPath(url: string): string {
+  const p = url.split("?")[0];
+  return p.endsWith("/") || p.length === 0 ? p : `${p}/`;
+}
+
+export function mergeProfileOutboxFifo(base: AppProfileResponse, rows: OutboxRow[]): AppProfileResponse {
+  let next: AppProfileResponse = { ...base };
+  for (const row of rows) {
+    if (row.id === undefined) {
+      continue;
+    }
+    if (row.method.toUpperCase() !== "PATCH") {
+      continue;
+    }
+    if (!PROFILE_PATH.test(normPath(row.url))) {
+      continue;
+    }
+    if (!row.body || typeof row.body !== "object") {
+      continue;
+    }
+    const p = row.body as AppProfileUpdateRequest;
+    next = {
+      ...next,
+      ...(p.spend_accounts !== undefined ? { spend_accounts: [...p.spend_accounts] } : {}),
+      ...(p.base_currency !== undefined ? { base_currency: String(p.base_currency).trim().toUpperCase() } : {}),
+      ...(p.timezone !== undefined ? { timezone: String(p.timezone) } : {}),
+      ...(p.start_week !== undefined ? { start_of_week: Number(p.start_week) } : {}),
+    };
+  }
+  return next;
+}
+
+/** Merge queued profile patches into a profile response (FIFO). */
+export async function applyProfileOutboxToProfile(base: AppProfileResponse): Promise<AppProfileResponse> {
+  const rows = await listOutboxOrdered();
+  return mergeProfileOutboxFifo(base, rows);
+}

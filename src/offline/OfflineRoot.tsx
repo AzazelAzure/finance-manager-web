@@ -2,7 +2,12 @@ import { useEffect, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { isPwaStandaloneDisplay } from "../lib/pwaDisplay";
 import { useSessionOptional } from "../state/SessionContext";
-import { probeApiReachability } from "./connectivity";
+import {
+  FM_API_REACHABLE_EVENT,
+  type ApiReachableDetail,
+  markApiReachable,
+  probeApiReachability,
+} from "./connectivity";
 import { drainOutbox } from "./drain";
 import { outboxDepth } from "./outbox";
 import { seedOfflineWindow } from "./seed";
@@ -34,7 +39,19 @@ export function OfflineRoot(): ReactNode {
         }
       });
     };
+    const onOffline = (): void => {
+      markApiReachable(false);
+    };
+    const onReachable = (e: Event): void => {
+      const ce = e as CustomEvent<ApiReachableDetail>;
+      if (ce.detail?.ok) {
+        void syncMinimalExchangeRates();
+        void drainOutbox();
+      }
+    };
     window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    window.addEventListener(FM_API_REACHABLE_EVENT, onReachable);
     void (async () => {
       await probeApiReachability();
       void syncMinimalExchangeRates();
@@ -42,7 +59,11 @@ export function OfflineRoot(): ReactNode {
         await drainOutbox();
       }
     })();
-    return () => window.removeEventListener("online", onOnline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+      window.removeEventListener(FM_API_REACHABLE_EVENT, onReachable);
+    };
   }, [allow]);
 
   useEffect(() => {

@@ -7,6 +7,7 @@ import axios, {
 } from "axios";
 import { CLIENT_BUILD } from "../lib/clientBuild";
 import { isLikelyNetworkFailure, markApiReachable } from "../offline/connectivity";
+import { isOutboxAllowlisted, resolveUrlPathForAllowlist } from "../offline/allowlist";
 import {
   canRetroactivelyQueue,
   enqueueOfflineAxiosWrite,
@@ -44,6 +45,12 @@ api.defaults.adapter = async (config) => {
       void queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
       void queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
       void queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["tags", "all"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["categories", "all"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["profile"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["app-profile"], refetchType: "all" });
     }
     const headers = new AxiosHeaders();
     return {
@@ -90,6 +97,13 @@ function refreshAccessToken(): Promise<string | null> {
 
 const MUTATING_METHODS = new Set(["post", "put", "patch", "delete"]);
 
+function randomIdempotencyKeyForOnlineWrite(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `idem-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 api.interceptors.request.use((config) => {
   const token = getEffectiveAccessTokenForSession();
   if (token) {
@@ -99,6 +113,16 @@ api.interceptors.request.use((config) => {
   if (MUTATING_METHODS.has(method)) {
     config.headers = config.headers ?? {};
     config.headers["X-Client-Build"] = CLIENT_BUILD;
+    const path = resolveUrlPathForAllowlist(config);
+    const m = method.toUpperCase();
+    if (isOutboxAllowlisted(m, path) && !shouldQueueOfflineWrite(config)) {
+      const headers = AxiosHeaders.from(config.headers);
+      const existing = headers.get("Idempotency-Key") ?? headers.get("idempotency-key");
+      if (!existing) {
+        headers.set("Idempotency-Key", randomIdempotencyKeyForOnlineWrite());
+        config.headers = headers;
+      }
+    }
   }
   return config;
 });
@@ -132,6 +156,12 @@ api.interceptors.response.use(
           void queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
           void queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
           void queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+          void queryClient.invalidateQueries({ queryKey: ["tags", "all"], refetchType: "all" });
+          void queryClient.invalidateQueries({ queryKey: ["categories", "all"], refetchType: "all" });
+          void queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });
+          void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"], refetchType: "all" });
+          void queryClient.invalidateQueries({ queryKey: ["profile"], refetchType: "all" });
+          void queryClient.invalidateQueries({ queryKey: ["app-profile"], refetchType: "all" });
         }
         const headers = new AxiosHeaders();
         return {

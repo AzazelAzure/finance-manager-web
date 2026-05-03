@@ -2,21 +2,44 @@ import type { InternalAxiosRequestConfig } from "axios";
 
 type ConfigWithOfflineEcho = InternalAxiosRequestConfig & { offlineEcho?: unknown };
 import { getAccessToken, getRefreshToken } from "../state/auth";
-import { isOutboxAllowlisted } from "./allowlist";
+import { isOutboxAllowlisted, resolveUrlPathForAllowlist } from "./allowlist";
 import { shouldTreatAsDisconnectedForMutations } from "./connectivity";
+import {
+  mergeLookupsDexieCachesAfterOutboxEnqueue,
+  mergeUpcomingListDexieCacheAfterOutboxEnqueue,
+} from "./optimisticLookupsEnqueue";
 import { mergePendingPostIntoTxListCaches } from "./optimisticTxEnqueue";
 import { enqueueOutboxEntry } from "./outbox";
 
-function resolveUrlPath(config: InternalAxiosRequestConfig): string {
-  const raw = config.url ?? "";
-  if (raw.startsWith("http://") || raw.startsWith("https://")) {
-    try {
-      return new URL(raw).pathname;
-    } catch {
-      return raw;
-    }
+function isLookupOutboxEnqueue(method: string, pathNorm: string): boolean {
+  const m = method.toUpperCase();
+  if (m === "POST" && /^\/finance\/categories\/?$/.test(pathNorm)) {
+    return true;
   }
-  return raw.startsWith("/") ? raw : `/${raw}`;
+  if ((m === "PATCH" || m === "DELETE") && /^\/finance\/categories\/[^/]+\/?$/.test(pathNorm)) {
+    return true;
+  }
+  if ((m === "POST" || m === "PATCH" || m === "DELETE") && /^\/finance\/tags\/?$/.test(pathNorm)) {
+    return true;
+  }
+  if (m === "POST" && /^\/finance\/sources\/?$/.test(pathNorm)) {
+    return true;
+  }
+  if ((m === "PATCH" || m === "DELETE") && /^\/finance\/sources\/[^/]+\/?$/.test(pathNorm)) {
+    return true;
+  }
+  return false;
+}
+
+function isUpcomingOutboxEnqueue(method: string, pathNorm: string): boolean {
+  const m = method.toUpperCase();
+  if (m === "POST" && /^\/finance\/upcoming_expenses\/?$/.test(pathNorm)) {
+    return true;
+  }
+  if ((m === "PATCH" || m === "PUT" || m === "DELETE") && /^\/finance\/upcoming_expenses\/[^/]+\/?$/.test(pathNorm)) {
+    return true;
+  }
+  return false;
 }
 
 export function shouldQueueOfflineWrite(config: InternalAxiosRequestConfig): boolean {
@@ -27,7 +50,7 @@ export function shouldQueueOfflineWrite(config: InternalAxiosRequestConfig): boo
   if (!["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
     return false;
   }
-  const path = resolveUrlPath(config);
+  const path = resolveUrlPathForAllowlist(config);
   if (!isOutboxAllowlisted(method, path)) {
     return false;
   }
@@ -37,7 +60,7 @@ export function shouldQueueOfflineWrite(config: InternalAxiosRequestConfig): boo
 }
 
 export async function enqueueOfflineAxiosWrite(config: InternalAxiosRequestConfig): Promise<string> {
-  const path = resolveUrlPath(config);
+  const path = resolveUrlPathForAllowlist(config);
   const echo = (config as ConfigWithOfflineEcho).offlineEcho;
   const method = (config.method ?? "POST").toUpperCase();
   const idempotencyKey = await enqueueOutboxEntry({
@@ -50,6 +73,12 @@ export async function enqueueOfflineAxiosWrite(config: InternalAxiosRequestConfi
   const pathNorm = norm.endsWith("/") || norm.length === 0 ? norm : `${norm}/`;
   if (method === "POST" && /^\/finance\/transactions\/?$/.test(pathNorm)) {
     await mergePendingPostIntoTxListCaches(config.data, idempotencyKey).catch(() => undefined);
+  }
+  if (isLookupOutboxEnqueue(method, pathNorm)) {
+    await mergeLookupsDexieCachesAfterOutboxEnqueue().catch(() => undefined);
+  }
+  if (isUpcomingOutboxEnqueue(method, pathNorm)) {
+    await mergeUpcomingListDexieCacheAfterOutboxEnqueue().catch(() => undefined);
   }
   return idempotencyKey;
 }
@@ -70,7 +99,7 @@ export function canRetroactivelyQueue(
   if (!["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
     return false;
   }
-  const path = resolveUrlPath(config);
+  const path = resolveUrlPathForAllowlist(config);
   if (!isOutboxAllowlisted(method, path)) {
     return false;
   }

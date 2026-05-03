@@ -3,12 +3,13 @@ import {
   FM_API_REACHABLE_EVENT,
   type ApiReachableDetail,
   isApiMarkedUnreachable,
+  markApiReachable,
   probeApiReachability,
 } from "../offline/connectivity";
 import { drainOutbox } from "../offline/drain";
 import { outboxDepth } from "../offline/outbox";
 import { SYNC_STATE_EVENT, type SyncStatePayload } from "../offline/syncEvents";
-import { tr, useLocale } from "../lib/i18n";
+import { tr, trFmt, useLocale } from "../lib/i18n";
 import { Button } from "./ui/Button";
 
 function computeNavigatorOnline(): boolean {
@@ -25,6 +26,7 @@ export function SyncStatusBar(): ReactNode {
   const [sync, setSync] = useState<SyncStatePayload["phase"]>("idle");
   const [syncDetail, setSyncDetail] = useState<string | undefined>();
   const [reconnectPrompt, setReconnectPrompt] = useState(false);
+  const [sessionDismissed, setSessionDismissed] = useState(false);
 
   const treatAsOffline = !navigatorOnline || apiUnreachable;
 
@@ -42,11 +44,15 @@ export function SyncStatusBar(): ReactNode {
     };
     const onOffline = (): void => {
       setNavigatorOnline(false);
+      markApiReachable(false);
     };
     const onReach = (e: Event): void => {
       const ce = e as CustomEvent<ApiReachableDetail>;
       const d = ce.detail;
       setApiUnreachable(d.ok === false);
+      if (d.ok) {
+        setSync((prev) => (prev === "error" ? "idle" : prev));
+      }
       if (d.ok && d.previous === false) {
         void outboxDepth().then((n) => {
           if (n > 0) {
@@ -55,7 +61,10 @@ export function SyncStatusBar(): ReactNode {
         });
       }
     };
-    const onQueued = (): void => refreshDepth();
+    const onQueued = (): void => {
+      setSessionDismissed(false);
+      refreshDepth();
+    };
     const onSync = (e: Event): void => {
       const ce = e as CustomEvent<SyncStatePayload>;
       setSync(ce.detail?.phase ?? "idle");
@@ -78,21 +87,47 @@ export function SyncStatusBar(): ReactNode {
     };
   }, []);
 
-  if (sync === "idle" && !treatAsOffline && queued === 0 && !reconnectPrompt) {
-    return null;
+  useEffect(() => {
+    if (sync === "idle") {
+      setSyncDetail(undefined);
+    }
+  }, [sync]);
+
+  useEffect(() => {
+    if (queued > 0 || sync === "syncing" || sync === "error" || sync === "auth_blocked" || reconnectPrompt) {
+      setSessionDismissed(false);
+    }
+  }, [queued, sync, reconnectPrompt]);
+
+  if (sync === "idle" && queued === 0 && !reconnectPrompt) {
+    if (!navigatorOnline) {
+      return null;
+    }
+    if (!treatAsOffline) {
+      return null;
+    }
   }
 
-  const label = treatAsOffline
-    ? tr("sync.status.offlineQueued", locale)
-    : sync === "syncing"
-      ? tr("sync.status.syncing", locale)
-      : sync === "auth_blocked"
-        ? syncDetail ?? tr("sync.status.authBlocked", locale)
-        : sync === "error"
-          ? syncDetail ?? tr("sync.status.error", locale)
-          : queued > 0
-            ? tr("sync.status.queuedWillSync", locale)
-            : "";
+  const label =
+    treatAsOffline && queued > 0
+      ? trFmt("sync.status.offlineQueuedDepth", locale, { count: queued })
+      : treatAsOffline
+        ? tr("sync.status.offlineNoQueue", locale)
+        : sync === "syncing"
+          ? queued > 0
+            ? trFmt("sync.status.syncingDepth", locale, { count: queued })
+            : tr("sync.status.syncing", locale)
+          : sync === "auth_blocked"
+            ? syncDetail ?? tr("sync.status.authBlocked", locale)
+            : sync === "error"
+              ? syncDetail ?? tr("sync.status.error", locale)
+              : queued > 0
+                ? trFmt("sync.status.queuedWillSyncDepth", locale, { count: queued })
+                : "";
+
+  if (sessionDismissed && sync === "idle" && queued === 0 && !reconnectPrompt) {
+    return null;
+  }
 
   return (
     <div
@@ -152,11 +187,21 @@ export function SyncStatusBar(): ReactNode {
         }}
       >
         <span>{label}</span>
-        {!treatAsOffline && queued > 0 ? (
-          <Button type="button" variant="secondary" onClick={() => void drainOutbox().finally(refreshDepth)}>
-            {tr("sync.action.syncNow", locale)}
+        <span style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          {!treatAsOffline && queued > 0 ? (
+            <Button type="button" variant="secondary" onClick={() => void drainOutbox().finally(refreshDepth)}>
+              {tr("sync.action.syncNow", locale)}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="ghost"
+            aria-label={tr("sync.dismiss.aria", locale)}
+            onClick={() => setSessionDismissed(true)}
+          >
+            {tr("sync.dismiss", locale)}
           </Button>
-        ) : null}
+        </span>
       </div>
     </div>
   );

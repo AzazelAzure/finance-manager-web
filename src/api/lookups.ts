@@ -3,18 +3,24 @@ import { readCachePayload, writeCachePayload } from "../offline/cache";
 import { offlineDb } from "../offline/db";
 import { isPwaBackgroundStale, schedulePwaBackgroundWork } from "../offline/pwaLocalFirstBg";
 import { shouldBypassPwaDataCache, type PwaReadBypassOpts } from "../offline/pwaReadBypass";
+import {
+  applyCategoryOutboxToList,
+  applySourceOutboxToList,
+  applyTagOutboxToList,
+} from "../offline/lookupsOutboxOverlay";
 import { listTransactions, type TransactionFilters } from "./transactions";
 import { api } from "./client";
 import type { CategoryRow, SourceRow, TagsListResponse, TransactionRecord } from "./types";
 
-const TAGS_CACHE_ID = "lookups:tags:all";
-const CATEGORIES_CACHE_ID = "lookups:categories:all";
-const SOURCES_CACHE_ID = "lookups:sources:all";
+export const TAGS_CACHE_ID = "lookups:tags:all";
+export const CATEGORIES_CACHE_ID = "lookups:categories:all";
+export const SOURCES_CACHE_ID = "lookups:sources:all";
 
 export async function listTags(opts?: PwaReadBypassOpts): Promise<string[]> {
   if (preferOfflineCaches()) {
     const raw = await readCachePayload(TAGS_CACHE_ID);
-    return Array.isArray(raw) ? (raw as string[]) : [];
+    const base = Array.isArray(raw) ? (raw as string[]) : [];
+    return applyTagOutboxToList(base);
   }
   if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
     const row = await offlineDb.caches.get(TAGS_CACHE_ID);
@@ -30,19 +36,20 @@ export async function listTags(opts?: PwaReadBypassOpts): Promise<string[]> {
           await queryClient.invalidateQueries({ queryKey: ["tags", "all"], refetchType: "all" });
         });
       }
-      return raw as string[];
+      return applyTagOutboxToList(raw as string[]);
     }
   }
   const { data } = await api.get<TagsListResponse>("/finance/tags/");
   const tags = data.tags ?? [];
   await writeCachePayload(TAGS_CACHE_ID, tags, Date.now());
-  return tags;
+  return applyTagOutboxToList(tags);
 }
 
 export async function listCategories(opts?: PwaReadBypassOpts): Promise<string[]> {
   if (preferOfflineCaches()) {
     const raw = await readCachePayload(CATEGORIES_CACHE_ID);
-    return Array.isArray(raw) ? (raw as string[]) : [];
+    const base = Array.isArray(raw) ? (raw as string[]) : [];
+    return applyCategoryOutboxToList(base);
   }
   if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
     const row = await offlineDb.caches.get(CATEGORIES_CACHE_ID);
@@ -60,7 +67,7 @@ export async function listCategories(opts?: PwaReadBypassOpts): Promise<string[]
           await queryClient.invalidateQueries({ queryKey: ["categories", "all"], refetchType: "all" });
         });
       }
-      return raw as string[];
+      return applyCategoryOutboxToList(raw as string[]);
     }
   }
   const { data } = await api.get<CategoryRow[]>("/finance/categories/");
@@ -68,13 +75,14 @@ export async function listCategories(opts?: PwaReadBypassOpts): Promise<string[]
     .map((c) => (typeof c?.name === "string" ? c.name.trim() : ""))
     .filter((name) => Boolean(name));
   await writeCachePayload(CATEGORIES_CACHE_ID, names, Date.now());
-  return names;
+  return applyCategoryOutboxToList(names);
 }
 
 export async function listSourceNames(opts?: PwaReadBypassOpts): Promise<SourceRow[]> {
   if (preferOfflineCaches()) {
     const raw = await readCachePayload(SOURCES_CACHE_ID);
-    return Array.isArray(raw) ? (raw as SourceRow[]) : [];
+    const base = Array.isArray(raw) ? (raw as SourceRow[]) : [];
+    return applySourceOutboxToList(base);
   }
   if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
     const row = await offlineDb.caches.get(SOURCES_CACHE_ID);
@@ -84,19 +92,19 @@ export async function listSourceNames(opts?: PwaReadBypassOpts): Promise<SourceR
       if (isPwaBackgroundStale(fetchedAt)) {
         schedulePwaBackgroundWork(SOURCES_CACHE_ID, async () => {
           const { data } = await api.get<SourceRow[]>("/finance/sources/");
-          const rows = (data ?? []).filter((row) => String(row.source ?? "").trim().toLowerCase() !== "unknown");
+          const rows = (data ?? []).filter((r) => String(r.source ?? "").trim().toLowerCase() !== "unknown");
           await writeCachePayload(SOURCES_CACHE_ID, rows, Date.now());
           const { queryClient } = await import("../lib/queryClient");
           await queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });
         });
       }
-      return raw as SourceRow[];
+      return applySourceOutboxToList(raw as SourceRow[]);
     }
   }
   const { data } = await api.get<SourceRow[]>("/finance/sources/");
-  const rows = (data ?? []).filter((row) => String(row.source ?? "").trim().toLowerCase() !== "unknown");
+  const rows = (data ?? []).filter((r) => String(r.source ?? "").trim().toLowerCase() !== "unknown");
   await writeCachePayload(SOURCES_CACHE_ID, rows, Date.now());
-  return rows;
+  return applySourceOutboxToList(rows);
 }
 
 export async function createCategory(name: string): Promise<CategoryRow> {

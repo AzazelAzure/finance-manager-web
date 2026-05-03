@@ -15,6 +15,8 @@ import { SourceSelect } from "../transactions/SourceSelect";
 
 type QuickActionType = "INCOME" | "EXPENSE" | "XFER" | "BILL";
 
+// +Bill / KNOWN_ISSUES #2: disabled until Quick pay bill ships. Staged design (transaction + bill, v1 fields):
+// Parent workspace: plans/cursor/s1b/quick-pay-bill-design/DESIGN_DECISION.md
 const items = [
   { type: "INCOME" as QuickActionType },
   { type: "EXPENSE" as QuickActionType },
@@ -44,7 +46,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
   });
   const unpaidBillsQuery = useQuery({
     queryKey: ["upcoming-expenses", "unpaid-names"] as const,
-    queryFn: listUnpaidExpenseNames,
+    queryFn: (ctx) => listUnpaidExpenseNames(readOptsFromQuery(ctx)),
   });
   const categoryOptions = categoriesQuery.data ?? [];
   const tagOptions = tagsQuery.data ?? [];

@@ -10,6 +10,7 @@ import { ErrorState } from "../../components/ui/ErrorState";
 import { LoadingState } from "../../components/ui/LoadingState";
 import { formatMoney } from "../../lib/money";
 import { tr, useLocale } from "../../lib/i18n";
+import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -81,7 +82,7 @@ export function DeepDivePage(): ReactNode {
   const [activeTypeSlice, setActiveTypeSlice] = useState<number>(-1);
   const query = useQuery({
     queryKey: ["transactions-viz", startDate, endDate] as const,
-    queryFn: () => getTransactionsVisualization({ start_date: startDate, end_date: endDate }),
+    queryFn: (ctx) => getTransactionsVisualization({ start_date: startDate, end_date: endDate }, readOptsFromQuery(ctx)),
   });
 
   const flowData = useMemo(() => normalizeFlowRows(query.data?.flow_daily), [query.data?.flow_daily]);

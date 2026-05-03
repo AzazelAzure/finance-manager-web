@@ -9,7 +9,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { setLocale, tr, useLocale } from "../lib/i18n";
+import { setLocale, tr, trFmt, useLocale } from "../lib/i18n";
 import { useSession } from "../state/SessionContext";
 import { useMemo, useState, type ReactNode } from "react";
 import { OfflineHistoryBanner } from "../components/OfflineHistoryBanner";
@@ -102,6 +102,7 @@ export function ProtectedShell(): ReactNode {
   const [guideOpen, setGuideOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [logoutOutboxStep, setLogoutOutboxStep] = useState(false);
+  const [logoutOutboxCount, setLogoutOutboxCount] = useState(0);
   const title = tr(TITLE[loc.pathname] ?? "shell.title.app", locale);
   const guideSteps = useMemo(() => {
     if (loc.pathname.startsWith("/app/dashboard")) {
@@ -175,6 +176,7 @@ export function ProtectedShell(): ReactNode {
             type="button"
             onClick={() => {
               setLogoutOutboxStep(false);
+              setLogoutOutboxCount(0);
               setLogoutOpen(true);
             }}
           >
@@ -229,6 +231,7 @@ export function ProtectedShell(): ReactNode {
             className="shell-nav-link shell-nav-link--danger"
             onClick={() => {
               setLogoutOutboxStep(false);
+              setLogoutOutboxCount(0);
               setLogoutOpen(true);
             }}
             aria-label={tr("shell.nav.logout", locale)}
@@ -252,6 +255,7 @@ export function ProtectedShell(): ReactNode {
         onClose={() => {
           setLogoutOpen(false);
           setLogoutOutboxStep(false);
+          setLogoutOutboxCount(0);
         }}
         title={tr("shell.nav.logout", locale)}
       >
@@ -268,6 +272,7 @@ export function ProtectedShell(): ReactNode {
                   onClick={() => {
                     setLogoutOpen(false);
                     setLogoutOutboxStep(false);
+                    setLogoutOutboxCount(0);
                   }}
                 >
                   Cancel
@@ -278,6 +283,7 @@ export function ProtectedShell(): ReactNode {
                     void (async () => {
                       const depth = await outboxDepth();
                       if (depth > 0) {
+                        setLogoutOutboxCount(depth);
                         setLogoutOutboxStep(true);
                         return;
                       }
@@ -294,7 +300,9 @@ export function ProtectedShell(): ReactNode {
           ) : (
             <>
               <p className="muted-text" style={{ margin: 0 }}>
-                {tr("shell.logout.outboxPrompt", locale)}
+                {logoutOutboxCount > 0
+                  ? trFmt("shell.logout.outboxPromptDepth", locale, { count: logoutOutboxCount })
+                  : tr("shell.logout.outboxPrompt", locale)}
               </p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
                 <Button

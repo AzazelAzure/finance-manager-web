@@ -18,6 +18,7 @@ import { SuccessState } from "../../components/ui/SuccessState";
 import { TabPanel, Tabs } from "../../components/ui/Tabs";
 import { listSourceNames } from "../../api/lookups";
 import { getAppProfile, updateAppProfile } from "../../api/profile";
+import { isOfflineQueued } from "../../api/types";
 import { fetchAppSnapshot } from "../../api/snapshot";
 import { deleteCurrentUser, getCurrentUserEmail, patchCurrentUserPassword } from "../../api/user";
 import { formatMoney } from "../../lib/money";
@@ -163,16 +164,19 @@ export function SettingsProfilePage(): ReactNode {
 
   const settingsMutation = useMutation({
     mutationFn: async (values: SettingsForm) => {
-      await updateAppProfile({
+      const res = await updateAppProfile({
         spend_accounts: selectedSpendAccounts,
         base_currency: values.base_currency.toUpperCase(),
         timezone: values.timezone,
         start_week: Number(values.start_week),
       });
       setThemePreference(values.theme as ThemePreference);
+      return res;
     },
-    onSuccess: () => {
-      setSettingsMessage(tr("settings.saved", locale));
+    onSuccess: (res) => {
+      setSettingsMessage(
+        isOfflineQueued(res) ? tr("settings.savedOffline", locale) : tr("settings.saved", locale),
+      );
       requestPwaReadBypassAfterMutation();
       void queryClient.invalidateQueries({ queryKey: ["profile"], refetchType: "all" });
       void queryClient.invalidateQueries({ queryKey: ["app-profile"], refetchType: "all" });

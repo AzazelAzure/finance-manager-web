@@ -1,3 +1,18 @@
+import type { InternalAxiosRequestConfig } from "axios";
+
+/** Pathname tail for allowlist checks (matches axios `config.url` vs baseURL). */
+export function resolveUrlPathForAllowlist(config: Pick<InternalAxiosRequestConfig, "url">): string {
+  const raw = config.url ?? "";
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    try {
+      return new URL(raw).pathname;
+    } catch {
+      return raw;
+    }
+  }
+  return raw.startsWith("/") ? raw : `/${raw}`;
+}
+
 /**
  * v1 mutating paths aligned with API D2 (transactions + upcoming_expenses) plus lookup
  * endpoints the UI may call immediately before a dependent write (e.g. Quick add creates
@@ -13,6 +28,7 @@ const CAT_DETAIL = /^\/finance\/categories\/[^/]+\/?$/;
 const TAG_ENDPOINT = /^\/finance\/tags\/?$/;
 const SRC_LIST = /^\/finance\/sources\/?$/;
 const SRC_DETAIL = /^\/finance\/sources\/[^/]+\/?$/;
+const APP_PROFILE = /^\/finance\/appprofile\/?$/;
 
 export function isOutboxAllowlisted(method: string, path: string): boolean {
   const m = method.toUpperCase();
@@ -35,5 +51,7 @@ export function isOutboxAllowlisted(method: string, path: string): boolean {
   if (m === "POST" && SRC_LIST.test(norm)) return true;
   if (m === "PATCH" && SRC_DETAIL.test(norm)) return true;
   if (m === "DELETE" && SRC_DETAIL.test(norm)) return true;
+
+  if (m === "PATCH" && APP_PROFILE.test(norm)) return true;
   return false;
 }

@@ -14,7 +14,9 @@ import { shouldBypassPwaDataCache, type PwaReadBypassOpts } from "../offline/pwa
 import { buildCalendarResponseFromTransactions } from "../offline/calendarOffline";
 import { loadCurrencyConverter } from "../offline/exchangeRates";
 import { buildVisualizationFromTransactions } from "../offline/visualizationOffline";
-import { applyTransactionOutboxToList } from "../offline/transactionOutboxOverlay";
+import { replacePendingPostInTxListCaches } from "../offline/optimisticTxEnqueue";
+import { listOutboxOrdered, parsePendingTransactionIdentity, updateQueuedTransactionPostBody } from "../offline/outbox";
+import { findTransactionRecordById, applyTransactionOutboxToList } from "../offline/transactionOutboxOverlay";
 import { api } from "./client";
 import { listUpcomingExpenses } from "./upcomingExpenses";
 import {
@@ -90,8 +92,17 @@ export async function listTransactions(
 }
 
 export async function getTransaction(txId: string): Promise<TransactionRecord> {
+  if (txId.startsWith("pending:") || preferOfflineCaches()) {
+    const local = await findTransactionRecordById(txId);
+    if (local) {
+      return local;
+    }
+    if (txId.startsWith("pending:")) {
+      throw new Error("Queued transaction draft was not found (it may have already synced).");
+    }
+  }
   const { data } = await api.get<{ transaction?: TransactionRecord } | TransactionRecord>(
-    `/finance/transactions/${txId}/`,
+    `/finance/transactions/${encodeURIComponent(txId)}/`,
   );
   if ("transaction" in data && data.transaction) {
     return data.transaction;
@@ -113,7 +124,38 @@ export async function updateTransaction(
   txId: string,
   payload: TransactionPatchRequest,
 ): Promise<TransactionRecord | OfflineQueuedResult> {
-  const res = await api.patch<TransactionRecord | OfflineQueuedResult>(`/finance/transactions/${txId}/`, payload);
+  if (txId.startsWith("pending:")) {
+    const ok = await updateQueuedTransactionPostBody(txId, payload);
+    if (!ok) {
+      throw new Error("Could not update queued transaction draft.");
+    }
+    const ident = parsePendingTransactionIdentity(txId);
+    if (ident) {
+      const row = (await listOutboxOrdered()).find(
+        (r) =>
+          r.idempotencyKey === ident.idempotencyKey &&
+          r.method.toUpperCase() === "POST" &&
+          /^\/finance\/transactions\/?$/.test(
+            (() => {
+              const p = r.url.split("?")[0];
+              return p.endsWith("/") || p.length === 0 ? p : `${p}/`;
+            })(),
+          ),
+      );
+      if (row) {
+        await replacePendingPostInTxListCaches(ident.idempotencyKey, row.body);
+      }
+    }
+    const rec = await findTransactionRecordById(txId);
+    if (!rec) {
+      throw new Error("Updated queued draft but could not re-read it locally.");
+    }
+    return rec;
+  }
+  const res = await api.patch<TransactionRecord | OfflineQueuedResult>(
+    `/finance/transactions/${encodeURIComponent(txId)}/`,
+    payload,
+  );
   if (res.status === 202 && isOfflineQueued(res.data)) {
     return res.data;
   }
@@ -229,22 +271,11 @@ export async function getTransactionsVisualization(
   return payload;
 }
 
-export async function listUnpaidExpenseNames(): Promise<string[]> {
-  if (preferOfflineCaches()) {
-    const all = await listUpcomingExpenses();
-    const names = all
-      .filter((row) => !row.paid_flag)
-      .map((row) => String(row.name ?? "").trim())
-      .filter(Boolean);
-    return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
-  }
-  const { data } = await api.get<{ expenses?: Array<{ name?: string }> } | Array<{ name?: string }>>(
-    "/finance/upcoming_expenses/",
-    { params: { paid_flag: "false" } },
-  );
-  const rows = Array.isArray(data) ? data : data.expenses ?? [];
-  const names = rows
-    .map((row) => String(row?.name ?? "").trim())
-    .filter((name) => Boolean(name));
+export async function listUnpaidExpenseNames(opts?: PwaReadBypassOpts): Promise<string[]> {
+  const all = await listUpcomingExpenses(opts);
+  const names = all
+    .filter((row) => !row.paid_flag)
+    .map((row) => String(row.name ?? "").trim())
+    .filter(Boolean);
   return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
 }

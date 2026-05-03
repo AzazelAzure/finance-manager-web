@@ -1,5 +1,13 @@
+import type { TransactionCreateRequest, TransactionPatchRequest } from "../api/types";
 import type { OutboxRow } from "./db";
 import { offlineDb } from "./db";
+
+const TX_LIST_PATH = /^\/finance\/transactions\/?$/;
+
+function normPathForOutbox(url: string): string {
+  const p = url.split("?")[0];
+  return p.endsWith("/") || p.length === 0 ? p : `${p}/`;
+}
 
 function randomIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -40,4 +48,81 @@ export async function clearOutbox(): Promise<void> {
 
 export async function outboxDepth(): Promise<number> {
   return offlineDb.outbox.count();
+}
+
+/** Parse `pending:<idempotencyKey>` or `pending:<idempotencyKey>:<index>` (multi-body POST). */
+export function parsePendingTransactionIdentity(txId: string): { idempotencyKey: string; bodyIndex: number } | null {
+  if (!txId.startsWith("pending:")) {
+    return null;
+  }
+  const rest = txId.slice("pending:".length);
+  const m = rest.match(/^(.*):(\d+)$/);
+  if (m) {
+    return { idempotencyKey: m[1]!, bodyIndex: Number(m[2]) };
+  }
+  return { idempotencyKey: rest, bodyIndex: 0 };
+}
+
+function mergeCreateBodyWithPatch(
+  body: TransactionCreateRequest,
+  patch: TransactionPatchRequest,
+): TransactionCreateRequest {
+  return {
+    ...body,
+    date: patch.date ?? body.date,
+    amount: patch.amount != null ? String(patch.amount) : body.amount,
+    source: patch.source ?? body.source,
+    currency: patch.currency ?? body.currency,
+    tx_type: (patch.tx_type ?? body.tx_type) as TransactionCreateRequest["tx_type"],
+    category: patch.category ?? body.category,
+    description: patch.description ?? body.description,
+    bill: patch.bill ?? body.bill,
+    tags: patch.tags ?? body.tags,
+  };
+}
+
+/**
+ * Update the queued POST /finance/transactions/ body for a synthetic `pending:*` tx id
+ * (Dexie outbox row update).
+ */
+export async function updateQueuedTransactionPostBody(
+  txId: string,
+  patch: TransactionPatchRequest,
+): Promise<boolean> {
+  const ident = parsePendingTransactionIdentity(txId);
+  if (!ident) {
+    return false;
+  }
+  const rows = await offlineDb.outbox.orderBy("id").toArray();
+  const row = rows.find(
+    (r) =>
+      r.idempotencyKey === ident.idempotencyKey &&
+      r.method.toUpperCase() === "POST" &&
+      TX_LIST_PATH.test(normPathForOutbox(r.url)),
+  );
+  if (row?.id === undefined) {
+    return false;
+  }
+  const bi = ident.bodyIndex;
+  const body = row.body;
+  if (Array.isArray(body)) {
+    if (bi < 0 || bi >= body.length) {
+      return false;
+    }
+    const cur = body[bi];
+    if (!cur || typeof cur !== "object") {
+      return false;
+    }
+    const next = [...body];
+    next[bi] = mergeCreateBodyWithPatch(cur as TransactionCreateRequest, patch);
+    await offlineDb.outbox.update(row.id, { body: next });
+    return true;
+  }
+  if (body && typeof body === "object") {
+    await offlineDb.outbox.update(row.id, {
+      body: mergeCreateBodyWithPatch(body as TransactionCreateRequest, patch),
+    });
+    return true;
+  }
+  return false;
 }
