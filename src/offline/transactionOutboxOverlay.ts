@@ -2,21 +2,20 @@
  * Merges allowlisted transaction outbox rows into snapshot/list reads so the UI
  * stays usable offline or before drain completes.
  *
- * Limitations (acceptable until we cache ECB rates + wider tx index in IndexedDB):
- * - Cross-currency math uses **no conversion** (amount treated as numeric in target
- *   currency). Same-currency paths match the API.
- * - Source balance replay starts from cached `source_balances` + outbox deltas; if
- *   DELETE/PATCH targets a tx id that was never in the cached month snapshot, the
- *   balance reversal is skipped until the next online refresh.
+ * Cross-currency: uses **stored** pairwise rates from `GET /finance/exchange_rates/`
+ * (see `offline/exchangeRates.ts`). If a pair is missing, conversion falls back to
+ * identity (same as pre-rates behavior).
  *
- * Rust/WASM is **not** required for this layer: deterministic replay of signed
- * amounts. A future shared **rate table** (bundled or synced) would align
- * cross-currency with the Django `convert_currency` path.
+ * DELETE balance reversal: prefers the tx row from the cached snapshot month; if
+ * missing, uses optional outbox **echo** (`kind: "transaction_delete"`) captured when
+ * the user deletes from the ledger while offline.
  */
 
 import type { SnapshotResponse, SnapshotTransactionRow, TransactionCreateRequest, TransactionPatchRequest, TransactionRecord } from "../api/types";
 import type { OutboxRow } from "./db";
 import { readCachePayload } from "./cache";
+import type { CurrencyConverter } from "./exchangeRates";
+import { loadCurrencyConverter } from "./exchangeRates";
 import { listOutboxOrdered } from "./outbox";
 
 const TX_LIST = /^\/finance\/transactions\/?$/;
@@ -53,25 +52,6 @@ export function signedAmountFromTxLike(amountStr: string, txType: string): numbe
   return raw;
 }
 
-/** API `_calc_totals` without ECB offline: same-currency only; else pass-through (documented). */
-function amountInBase(amount: number, currency: string, baseCurrency: string): number {
-  const c = currency.trim().toUpperCase();
-  const b = baseCurrency.trim().toUpperCase();
-  if (c === b) {
-    return amount;
-  }
-  return amount;
-}
-
-function convertTxToSourceCurrency(amount: number, txCurrency: string, sourceCurrency: string): number {
-  const t = txCurrency.trim().toUpperCase();
-  const s = sourceCurrency.trim().toUpperCase();
-  if (t === s) {
-    return amount;
-  }
-  return amount;
-}
-
 type MutableSource = { source: string; acc_type: string; amount: number; currency: string };
 
 function cloneSourcesFromBase(base: SnapshotResponse): Map<string, MutableSource> {
@@ -88,7 +68,12 @@ function cloneSourcesFromBase(base: SnapshotResponse): Map<string, MutableSource
   return m;
 }
 
-function applyTxToSourceBalance(sources: Map<string, MutableSource>, tx: TransactionRecord, direction: 1 | -1): void {
+async function applyTxToSourceBalance(
+  sources: Map<string, MutableSource>,
+  tx: TransactionRecord,
+  direction: 1 | -1,
+  cv: CurrencyConverter,
+): Promise<void> {
   const key = tx.source.trim().toLowerCase();
   let row = sources.get(key);
   if (!row) {
@@ -97,8 +82,20 @@ function applyTxToSourceBalance(sources: Map<string, MutableSource>, tx: Transac
     sources.set(key, row);
   }
   const signed = signedAmountFromTxLike(tx.amount, tx.tx_type);
-  const delta = convertTxToSourceCurrency(signed, (tx.currency || "USD").toUpperCase(), row.currency) * direction;
+  const delta = (await cv.convert(signed, (tx.currency || "USD").toUpperCase(), row.currency)) * direction;
   row.amount = round2(row.amount + delta);
+}
+
+function deleteEchoToRecord(echo: unknown): TransactionRecord | undefined {
+  if (!echo || typeof echo !== "object") {
+    return undefined;
+  }
+  const o = echo as { kind?: string; record?: TransactionRecord };
+  if (o.kind !== "transaction_delete" || !o.record) {
+    return undefined;
+  }
+  const r = o.record;
+  return { ...r, tags: [...(r.tags ?? [])] };
 }
 
 function txYearMonth(txDate: string): string | null {
@@ -301,15 +298,8 @@ function isPendingTxId(txId: string): boolean {
   return txId.startsWith("pending:");
 }
 
-/**
- * Replays outbox onto a tx map; optionally applies the same operations to source balances
- * (FIFO) for snapshot refresh.
- */
-function applyOutboxToTxMapAndSources(
-  map: Map<string, TransactionRecord>,
-  sources: Map<string, MutableSource> | null,
-  rows: OutboxRow[],
-): void {
+/** Replay outbox onto tx map only (list reads). */
+function applyOutboxToTxMapOnly(map: Map<string, TransactionRecord>, rows: OutboxRow[]): void {
   for (const row of rows) {
     if (row.id === undefined) {
       continue;
@@ -323,11 +313,7 @@ function applyOutboxToTxMapAndSources(
       const keyBase = `pending:${row.idempotencyKey}`;
       bodies.forEach((req, idx) => {
         const txId = bodies.length === 1 ? keyBase : `${keyBase}:${idx}`;
-        const rec = createRequestToRecord(req, txId);
-        if (sources) {
-          applyTxToSourceBalance(sources, rec, 1);
-        }
-        map.set(txId, rec);
+        map.set(txId, createRequestToRecord(req, txId));
       });
       continue;
     }
@@ -343,9 +329,62 @@ function applyOutboxToTxMapAndSources(
     }
 
     if (method === "DELETE") {
+      map.delete(serverId);
+      continue;
+    }
+
+    if (method === "PATCH" && row.body && typeof row.body === "object") {
       const prev = map.get(serverId);
-      if (prev && sources) {
-        applyTxToSourceBalance(sources, prev, -1);
+      if (!prev) {
+        continue;
+      }
+      map.set(serverId, mergePatch(prev, row.body as TransactionPatchRequest));
+    }
+  }
+}
+
+/** Replay outbox onto tx map and source balances (snapshot); uses stored FX rates. */
+async function applyOutboxToTxMapAndSourcesAsync(
+  map: Map<string, TransactionRecord>,
+  sources: Map<string, MutableSource>,
+  rows: OutboxRow[],
+  cv: CurrencyConverter,
+): Promise<void> {
+  for (const row of rows) {
+    if (row.id === undefined) {
+      continue;
+    }
+    const method = row.method.toUpperCase();
+    const path = row.url.split("?")[0];
+    const norm = path.endsWith("/") || path.length === 0 ? path : `${path}/`;
+
+    if (method === "POST" && TX_LIST.test(norm)) {
+      const bodies = normalizeTransactionPostBody(row.body);
+      const keyBase = `pending:${row.idempotencyKey}`;
+      for (let idx = 0; idx < bodies.length; idx += 1) {
+        const req = bodies[idx]!;
+        const txId = bodies.length === 1 ? keyBase : `${keyBase}:${idx}`;
+        const rec = createRequestToRecord(req, txId);
+        await applyTxToSourceBalance(sources, rec, 1, cv);
+        map.set(txId, rec);
+      }
+      continue;
+    }
+
+    const detailMatch = norm.match(TX_DETAIL);
+    if (!detailMatch) {
+      continue;
+    }
+    const serverId = decodeURIComponent(detailMatch[1]);
+
+    if (isPendingTxId(serverId)) {
+      continue;
+    }
+
+    if (method === "DELETE") {
+      const prev = map.get(serverId) ?? deleteEchoToRecord(row.echo);
+      if (prev) {
+        await applyTxToSourceBalance(sources, prev, -1, cv);
       }
       map.delete(serverId);
       continue;
@@ -356,13 +395,9 @@ function applyOutboxToTxMapAndSources(
       if (!prev) {
         continue;
       }
-      if (sources) {
-        applyTxToSourceBalance(sources, prev, -1);
-      }
+      await applyTxToSourceBalance(sources, prev, -1, cv);
       const merged = mergePatch(prev, row.body as TransactionPatchRequest);
-      if (sources) {
-        applyTxToSourceBalance(sources, merged, 1);
-      }
+      await applyTxToSourceBalance(sources, merged, 1, cv);
       map.set(serverId, merged);
     }
   }
@@ -378,10 +413,11 @@ async function readProfileBaseCurrency(): Promise<string> {
   return "USD";
 }
 
-function buildFlowSeriesFromRows(
+async function buildFlowSeriesFromRows(
   rows: SnapshotTransactionRow[],
   baseCurrency: string,
-): Array<{ label: string; incoming: number; outgoing: number; leaks: number }> {
+  cv: CurrencyConverter,
+): Promise<Array<{ label: string; incoming: number; outgoing: number; leaks: number }>> {
   const byDay = new Map<string, { incoming: number; outgoing: number; leaksRaw: number }>();
   for (const r of rows) {
     const day = (r.date || r.created_on || "").slice(0, 10);
@@ -389,7 +425,7 @@ function buildFlowSeriesFromRows(
       continue;
     }
     const signed = signedAmountFromTxLike(String(r.amount ?? ""), String(r.tx_type ?? ""));
-    const inBase = amountInBase(signed, (r.currency || baseCurrency).toUpperCase(), baseCurrency);
+    const inBase = await cv.toBase(signed, (r.currency || baseCurrency).toUpperCase(), baseCurrency);
     const tt = String(r.tx_type || "").toUpperCase();
     const bucket = byDay.get(day) ?? { incoming: 0, outgoing: 0, leaksRaw: 0 };
     if (tt === "INCOME") {
@@ -416,7 +452,7 @@ function mergedTransactionMapWithRows(base: TransactionRecord[], rows: OutboxRow
   for (const r of base) {
     map.set(r.tx_id, { ...r, tags: [...(r.tags ?? [])] });
   }
-  applyOutboxToTxMapAndSources(map, null, rows);
+  applyOutboxToTxMapOnly(map, rows);
   return map;
 }
 
@@ -439,16 +475,19 @@ export async function applyTransactionOutboxToList(
   return out;
 }
 
-function computeTotalsFromSnapshotRows(
+async function computeTotalsFromSnapshotRows(
   rows: SnapshotTransactionRow[],
   baseCurrency: string,
-): Pick<
-  SnapshotResponse,
-  | "total_expenses_for_month"
-  | "total_income_for_month"
-  | "total_transfer_out_for_month"
-  | "total_transfer_in_for_month"
-  | "total_leaks_for_month"
+  cv: CurrencyConverter,
+): Promise<
+  Pick<
+    SnapshotResponse,
+    | "total_expenses_for_month"
+    | "total_income_for_month"
+    | "total_transfer_out_for_month"
+    | "total_transfer_in_for_month"
+    | "total_leaks_for_month"
+  >
 > {
   let te = 0;
   let ti = 0;
@@ -457,7 +496,7 @@ function computeTotalsFromSnapshotRows(
   let netXferBase = 0;
   for (const r of rows) {
     const signed = signedAmountFromTxLike(String(r.amount ?? ""), String(r.tx_type ?? ""));
-    const inBase = amountInBase(signed, (r.currency || baseCurrency).toUpperCase(), baseCurrency);
+    const inBase = await cv.toBase(signed, (r.currency || baseCurrency).toUpperCase(), baseCurrency);
     const tt = String(r.tx_type || "").toUpperCase();
     if (tt === "EXPENSE") {
       te += inBase;
@@ -481,10 +520,11 @@ function computeTotalsFromSnapshotRows(
   };
 }
 
-function computeExpenseByCategory(
+async function computeExpenseByCategory(
   rows: SnapshotTransactionRow[],
   baseCurrency: string,
-): Array<{ name: string; value: number }> {
+  cv: CurrencyConverter,
+): Promise<Array<{ name: string; value: number }>> {
   const m = new Map<string, number>();
   for (const r of rows) {
     if (String(r.tx_type || "").toUpperCase() !== "EXPENSE") {
@@ -492,7 +532,7 @@ function computeExpenseByCategory(
     }
     const name = String(r.category || "").trim() || "Uncategorized";
     const signed = signedAmountFromTxLike(String(r.amount ?? ""), "EXPENSE");
-    const inBase = amountInBase(signed, (r.currency || baseCurrency).toUpperCase(), baseCurrency);
+    const inBase = await cv.toBase(signed, (r.currency || baseCurrency).toUpperCase(), baseCurrency);
     const n = Math.abs(inBase);
     m.set(name, round2((m.get(name) ?? 0) + n));
   }
@@ -527,9 +567,12 @@ export async function applyTransactionOutboxToSnapshot(
   const snapRows = mergedRows.map(recordToSnapshotRow);
 
   const baseCurrency = await readProfileBaseCurrency();
-  const totals = computeTotalsFromSnapshotRows(snapRows, baseCurrency);
-  const expense_by_category = computeExpenseByCategory(snapRows, baseCurrency);
-  const flow_series = buildFlowSeriesFromRows(snapRows, baseCurrency);
+  const cv = await loadCurrencyConverter();
+  const [totals, expense_by_category, flow_series] = await Promise.all([
+    computeTotalsFromSnapshotRows(snapRows, baseCurrency, cv),
+    computeExpenseByCategory(snapRows, baseCurrency, cv),
+    buildFlowSeriesFromRows(snapRows, baseCurrency, cv),
+  ]);
   const daily_spend = flow_series.filter((p) => p.outgoing > 0).map((p) => ({ date: p.label, amount: p.outgoing }));
   const daily_income = flow_series.filter((p) => p.incoming > 0).map((p) => ({ date: p.label, amount: p.incoming }));
 
@@ -538,7 +581,7 @@ export async function applyTransactionOutboxToSnapshot(
   for (const r of base.transactions_for_month.map(snapshotRowToRecord)) {
     sourceReplayMap.set(r.tx_id, { ...r, tags: [...(r.tags ?? [])] });
   }
-  applyOutboxToTxMapAndSources(sourceReplayMap, sourcesClone, outboxRows);
+  await applyOutboxToTxMapAndSourcesAsync(sourceReplayMap, sourcesClone, outboxRows, cv);
   const source_balances = sourcesToSnapshotRows(sourcesClone);
 
   return {

@@ -7,6 +7,7 @@ import { AUTH_CHANGED_EVENT, getRefreshToken, setSession } from "../state/auth";
 import { isApiMarkedUnreachable, probeApiReachability } from "./connectivity";
 import { clearOutbox, listOutboxOrdered, removeOutboxEntry } from "./outbox";
 import { emitSyncState } from "./syncEvents";
+import { syncMinimalExchangeRates } from "./exchangeRates";
 
 let drainInFlight: Promise<void> | null = null;
 
@@ -97,6 +98,7 @@ export async function drainOutbox(): Promise<void> {
       await queryClient.invalidateQueries({ queryKey: ["tags", "all"] });
       await queryClient.invalidateQueries({ queryKey: ["categories", "all"] });
       await queryClient.refetchQueries({ type: "active" });
+      void syncMinimalExchangeRates(true);
     } catch {
       /* ignore refetch failures after successful upload */
     }

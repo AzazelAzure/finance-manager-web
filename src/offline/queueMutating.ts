@@ -1,4 +1,6 @@
 import type { InternalAxiosRequestConfig } from "axios";
+
+type ConfigWithOfflineEcho = InternalAxiosRequestConfig & { offlineEcho?: unknown };
 import { getRefreshToken } from "../state/auth";
 import { isOutboxAllowlisted } from "./allowlist";
 import { shouldTreatAsDisconnectedForMutations } from "./connectivity";
@@ -34,9 +36,11 @@ export function shouldQueueOfflineWrite(config: InternalAxiosRequestConfig): boo
 
 export async function enqueueOfflineAxiosWrite(config: InternalAxiosRequestConfig): Promise<string> {
   const path = resolveUrlPath(config);
+  const echo = (config as ConfigWithOfflineEcho).offlineEcho;
   return enqueueOutboxEntry({
     method: (config.method ?? "POST").toUpperCase(),
     url: path,
     body: config.data,
+    ...(echo !== undefined ? { echo } : {}),
   });
 }

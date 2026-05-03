@@ -9,6 +9,8 @@ export type OutboxRow = {
   body: unknown;
   idempotencyKey: string;
   createdAt: number;
+  /** Optional client-only payload (not sent on drain) for balance replay when the tx row is missing from cache. */
+  echo?: unknown;
 };
 
 export type CacheRow = {

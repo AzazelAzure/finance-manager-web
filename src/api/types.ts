@@ -163,6 +163,10 @@ export type CalendarDueEventRow = {
 };
 
 export type CalendarResponse = {
+  start_date?: string;
+  end_date?: string;
+  display_currency_mode?: "base" | "original";
+  heat_metric_mode?: "net" | "expense_only" | "count";
   daily?: CalendarDailyRow[];
   weekly?: Array<Record<string, unknown>>;
   monthly?: Array<Record<string, unknown>>;
@@ -173,7 +177,9 @@ export type CalendarResponse = {
 };
 
 export type VisualizationResponse = {
-  flow_daily?: Array<{ date: string; income: number; expense: number }>;
+  start_date?: string;
+  end_date?: string;
+  flow_daily?: Array<{ date: string; income: number; expense: number; net?: number; tx_count?: number }>;
   tx_type_totals?: Array<{ tx_type: string; amount: number }>;
   top_expense_categories?: Array<{ category: string; amount: number }>;
 };

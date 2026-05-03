@@ -5,6 +5,7 @@ import { listTransactions } from "../api/transactions";
 import { listUpcomingExpenses } from "../api/upcomingExpenses";
 import { preferOfflineCaches } from "./connectivity";
 import { offlineDb } from "./db";
+import { syncMinimalExchangeRates } from "./exchangeRates";
 
 /** v2: seeds dashboard snapshot + lookups + profile in addition to tx/upcoming lists. */
 const SEED_META_KEY = "offline_seed_v2";
@@ -31,6 +32,7 @@ export async function seedOfflineWindow(): Promise<void> {
     await Promise.all([getAppProfile(), fetchAppSnapshot({}), listTags(), listCategories(), listSourceNames()]);
     await listTransactions(filters);
     await listUpcomingExpenses();
+    await syncMinimalExchangeRates(true);
     await offlineDb.meta.put({ key: SEED_META_KEY, value: true });
   } catch {
     // Network or auth — retry on next app mount when online.

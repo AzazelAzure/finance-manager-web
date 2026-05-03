@@ -36,6 +36,8 @@ api.defaults.adapter = async (config) => {
       window.dispatchEvent(new Event("fm-offline-queued"));
       void queryClient.invalidateQueries({ queryKey: ["snapshot"] });
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      void queryClient.invalidateQueries({ queryKey: ["transactions-calendar"] });
+      void queryClient.invalidateQueries({ queryKey: ["transactions-viz"] });
     }
     const headers = new AxiosHeaders();
     return {

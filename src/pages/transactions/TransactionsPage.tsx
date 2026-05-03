@@ -322,8 +322,8 @@ export function TransactionsPage(): ReactNode {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (txId: string) => {
-      const r = await deleteTransaction(txId);
+    mutationFn: async (payload: { txId: string; echo?: TransactionRecord }) => {
+      const r = await deleteTransaction(payload.txId, payload.echo ? { echo: payload.echo } : undefined);
       if (isOfflineQueued(r)) {
         return "queued" as const;
       }
@@ -456,7 +456,7 @@ export function TransactionsPage(): ReactNode {
                     setPendingDelete((prev) => ({ ...prev, [r.tx_id]: Date.now() + 5000 }));
                     return;
                   }
-                  deleteMutation.mutate(r.tx_id);
+                  deleteMutation.mutate({ txId: r.tx_id, echo: r });
                 }}
               >
                 {isConfirm ? "Confirm delete?" : "Delete"}
