@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **PWA online sync loop:** `OfflineRoot` no longer runs **`drainOutbox()`** / **`syncMinimalExchangeRates()`** on every **`FM_API_REACHABLE_EVENT`** with `ok: true` (each routine Axios success called **`markApiReachable(true)`** with `previous: true`, which had caused continuous draining and refetch). Recovery-only gating uses **`isApiReachabilityRecovery()`** (`previous === false` or `null`). **`window.online`** / tab visibility now only **probe** reachability; **`SyncStatusBar`** `online` handler no longer unconditionally drains after probe.
+
 ### Added
 
 - **PWA offline parity sweep (ledger-adjacent):** FIFO **outbox overlays** for **categories, tags, sources** (`lookupsOutboxOverlay.ts` + `api/lookups.ts`), **upcoming expenses** (`upcomingOutboxOverlay.ts` + `api/upcomingExpenses.ts`), and **app profile** (`profileOutboxOverlay.ts` + `api/profile.ts`); **snapshot `source_balances`** also reflects queued **source** mutators. **Dexie** lookup/upcoming list caches rewrite on enqueue (`optimisticLookupsEnqueue.ts` + `queueMutating.ts`). **`getTransaction`** resolves **offline** / **`pending:*`** via `findTransactionRecordById`; **edit** updates the queued **POST** body in Dexie and refreshes `txlist:*` caches (`replacePendingPostInTxListCaches`). **Calendar** + **transaction deep-dive** queries pass **`readOptsFromQuery`**. **Online** allowlisted mutators get auto-**`Idempotency-Key`** when not using the offline adapter (`api/client.ts`). **Settings** profile save shows **offline-queued** copy; **logout** modal shows **outbox depth**. **`SyncStatusBar`:** queue-depth copy, session **dismiss**, **`trFmt`**. Vitest: `lookupsOutboxOverlay.test.ts`, `upcomingOutboxOverlay.test.ts`, `profileOutboxOverlay.test.ts`, `outbox.test.ts`.

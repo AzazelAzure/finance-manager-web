@@ -5,6 +5,7 @@ import { useSessionOptional } from "../state/SessionContext";
 import {
   FM_API_REACHABLE_EVENT,
   type ApiReachableDetail,
+  isApiReachabilityRecovery,
   markApiReachable,
   probeApiReachability,
 } from "./connectivity";
@@ -32,22 +33,18 @@ export function OfflineRoot(): ReactNode {
       return;
     }
     const onOnline = (): void => {
-      void probeApiReachability().then((ok) => {
-        if (ok) {
-          void syncMinimalExchangeRates();
-          void drainOutbox();
-        }
-      });
+      void probeApiReachability();
     };
     const onOffline = (): void => {
       markApiReachable(false);
     };
     const onReachable = (e: Event): void => {
       const ce = e as CustomEvent<ApiReachableDetail>;
-      if (ce.detail?.ok) {
-        void syncMinimalExchangeRates();
-        void drainOutbox();
+      if (!isApiReachabilityRecovery(ce.detail)) {
+        return;
       }
+      void syncMinimalExchangeRates();
+      void drainOutbox();
     };
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
@@ -87,12 +84,7 @@ export function OfflineRoot(): ReactNode {
     }
     const onVis = (): void => {
       if (document.visibilityState === "visible") {
-        void probeApiReachability().then((ok) => {
-          if (ok) {
-            void syncMinimalExchangeRates();
-            void drainOutbox();
-          }
-        });
+        void probeApiReachability();
       }
     };
     document.addEventListener("visibilitychange", onVis);
