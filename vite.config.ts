@@ -24,6 +24,7 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,woff2}"],
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
+        clientsClaim: true,
         /**
          * Do not register a separate Workbox route for `request.mode === "navigate"`.
          * generateSW already adds `NavigationRoute(createHandlerBoundToURL("/index.html"))`, which

@@ -53,3 +53,26 @@ export async function enqueueOfflineAxiosWrite(config: InternalAxiosRequestConfi
   }
   return idempotencyKey;
 }
+
+/**
+ * Connectivity-independent check: can this failed request be retroactively queued
+ * to the outbox? Used by the response error interceptor when a network failure
+ * occurs on a request that was NOT pre-emptively queued (i.e. we thought we were
+ * online but the request failed anyway).
+ */
+export function canRetroactivelyQueue(
+  config: InternalAxiosRequestConfig & { _retry?: boolean },
+): boolean {
+  if (config._retry) {
+    return false;
+  }
+  const method = (config.method ?? "get").toUpperCase();
+  if (!["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    return false;
+  }
+  const path = resolveUrlPath(config);
+  if (!isOutboxAllowlisted(method, path)) {
+    return false;
+  }
+  return Boolean(getRefreshToken().trim() || getAccessToken().trim());
+}
