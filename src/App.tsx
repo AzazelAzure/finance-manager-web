@@ -1,9 +1,11 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { useSyncExternalStore, type ReactNode } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { ClientBuildUpgradeGate } from "./components/ClientBuildUpgradeGate";
 import { CookieBanner } from "./components/CookieBanner";
 import { SwUpdateBanner } from "./components/SwUpdateBanner";
 import { SyncProgressOverlay } from "./components/SyncProgressOverlay";
 import { SyncStatusBar } from "./components/SyncStatusBar";
+import { isPwaStandaloneDisplay } from "./lib/pwaDisplay";
 import { PublicShell } from "./layout/PublicShell";
 import { ProtectedShell } from "./layout/ProtectedShell";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
@@ -20,18 +22,57 @@ import { SettingsProfilePage } from "./pages/settings/SettingsProfilePage";
 import { OnboardingPage } from "./pages/onboarding/OnboardingPage";
 import { RequireAuth } from "./routes/RequireAuth";
 import { useSession } from "./state/SessionContext";
-import type { ReactNode } from "react";
 
 function WildcardRedirect(): ReactNode {
   const { isAuthenticated } = useSession();
   return <Navigate to={isAuthenticated ? "/app/dashboard" : "/"} replace />;
 }
 
+function subscribePwaStandalone(cb: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+  const mq1 = window.matchMedia("(display-mode: standalone)");
+  const mq2 = window.matchMedia("(display-mode: window-controls-overlay)");
+  const fn = (): void => cb();
+  mq1.addEventListener("change", fn);
+  mq2.addEventListener("change", fn);
+  return () => {
+    mq1.removeEventListener("change", fn);
+    mq2.removeEventListener("change", fn);
+  };
+}
+
+function getPwaStandaloneSnapshot(): boolean {
+  return isPwaStandaloneDisplay();
+}
+
+/**
+ * Full-screen sync overlay: installed PWA only (never on marketing `/` in a browser tab).
+ * Status bar: authenticated app shell in browser, or PWA anywhere.
+ */
+function SyncChrome(): ReactNode {
+  const { pathname } = useLocation();
+  const pwa = useSyncExternalStore(subscribePwaStandalone, getPwaStandaloneSnapshot, () => false);
+  const inAppShell = pathname.startsWith("/app");
+  if (pwa) {
+    return (
+      <>
+        <SyncProgressOverlay />
+        <SyncStatusBar />
+      </>
+    );
+  }
+  if (inAppShell) {
+    return <SyncStatusBar />;
+  }
+  return null;
+}
+
 export default function App(): ReactNode {
   return (
     <div className="app-root">
-      <SyncProgressOverlay />
-      <SyncStatusBar />
+      <SyncChrome />
       <ClientBuildUpgradeGate />
       <CookieBanner />
       <SwUpdateBanner />
