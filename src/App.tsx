@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { ClientBuildUpgradeGate } from "./components/ClientBuildUpgradeGate";
 import { CookieBanner } from "./components/CookieBanner";
 import { PublicShell } from "./layout/PublicShell";
 import { ProtectedShell } from "./layout/ProtectedShell";
@@ -26,6 +27,7 @@ function WildcardRedirect(): ReactNode {
 export default function App(): ReactNode {
   return (
     <div className="app-root">
+      <ClientBuildUpgradeGate />
       <CookieBanner />
       <Routes>
         <Route element={<PublicShell />}>

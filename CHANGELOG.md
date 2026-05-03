@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- **PWA client build header + force-upgrade UX (D2 / T03):** Vite injects `__FM_CLIENT_BUILD__` from `VITE_CLIENT_BUILD`, `GITHUB_SHA`, or `dev`. The shared Axios client sends **`X-Client-Build` on POST/PUT/PATCH/DELETE** to the API. **409** responses with `code: CLIENT_BUILD_UNSUPPORTED` open a blocking **Reload app** dialog (optional doc link) so users are not stuck in silent retry loops.
 - **Staging API host for pre-cutover full-stack tests** — on `jsdevtesting.thehivemanager.com` the app uses `VITE_STAGING_API_BASE_URL` (default `https://api-jsdevtesting.thehivemanager.com`, see `src/lib/apiBaseUrl.ts`) so Nginx can route the inactive `api-*` with the inactive web; production hostnames still use `VITE_API_BASE_URL` only.
 
 ### Changed
