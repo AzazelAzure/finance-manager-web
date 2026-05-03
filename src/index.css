@@ -178,3 +178,53 @@ pre {
   overflow: auto;
   font-size: var(--font-sm);
 }
+
+.sync-progress-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.sync-progress-overlay__panel {
+  min-width: min(22rem, 92vw);
+  max-width: 28rem;
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+  text-align: center;
+}
+
+.sync-progress-overlay__title {
+  margin: var(--space-3) 0 0;
+  font-size: var(--font-lg);
+  font-weight: 600;
+}
+
+.sync-progress-overlay__detail {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-sm);
+  color: var(--fg-muted, #64748b);
+}
+
+.sync-progress-overlay__spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: 0 auto;
+  border: 3px solid rgba(15, 23, 42, 0.12);
+  border-top-color: var(--accent, #2563eb);
+  border-radius: 50%;
+  animation: sync-progress-spin 0.75s linear infinite;
+}
+
+@keyframes sync-progress-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

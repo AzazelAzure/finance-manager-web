@@ -1,5 +1,6 @@
 import { preferOfflineCaches } from "../offline/connectivity";
 import { readCachePayload, snapshotParamsCacheKey, writeCachePayload } from "../offline/cache";
+import { applyTransactionOutboxToSnapshot } from "../offline/transactionOutboxOverlay";
 import { api } from "./client";
 import type { SnapshotResponse } from "./types";
 
@@ -23,18 +24,22 @@ export function emptyDashboardSnapshot(): SnapshotResponse {
 
 export async function fetchAppSnapshot(params: Record<string, string> = {}): Promise<SnapshotResponse> {
   const cacheId = snapshotParamsCacheKey(params);
+  let base: SnapshotResponse;
   if (preferOfflineCaches()) {
     const raw = await readCachePayload(cacheId);
     if (raw && typeof raw === "object" && "flow_series" in raw) {
-      return raw as SnapshotResponse;
+      base = raw as SnapshotResponse;
+    } else {
+      base = emptyDashboardSnapshot();
     }
-    return emptyDashboardSnapshot();
+  } else {
+    const { data } = await api.get<SnapshotResponse>("/finance/appprofile/snapshot/", {
+      params,
+    });
+    await writeCachePayload(cacheId, data, Date.now());
+    base = data;
   }
-  const { data } = await api.get<SnapshotResponse>("/finance/appprofile/snapshot/", {
-    params,
-  });
-  await writeCachePayload(cacheId, data, Date.now());
-  return data;
+  return applyTransactionOutboxToSnapshot(base, params);
 }
 
 /** @deprecated Use fetchAppSnapshot with URL-derived params */

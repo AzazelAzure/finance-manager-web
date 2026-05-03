@@ -6,6 +6,8 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- **Local-first transaction reads + sync overlay:** pending **transaction** outbox rows (POST/PATCH/DELETE) are merged into **`listTransactions`** and **`fetchAppSnapshot`** responses in FIFO order so KPIs, lists, and charts update without waiting for the server. Queued creates use stable synthetic ids (`pending:<idempotency-key>…`). **`SyncProgressOverlay`** shows a blocking dialog while the outbox drains and active queries refetch; the Axios offline adapter returns **`idempotency_key`** on synthetic **202** responses and invalidates snapshot/transaction queries after enqueue.
+
 - **Offline reachability + reconnect UX:** outbox-eligible writes queue when the browser is offline **or** when a lightweight **`GET /api/health/`** probe (or a prior Axios **no-response** failure) indicates the API is unreachable—so installs that keep `navigator.onLine === true` can still save transactions/upcoming locally. Signed-in sessions run a periodic probe; **`SyncStatusBar`** shows offline/unreachable copy and a **“back online — sync now?”** prompt when connectivity returns and the outbox is non-empty. Outbox **drain** re-probes before replay when the UI had marked the API down.
 
 - **Offline dashboard restore:** `fetchAppSnapshot`, `getAppProfile`, and list lookups (`listTags` / `listCategories` / `listSourceNames`) persist last-good JSON in IndexedDB and serve it when `preferOfflineCaches()` is true, so a **refresh while offline** still restores KPIs/charts from cache. Seed uses **`offline_seed_v2`** and prefetches profile + default snapshot + lookups before the ~3mo transaction and upcoming lists.

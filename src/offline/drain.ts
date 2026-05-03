@@ -1,6 +1,7 @@
 import axios, { isAxiosError } from "axios";
 import { postRefresh } from "../api/refreshClient";
 import type { LoginResponse } from "../api/types";
+import { queryClient } from "../lib/queryClient";
 import { dispatchClientBuildUnsupported } from "../lib/clientBuildUpgradeEvents";
 import { AUTH_CHANGED_EVENT, getRefreshToken, setSession } from "../state/auth";
 import { isApiMarkedUnreachable, probeApiReachability } from "./connectivity";
@@ -33,7 +34,7 @@ export async function drainOutbox(): Promise<void> {
       emitSyncState({ phase: "auth_blocked", detail: "Sign in again to sync queued changes." });
       return;
     }
-    emitSyncState({ phase: "syncing" });
+    emitSyncState({ phase: "syncing", detail: "Uploading queued changes…" });
     let login: LoginResponse;
     try {
       login = await postRefresh(refresh);
@@ -86,6 +87,18 @@ export async function drainOutbox(): Promise<void> {
         });
         return;
       }
+    }
+    emitSyncState({ phase: "syncing", detail: "Refreshing data from the server…" });
+    try {
+      await queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      await queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
+      await queryClient.invalidateQueries({ queryKey: ["app-profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["tags", "all"] });
+      await queryClient.invalidateQueries({ queryKey: ["categories", "all"] });
+      await queryClient.refetchQueries({ type: "active" });
+    } catch {
+      /* ignore refetch failures after successful upload */
     }
     emitSyncState({ phase: "idle" });
   })().finally(() => {

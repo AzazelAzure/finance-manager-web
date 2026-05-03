@@ -32,9 +32,9 @@ export function shouldQueueOfflineWrite(config: InternalAxiosRequestConfig): boo
   return Boolean(getRefreshToken());
 }
 
-export async function enqueueOfflineAxiosWrite(config: InternalAxiosRequestConfig): Promise<void> {
+export async function enqueueOfflineAxiosWrite(config: InternalAxiosRequestConfig): Promise<string> {
   const path = resolveUrlPath(config);
-  await enqueueOutboxEntry({
+  return enqueueOutboxEntry({
     method: (config.method ?? "POST").toUpperCase(),
     url: path,
     body: config.data,

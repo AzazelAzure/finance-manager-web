@@ -1,5 +1,6 @@
 import { preferOfflineCaches } from "../offline/connectivity";
 import { readTxListCache, writeTxListCache } from "../offline/cache";
+import { applyTransactionOutboxToList } from "../offline/transactionOutboxOverlay";
 import { api } from "./client";
 import {
   isOfflineQueued,
@@ -29,21 +30,19 @@ export type TransactionFilters = {
 
 export async function listTransactions(filters: TransactionFilters = {}): Promise<TransactionRecord[]> {
   const filterRecord = filters as Record<string, unknown>;
+  let rows: TransactionRecord[];
   if (preferOfflineCaches()) {
     const cached = await readTxListCache(filterRecord);
-    if (cached) {
-      return cached as TransactionRecord[];
-    }
-    return [];
-  }
-  const { data } = await api.get<TransactionRecord[] | TransactionsListResponse>("/finance/transactions/", {
-    params: filters,
-  });
-  const rows = Array.isArray(data) ? data : (data.transactions ?? []);
-  if (!preferOfflineCaches()) {
+    rows = cached ? (cached as TransactionRecord[]) : [];
+  } else {
+    const { data } = await api.get<TransactionRecord[] | TransactionsListResponse>("/finance/transactions/", {
+      params: filters,
+    });
+    const parsed = Array.isArray(data) ? data : (data.transactions ?? []);
+    rows = parsed;
     void writeTxListCache(filterRecord, rows as unknown[], Date.now()).catch(() => undefined);
   }
-  return rows;
+  return applyTransactionOutboxToList(rows, filterRecord);
 }
 
 export async function getTransaction(txId: string): Promise<TransactionRecord> {
