@@ -16,6 +16,8 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- **Docker production image:** copy `.npmrc` into the build stage **before** `npm ci` so the same `legacy-peer-deps` policy as local dev applies when building the static SPA image (Vite 8 + `vite-plugin-pwa` peer range).
+
 - **KNOWN_ISSUES #8 (source balances after delete):** after transaction delete, the client **invalidates `sources`** so balances refetch; the API **reverses the transaction with the same currency rules as apply-on-create** and refreshes the snapshot so source balances stay consistent (including cross-currency).
 - **KNOWN_ISSUES #6 (mobile wedge):** dashboard **Quick add** is placed **above KPIs** so add expense/income/transfer is reachable without scrolling past charts.
 - **KNOWN_ISSUES #3 (quick-add parity):** Quick add modal supports **optional bill link** (unpaid bills datalist) and **tags** (add + datalist), matching main transaction create fields aside from tx-type (still chosen by the button).
