@@ -1,3 +1,5 @@
+import { preferOfflineCaches } from "../offline/connectivity";
+import { readCachePayload, writeCachePayload } from "../offline/cache";
 import { api } from "./client";
 import type {
   CategoryRow,
@@ -7,21 +9,43 @@ import type {
   TransactionsListResponse,
 } from "./types";
 
+const TAGS_CACHE_ID = "lookups:tags:all";
+const CATEGORIES_CACHE_ID = "lookups:categories:all";
+const SOURCES_CACHE_ID = "lookups:sources:all";
+
 export async function listTags(): Promise<string[]> {
+  if (preferOfflineCaches()) {
+    const raw = await readCachePayload(TAGS_CACHE_ID);
+    return Array.isArray(raw) ? (raw as string[]) : [];
+  }
   const { data } = await api.get<TagsListResponse>("/finance/tags/");
-  return data.tags ?? [];
+  const tags = data.tags ?? [];
+  await writeCachePayload(TAGS_CACHE_ID, tags, Date.now());
+  return tags;
 }
 
 export async function listCategories(): Promise<string[]> {
+  if (preferOfflineCaches()) {
+    const raw = await readCachePayload(CATEGORIES_CACHE_ID);
+    return Array.isArray(raw) ? (raw as string[]) : [];
+  }
   const { data } = await api.get<CategoryRow[]>("/finance/categories/");
-  return (data ?? [])
+  const names = (data ?? [])
     .map((c) => (typeof c?.name === "string" ? c.name.trim() : ""))
     .filter((name) => Boolean(name));
+  await writeCachePayload(CATEGORIES_CACHE_ID, names, Date.now());
+  return names;
 }
 
 export async function listSourceNames(): Promise<SourceRow[]> {
+  if (preferOfflineCaches()) {
+    const raw = await readCachePayload(SOURCES_CACHE_ID);
+    return Array.isArray(raw) ? (raw as SourceRow[]) : [];
+  }
   const { data } = await api.get<SourceRow[]>("/finance/sources/");
-  return (data ?? []).filter((row) => String(row.source ?? "").trim().toLowerCase() !== "unknown");
+  const rows = (data ?? []).filter((row) => String(row.source ?? "").trim().toLowerCase() !== "unknown");
+  await writeCachePayload(SOURCES_CACHE_ID, rows, Date.now());
+  return rows;
 }
 
 export async function createCategory(name: string): Promise<CategoryRow> {
