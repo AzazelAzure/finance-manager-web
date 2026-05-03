@@ -50,6 +50,11 @@ export function SyncStatusBar(): ReactNode {
       setApiUnreachable(d.ok === false);
       if (d.ok) {
         setSync((prev) => (prev === "error" ? "idle" : prev));
+        void outboxDepth().then((n) => {
+          if (n === 0) {
+            setSync((prev) => (prev === "auth_blocked" ? "idle" : prev));
+          }
+        });
       }
       if (d.ok && d.previous === false) {
         void outboxDepth().then((n) => {

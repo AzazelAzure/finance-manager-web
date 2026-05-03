@@ -86,6 +86,8 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "sync.status.syncing": "Syncing…",
     "sync.status.authBlocked": "Sign in again to sync queued changes.",
     "sync.status.error": "Sync paused — check connection or update the app.",
+    "sync.status.refreshNetworkError":
+      "Could not reach the server to refresh your session. Sync will retry when the connection is stable.",
     "sync.status.queuedUpload": "You have local changes waiting — tap Sync now to upload.",
     "sync.reconnect.prompt": "You're back online. Send pending changes to the server now?",
     "sync.reconnect.later": "Later",
@@ -400,6 +402,8 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "sync.status.syncing": "Nagsi-sync…",
     "sync.status.authBlocked": "Mag-sign in ulit para i-sync ang mga nakapila.",
     "sync.status.error": "Tumigil ang sync — tingnan ang koneksyon o i-update ang app.",
+    "sync.status.refreshNetworkError":
+      "Hindi maabot ang server para i-refresh ang session. Susubukan ulit ang sync kapag stable na ang koneksyon.",
     "sync.status.queuedUpload": "May mga lokal na binago — i-tap ang I-sync ngayon para i-upload.",
     "sync.reconnect.prompt": "Balik online ka na. Ipadala na ang mga nakapiling binago sa server?",
     "sync.reconnect.later": "Mamaya na",

@@ -1,6 +1,7 @@
 import axios, { isAxiosError } from "axios";
 import { postRefresh } from "../api/refreshClient";
 import type { LoginResponse } from "../api/types";
+import { tr } from "../lib/i18n";
 import { queryClient } from "../lib/queryClient";
 import { dispatchClientBuildUnsupported } from "../lib/clientBuildUpgradeEvents";
 import { AUTH_CHANGED_EVENT, getRefreshToken, setSession } from "../state/auth";
@@ -43,11 +44,10 @@ export async function drainOutbox(): Promise<void> {
   if (drainInFlight) {
     return drainInFlight;
   }
+  const ac = new AbortController();
+  const onAuth = (): void => ac.abort();
+  let authListenerAttached = false;
   drainInFlight = (async () => {
-    const ac = new AbortController();
-    const onAuth = (): void => ac.abort();
-    window.addEventListener(AUTH_CHANGED_EVENT, onAuth, { once: true });
-
     let canReach = typeof navigator !== "undefined" && navigator.onLine;
     if (!canReach) {
       canReach = await probeApiReachability();
@@ -67,14 +67,24 @@ export async function drainOutbox(): Promise<void> {
     let login: LoginResponse;
     try {
       login = await postRefresh(refresh);
-    } catch {
-      emitSyncState({ phase: "auth_blocked", detail: "Session expired. Sign in again to sync." });
+    } catch (e: unknown) {
+      if (isAxiosError(e) && e.response?.status === 401) {
+        emitSyncState({ phase: "auth_blocked", detail: "Session expired. Sign in again to sync." });
+        return;
+      }
+      wantsRetryAfterReachableError = true;
+      emitSyncState({
+        phase: "error",
+        detail: tr("sync.status.refreshNetworkError", "en-US"),
+      });
       return;
     }
     setSession({
       access: login.access,
       refresh: login.refresh ?? refresh,
     });
+    window.addEventListener(AUTH_CHANGED_EVENT, onAuth);
+    authListenerAttached = true;
 
     const { api } = await import("../api/client");
     const rows = await listOutboxOrdered();
@@ -137,9 +147,13 @@ export async function drainOutbox(): Promise<void> {
     }
     wantsRetryAfterReachableError = false;
     emitSyncState({ phase: "idle" });
-  })().finally(() => {
-    drainInFlight = null;
-  });
+  })()
+    .finally(() => {
+      if (authListenerAttached) {
+        window.removeEventListener(AUTH_CHANGED_EVENT, onAuth);
+      }
+      drainInFlight = null;
+    });
   return drainInFlight;
 }
 
