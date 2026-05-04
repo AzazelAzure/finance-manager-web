@@ -500,9 +500,21 @@ export function TransactionsPage(): ReactNode {
   useEffect(() => {
     // Start the linear tour when the page loads
     startTour('transactions_linear_tour', [
-      { target: '#tx-filters', content: 'Filter by period, type, or source and apply to reload results.', title: 'Filters' },
-      { target: '#tx-add', content: 'Use Add transaction or Add transfer for proper payloads.', title: 'Add Transactions' },
-      { target: '#tx-table', content: 'Edit and delete actions are in-line per row.', title: 'Transaction List' }
+      { 
+        target: '#tx-filters', 
+        title: 'Refine History',
+        content: 'Narrow down your search by date range, transaction type, or specific source accounts. Click "Apply" to refresh the list.' 
+      },
+      { 
+        target: '#tx-add', 
+        title: 'New Records',
+        content: 'Log single transactions or account transfers. Use the "? Guide" inside the forms for step-by-step help.' 
+      },
+      { 
+        target: '#tx-table', 
+        title: 'Your Ledger',
+        content: 'A comprehensive list of all your historical records. You can click any row to see details or use the action buttons to edit/delete.' 
+      }
     ]);
   }, [startTour]);
 
@@ -512,7 +524,7 @@ export function TransactionsPage(): ReactNode {
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
           Transactions
         </h2>
-        <div className="app-toolbar__actions">
+        <div className="app-toolbar__actions" id="tx-add">
           <Link to="/app/transactions/calendar" className="ui-btn ui-btn--secondary">
             Calendar
           </Link>
@@ -674,7 +686,19 @@ export function TransactionsPage(): ReactNode {
                 <li><strong>Type:</strong> Expense (money out) or Income (money in).</li>
                 <li><strong>Category:</strong> E.g. "Food" or "Salary" to group spending.</li>
               </ul>
-              <Button variant="primary" onClick={() => startTour('tx_single_tour', [{target: '#tx-form-source', content: 'Select the account.', title: 'Source'}], true)}>Start guide</Button>
+              <Button 
+                variant="primary" 
+                style={{ marginTop: 8 }}
+                onClick={() => startTour('tx_single_tour', [
+                  { target: '#tx-form-source', title: 'Payment Source', content: 'Select where the money is coming from (e.g., Gcash, Cash).' },
+                  { target: '#tx-form-cat', title: 'Category', content: 'Categorize your spending to see trends on the Dashboard.' },
+                  { target: '#tx-form-amount', title: 'Amount', content: 'Enter the amount in your base currency.' },
+                  { target: '#tx-form-date', title: 'Date', content: 'When did this happen? It defaults to today.' },
+                  { target: '#tx-form-desc', title: 'Description', content: 'Add a small note for future reference.' }
+                ], true)}
+              >
+                Start step-by-step guide
+              </Button>
             </div>
           ) : null}
           {showFormHelp && editorMode === "transfer" ? (
@@ -684,8 +708,20 @@ export function TransactionsPage(): ReactNode {
                 <li><strong>From source:</strong> The account the money left.</li>
                 <li><strong>To source:</strong> The account the money entered.</li>
                 <li><strong>Sent amount:</strong> How much left the <em>From source</em>.</li>
-                <li><strong>Received amount:</strong> How much entered the <em>To source</em>. If this differs from Sent amount, the system will track the difference as a <strong>Leak</strong> automatically (e.g., fees, forex differences).</li>
+                <li><strong>Received amount:</strong> How much entered the <em>To source</em>.</li>
               </ul>
+              <Button 
+                variant="primary" 
+                style={{ marginTop: 8 }}
+                onClick={() => startTour('tx_transfer_tour', [
+                  { target: '#tx-xfer-from', title: 'From Account', content: 'The source account of the transfer.' },
+                  { target: '#tx-xfer-to', title: 'To Account', content: 'The destination account where the money is going.' },
+                  { target: '#tx-xfer-sent', title: 'Amount Sent', content: 'How much left the source account.' },
+                  { target: '#tx-xfer-received', title: 'Amount Received', content: 'How much entered the destination (helps track transfer fees/leaks).' }
+                ], true)}
+              >
+                Start step-by-step guide
+              </Button>
             </div>
           ) : null}
 
@@ -710,6 +746,7 @@ export function TransactionsPage(): ReactNode {
               <label className="ui-field">
                 <span className="ui-label">Date</span>
                 <input
+                  id="tx-form-date"
                   className="ui-input"
                   type="date"
                   value={singleDraft.date}
@@ -719,6 +756,7 @@ export function TransactionsPage(): ReactNode {
               <label className="ui-field">
                 <span className="ui-label">Amount</span>
                 <input
+                  id="tx-form-amount"
                   className="ui-input"
                   value={singleDraft.amount}
                   onChange={(e) => setSingleDraft((d) => ({ ...d, amount: e.target.value }))}
@@ -887,6 +925,7 @@ export function TransactionsPage(): ReactNode {
           <label className="ui-field">
             <span className="ui-label">Category</span>
             <input
+              id="tx-form-cat"
               className="ui-input"
               list="tx-category-list"
               value={editingTxId ? singleDraft.category : editorMode === "single" ? singleDraft.category : transferDraft.category}
@@ -945,6 +984,7 @@ export function TransactionsPage(): ReactNode {
           <label className="ui-field">
             <span className="ui-label">Description</span>
             <input
+              id="tx-form-desc"
               className="ui-input"
               value={editingTxId ? singleDraft.description : editorMode === "single" ? singleDraft.description : transferDraft.description}
               onChange={(e) => {
