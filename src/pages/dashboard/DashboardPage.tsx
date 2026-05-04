@@ -149,6 +149,21 @@ export function DashboardPage(): ReactNode {
     return Array.from(ccy);
   }, [sourceQuery.data, profileQuery.data, currency]);
 
+  // Trigger linear tour when data is loaded
+  useEffect(() => {
+    if (data) {
+      const timer = setTimeout(() => {
+        startTour('dashboard_linear_tour', [
+          { target: '#tour-kpis', content: 'Use KPI cards to spot period trends quickly.', disableBeacon: true, title: 'KPI Cards' },
+          { target: '#tour-filters', content: 'Apply filters first, then refresh to compare snapshots.', title: 'Dashboard Filters' },
+          { target: '#tour-quick-actions', content: 'Quick add supports income, expense, transfer, and bill flows.', title: 'Quick Add' },
+          { target: '#tour-charts', content: 'Chart slices drill to detailed transactions.', title: 'Charts' }
+        ] as any);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [data, startTour]);
+
   const onDrillCategory = useCallback(
     (name: string) => {
       const q = appendDrill(searchParams, { category: name });
@@ -214,20 +229,7 @@ export function DashboardPage(): ReactNode {
     );
   }
 
-  // Trigger linear tour when data is loaded
-  useEffect(() => {
-    if (data) {
-      const timer = setTimeout(() => {
-        startTour('dashboard_linear_tour', [
-          { target: '#tour-kpis', content: 'Use KPI cards to spot period trends quickly.', disableBeacon: true, title: 'KPI Cards' },
-          { target: '#tour-filters', content: 'Apply filters first, then refresh to compare snapshots.', title: 'Dashboard Filters' },
-          { target: '#tour-quick-actions', content: 'Quick add supports income, expense, transfer, and bill flows.', title: 'Quick Add' },
-          { target: '#tour-charts', content: 'Chart slices drill to detailed transactions.', title: 'Charts' }
-        ] as any);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [data, startTour]);
+
 
   return (
     <div className="stack dashboard-page">
