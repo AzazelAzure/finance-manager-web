@@ -341,6 +341,11 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                             content: "The final amount that landed in the target account. This can be different if currency conversion occurred.",
                             title: "Received Amount",
                           },
+                          {
+                            target: "#quick-form-desc",
+                            content: "Add a note for this transfer.",
+                            title: "Description",
+                          },
                         ] as any, true)
                       }
                     >
@@ -406,6 +411,21 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                             content: "Select the source account for this transaction.",
                             title: "Source",
                           },
+                          {
+                            target: "#quick-form-cat",
+                            content: "Pick a category to organize your spending.",
+                            title: "Category",
+                          },
+                          {
+                            target: "#quick-form-tags",
+                            content: "Add tags like #vacation to group related expenses.",
+                            title: "Tags",
+                          },
+                          {
+                            target: "#quick-form-desc",
+                            content: "Add a note for future reference.",
+                            title: "Description",
+                          },
                         ] as any, true)
                       }
                     >
@@ -422,7 +442,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
               <input className="ui-input" type="date" value={draft.dueDate} onChange={(e) => setDraft((d) => ({ ...d, dueDate: e.target.value }))} />
             </label>
           ) : (
-            <label className="ui-field">
+            <label className="ui-field" id="quick-form-cat">
               <span className="ui-label">Category</span>
               <input className="ui-input" list="quick-category-list" value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))} />
             </label>
@@ -443,7 +463,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                   <option key={name} value={name} />
                 ))}
               </datalist>
-              <div className="ui-field">
+              <div className="ui-field" id="quick-form-tags">
                 <span className="ui-label">{tr("dashboard.quick.tags", locale)}</span>
                 {selectedTags.length > 0 ? (
                   <p className="muted" style={{ margin: "0 0 0.35rem", fontSize: "0.85rem" }}>
@@ -480,7 +500,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
               </div>
             </>
           ) : null}
-          <label className="ui-field">
+          <label className="ui-field" id="quick-form-desc">
             <span className="ui-label">Description</span>
             <input className="ui-input" value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} />
           </label>
