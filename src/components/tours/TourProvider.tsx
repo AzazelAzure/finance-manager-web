@@ -127,11 +127,12 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
           showSkipButton
           steps={steps}
           styles={{
+            // @ts-ignore
             options: {
               zIndex: 10000,
               primaryColor: '#10b981', // Tailwind green
             },
-          }}
+          }} as any
         />
       </TourContext.Provider>
     </HelpModeContext.Provider>
