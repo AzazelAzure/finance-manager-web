@@ -72,16 +72,28 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     [completedTours, isTourCompleted, updateProfile]
   );
 
-  const startTour = useCallback(
-    (tourId: string, tourSteps: Step[], force = false) => {
-      if (force || !isTourCompleted(tourId)) {
-        setActiveTourId(tourId);
-        setSteps(tourSteps);
-        setRun(true);
-      }
-    },
-    [isTourCompleted]
-  );
+  const startTour = useCallback((id: string, steps: Step[], force = false) => {
+    console.log(`[TourProvider] Requesting tour: ${id} (force: ${force})`);
+    if (run && !force) {
+      console.warn(`[TourProvider] Tour already running: ${currentTourId}. Ignoring ${id}.`);
+      return;
+    }
+    
+    if (completedTours.includes(id) && !force) {
+      console.log(`[TourProvider] Tour ${id} already completed. Skipping.`);
+      return;
+    }
+
+    // Force a state reset if Joyride was already running or if we want to ensure fresh start
+    setRun(false);
+    
+    setTimeout(() => {
+      console.log(`[TourProvider] Starting tour: ${id} with ${steps.length} steps`);
+      setCurrentTourId(id);
+      setSteps(steps);
+      setRun(true);
+    }, 150); // Increased delay for stability
+  }, [run, completedTours, currentTourId]);
 
   const handleJoyrideCallback = useCallback(
     (data: any) => {
