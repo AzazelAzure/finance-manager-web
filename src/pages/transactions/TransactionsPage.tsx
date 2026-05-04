@@ -690,10 +690,10 @@ export function TransactionsPage(): ReactNode {
                 variant="primary" 
                 style={{ marginTop: 8 }}
                 onClick={() => startTour('tx_single_tour', [
+                  { target: '#tx-form-date', title: 'Date', content: 'When did this happen? It defaults to today.' },
+                  { target: '#tx-form-amount', title: 'Amount', content: 'Enter the absolute value of the transaction.' },
                   { target: '#tx-form-source', title: 'Payment Source', content: 'Select where the money is coming from (e.g., Gcash, Cash).' },
                   { target: '#tx-form-cat', title: 'Category', content: 'Categorize your spending to see trends on the Dashboard.' },
-                  { target: '#tx-form-amount', title: 'Amount', content: 'Enter the amount in your base currency.' },
-                  { target: '#tx-form-date', title: 'Date', content: 'When did this happen? It defaults to today.' },
                   { target: '#tx-form-desc', title: 'Description', content: 'Add a small note for future reference.' }
                 ], true)}
               >
@@ -714,6 +714,7 @@ export function TransactionsPage(): ReactNode {
                 variant="primary" 
                 style={{ marginTop: 8 }}
                 onClick={() => startTour('tx_transfer_tour', [
+                  { target: '#tx-xfer-date', title: 'Date', content: 'When the transfer occurred.' },
                   { target: '#tx-xfer-from', title: 'From Account', content: 'The source account of the transfer.' },
                   { target: '#tx-xfer-to', title: 'To Account', content: 'The destination account where the money is going.' },
                   { target: '#tx-xfer-sent', title: 'Amount Sent', content: 'How much left the source account.' },
