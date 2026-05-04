@@ -743,20 +743,18 @@ export function TransactionsPage(): ReactNode {
           ) : null}
           {editorMode === "single" || editingTxId ? (
             <>
-              <label className="ui-field">
+              <label className="ui-field" id="tx-form-date">
                 <span className="ui-label">Date</span>
                 <input
-                  id="tx-form-date"
                   className="ui-input"
                   type="date"
                   value={singleDraft.date}
                   onChange={(e) => setSingleDraft((d) => ({ ...d, date: e.target.value }))}
                 />
               </label>
-              <label className="ui-field">
+              <label className="ui-field" id="tx-form-amount">
                 <span className="ui-label">Amount</span>
                 <input
-                  id="tx-form-amount"
                   className="ui-input"
                   value={singleDraft.amount}
                   onChange={(e) => setSingleDraft((d) => ({ ...d, amount: e.target.value }))}
@@ -922,10 +920,9 @@ export function TransactionsPage(): ReactNode {
               )}
             </>
           )}
-          <label className="ui-field">
+          <label className="ui-field" id="tx-form-cat">
             <span className="ui-label">Category</span>
             <input
-              id="tx-form-cat"
               className="ui-input"
               list="tx-category-list"
               value={editingTxId ? singleDraft.category : editorMode === "single" ? singleDraft.category : transferDraft.category}
@@ -981,10 +978,9 @@ export function TransactionsPage(): ReactNode {
               ))}
             </select>
           </label>
-          <label className="ui-field">
+          <label className="ui-field" id="tx-form-desc">
             <span className="ui-label">Description</span>
             <input
-              id="tx-form-desc"
               className="ui-input"
               value={editingTxId ? singleDraft.description : editorMode === "single" ? singleDraft.description : transferDraft.description}
               onChange={(e) => {
