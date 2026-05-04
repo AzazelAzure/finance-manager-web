@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery, useQueryClient, type QueryFunctionContext } from "@tanstack/react-query";
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useMemo, useEffect, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getAppProfile } from "../../api/profile";
 import { fetchAppSnapshot } from "../../api/snapshot";
@@ -215,12 +215,19 @@ export function DashboardPage(): ReactNode {
   }
 
   // Trigger linear tour when data is loaded
-  startTour('dashboard_linear_tour', [
-    { target: '#tour-kpis', content: 'Use KPI cards to spot period trends quickly.', disableBeacon: true, title: 'KPI Cards' },
-    { target: '#tour-filters', content: 'Apply filters first, then refresh to compare snapshots.', title: 'Dashboard Filters' },
-    { target: '#tour-quick-actions', content: 'Quick add supports income, expense, transfer, and bill flows.', title: 'Quick Add' },
-    { target: '#tour-charts', content: 'Chart slices drill to detailed transactions.', title: 'Charts' }
-  ] as any);
+  useEffect(() => {
+    if (data) {
+      const timer = setTimeout(() => {
+        startTour('dashboard_linear_tour', [
+          { target: '#tour-kpis', content: 'Use KPI cards to spot period trends quickly.', disableBeacon: true, title: 'KPI Cards' },
+          { target: '#tour-filters', content: 'Apply filters first, then refresh to compare snapshots.', title: 'Dashboard Filters' },
+          { target: '#tour-quick-actions', content: 'Quick add supports income, expense, transfer, and bill flows.', title: 'Quick Add' },
+          { target: '#tour-charts', content: 'Chart slices drill to detailed transactions.', title: 'Charts' }
+        ] as any);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [data, startTour]);
 
   return (
     <div className="stack dashboard-page">

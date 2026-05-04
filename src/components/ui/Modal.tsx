@@ -5,7 +5,7 @@ import { Button } from "./Button";
 
 type Props = {
   open: boolean;
-  title: string;
+  title: ReactNode;
   onClose: () => void;
   children: ReactNode;
   className?: string;

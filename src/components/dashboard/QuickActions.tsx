@@ -11,7 +11,9 @@ import { ErrorState } from "../ui/ErrorState";
 import { createCategory, listCategories, listTags } from "../../api/lookups";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 import { isOfflineQueued, type SourceRow } from "../../api/types";
+import { HelpCircle } from "lucide-react";
 import { SourceSelect } from "../transactions/SourceSelect";
+import { useTour } from "../tours/TourProvider";
 
 type QuickActionType = "INCOME" | "EXPENSE" | "XFER" | "BILL";
 
@@ -33,6 +35,8 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
   const locale = useLocale();
   const queryClient = useQueryClient();
   const [activeType, setActiveType] = useState<QuickActionType | null>(null);
+  const [showFormHelp, setShowFormHelp] = useState(false);
+  const { startTour } = useTour();
   const [error, setError] = useState("");
   const today = new Date().toISOString().slice(0, 10);
   const sourceCurrency = new Map(sources.map((row) => [row.source, row.currency]));
@@ -213,8 +217,23 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
       </div>
       <Modal
         open={Boolean(activeType)}
-        onClose={() => setActiveType(null)}
-        title={activeType ? labels[activeType] : "Quick add"}
+        onClose={() => {
+          setActiveType(null);
+          setShowFormHelp(false);
+        }}
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span>{activeType ? labels[activeType] : "Quick add"}</span>
+            <button
+              type="button"
+              className="ui-btn ui-btn--ghost ui-btn--sm"
+              onClick={() => setShowFormHelp(!showFormHelp)}
+              style={{ fontSize: "0.8rem", padding: "2px 8px" }}
+            >
+              <HelpCircle size={14} /> {showFormHelp ? "Hide guide" : "Guide"}
+            </button>
+          </div>
+        }
       >
         <div className="stack" style={{ marginTop: 12 }}>
           {error ? <ErrorState title="Save failed" description={error} /> : null}
@@ -224,7 +243,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
           </label>
           {activeType === "XFER" ? (
             <>
-              <label className="ui-field">
+              <label className="ui-field" id="quick-xfer-from">
                 <span className="ui-label">From source</span>
                 <SourceSelect
                   sources={sources}
@@ -240,7 +259,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                   }
                 />
               </label>
-              <label className="ui-field">
+              <label className="ui-field" id="quick-xfer-to">
                 <span className="ui-label">To source</span>
                 <SourceSelect
                   sources={sources}
@@ -256,7 +275,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                   }
                 />
               </label>
-              <label className="ui-field">
+              <label className="ui-field" id="quick-xfer-sent">
                 <span className="ui-label">Sent amount</span>
                 <input className="ui-input" value={draft.sentAmount} onChange={(e) => setDraft((d) => ({ ...d, sentAmount: e.target.value }))} />
               </label>
@@ -270,7 +289,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                   ))}
                 </select>
               </label>
-              <label className="ui-field">
+              <label className="ui-field" id="quick-xfer-received">
                 <span className="ui-label">Received amount</span>
                 <input className="ui-input" value={draft.receivedAmount} onChange={(e) => setDraft((d) => ({ ...d, receivedAmount: e.target.value }))} />
               </label>
@@ -288,39 +307,113 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                   ))}
                 </select>
               </label>
+              {showFormHelp && (
+                <Card style={{ background: "var(--bg-depth-2)", border: "1px dashed var(--accent-primary)" }}>
+                  <p style={{ fontSize: "0.9rem", margin: 0 }}>
+                    <strong>Transfer Guide:</strong> Use this to move money between accounts.
+                    <br />
+                    • <strong>Sent amount:</strong> Put the amount sent here. Include any fees in the total.
+                    <br />
+                    • <strong>Received amount:</strong> The final amount that landed in the target account.
+                    <br />
+                    <Button
+                      variant="secondary"
+                      style={{ marginTop: 8 }}
+                      onClick={() =>
+                        startTour("quick_transfer_tour", [
+                          {
+                            target: "#quick-xfer-from",
+                            content: "Select where the money is coming from.",
+                            title: "Origin",
+                          },
+                          {
+                            target: "#quick-xfer-to",
+                            content: "Select the destination account.",
+                            title: "Destination",
+                          },
+                          {
+                            target: "#quick-xfer-sent",
+                            content: "Put the amount sent here. Include any fees in the total.",
+                            title: "Sent Amount",
+                          },
+                          {
+                            target: "#quick-xfer-received",
+                            content: "The final amount that landed in the target account. This can be different if currency conversion occurred.",
+                            title: "Received Amount",
+                          },
+                        ] as any)
+                      }
+                    >
+                      Start step-by-step guide
+                    </Button>
+                  </p>
+                </Card>
+              )}
             </>
           ) : (
             <>
-          <label className="ui-field">
-            <span className="ui-label">Amount</span>
-            <input className="ui-input" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} />
-          </label>
-          <label className="ui-field">
-            <span className="ui-label">Source</span>
-            <SourceSelect
-              sources={sources}
-              value={draft.source}
-              emptyLabel={tr("common.selectSource", locale)}
-              unknownSourceLabel={tr("common.unknownSourceHint", locale)}
-              onSourceChange={(source) =>
-                setDraft((d) => ({
-                  ...d,
-                  source,
-                  currency: sourceCurrency.get(source) ?? d.currency,
-                }))
-              }
-            />
-          </label>
-          <label className="ui-field">
-            <span className="ui-label">Currency</span>
-            <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
-              {currencyOptions.map((curr) => (
-                <option key={`quick-curr-${curr}`} value={curr}>
-                  {curr}
-                </option>
-              ))}
-            </select>
-          </label>
+              <label className="ui-field" id="quick-single-amount">
+                <span className="ui-label">Amount</span>
+                <input className="ui-input" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} />
+              </label>
+              <label className="ui-field" id="quick-single-source">
+                <span className="ui-label">Source</span>
+                <SourceSelect
+                  sources={sources}
+                  value={draft.source}
+                  emptyLabel={tr("common.selectSource", locale)}
+                  unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+                  onSourceChange={(source) =>
+                    setDraft((d) => ({
+                      ...d,
+                      source,
+                      currency: sourceCurrency.get(source) ?? d.currency,
+                    }))
+                  }
+                />
+              </label>
+              <label className="ui-field">
+                <span className="ui-label">Currency</span>
+                <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
+                  {currencyOptions.map((curr) => (
+                    <option key={`quick-curr-${curr}`} value={curr}>
+                      {curr}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {showFormHelp && (
+                <Card style={{ background: "var(--bg-depth-2)", border: "1px dashed var(--accent-primary)" }}>
+                  <p style={{ fontSize: "0.9rem", margin: 0 }}>
+                    <strong>Add {activeType === "INCOME" ? "Income" : activeType === "EXPENSE" ? "Expense" : "Bill"} Guide:</strong>
+                    <br />
+                    • <strong>Amount:</strong> Total value of the {activeType?.toLowerCase()}.
+                    <br />
+                    • <strong>Source:</strong> The account or wallet involved.
+                    <br />
+                    <Button
+                      variant="secondary"
+                      style={{ marginTop: 8 }}
+                      onClick={() =>
+                        startTour(`quick_${activeType?.toLowerCase()}_tour`, [
+                          {
+                            target: "#quick-single-amount",
+                            content: `Enter the total amount for this ${activeType?.toLowerCase()}.`,
+                            title: "Amount",
+                          },
+                          {
+                            target: "#quick-single-source",
+                            content: "Select the source account for this transaction.",
+                            title: "Source",
+                          },
+                        ] as any)
+                      }
+                    >
+                      Start step-by-step guide
+                    </Button>
+                  </p>
+                </Card>
+              )}
             </>
           )}
           {activeType === "BILL" ? (

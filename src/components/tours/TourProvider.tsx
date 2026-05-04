@@ -152,14 +152,14 @@ export function HelpModeWrapper({
   children: React.ReactNode;
   className?: string;
 }) {
-  const { isHelpModeActive, setHelpMode } = useHelpMode();
+  const { isHelpModeActive } = useHelpMode();
   const { startTour } = useTour();
 
   const handleClick = (e: React.MouseEvent) => {
     if (isHelpModeActive) {
       e.preventDefault();
       e.stopPropagation();
-      setHelpMode(false); // Disable help mode after clicking to view the tip
+      // Keep help mode active so the user can click multiple widgets
       startTour(`help_${id}_${Date.now()}`, [
         {
           target: `#${id}`,

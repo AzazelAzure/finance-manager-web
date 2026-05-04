@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { useTour } from "../../components/tours/TourProvider";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Link } from "react-router-dom";
@@ -113,6 +114,7 @@ export function UpcomingExpensesPage(): ReactNode {
   const [recurring, setRecurring] = useState<RecurringFilter>("both");
   const [paid, setPaid] = useState<PaidFilter>("both");
   const [dateQuick, setDateQuick] = useState<DateQuickFilter>("all");
+  const { startTour } = useTour();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingName, setEditingName] = useState<string | null>(null);
   const [draft, setDraft] = useState<UpcomingDraft>(() => emptyUpcomingDraft("USD"));
@@ -147,14 +149,6 @@ export function UpcomingExpensesPage(): ReactNode {
     return [...set].sort();
   }, [baseCurrency, sourcesQuery.data]);
   const currencyOptions = sourceCurrencyOptions.length > 0 ? sourceCurrencyOptions : [baseCurrency];
-  const draftCurrency = draft.currency.trim().toUpperCase();
-  const currencySelectOptions = useMemo(() => {
-    const set = new Set(currencyOptions);
-    if (draftCurrency.length === 3) {
-      set.add(draftCurrency);
-    }
-    return [...set].sort();
-  }, [currencyOptions, draftCurrency]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -461,17 +455,43 @@ export function UpcomingExpensesPage(): ReactNode {
               <HelpCircle size={16} /> {showFormHelp ? "Hide guide" : "Guide"}
             </button>
           </div>
-          {showFormHelp ? (
-            <div className="ui-state" style={{ textAlign: "left", fontSize: "0.9rem" }}>
-              <strong>Upcoming Expense Guide</strong>
-              <ul style={{ paddingLeft: 20, margin: "8px 0 0 0" }}>
-                <li><strong>Name:</strong> A descriptive name for the expense.</li>
-                <li><strong>Due date:</strong> When the expense needs to be paid.</li>
-                <li><strong>Recurring:</strong> Check if this repeats periodically.</li>
-                <li><strong>Use start / end window:</strong> Specify the coverage period for this bill.</li>
-              </ul>
-            </div>
-          ) : null}
+          {showFormHelp && (
+            <Card style={{ background: "var(--bg-depth-2)", border: "1px dashed var(--accent-primary)", marginBottom: 12 }}>
+              <p style={{ fontSize: "0.9rem", margin: 0 }}>
+                <strong>Bill/Upcoming Guide:</strong>
+                <br />
+                • <strong>Name:</strong> Friendly name for the bill.
+                <br />
+                • <strong>Due date:</strong> When you expect to pay this.
+                <br />
+                <Button
+                  variant="secondary"
+                  style={{ marginTop: 8 }}
+                  onClick={() =>
+                    startTour("bill_form_tour", [
+                      {
+                        target: "#bill-form-name",
+                        content: "Enter a descriptive name for this bill or upcoming expense.",
+                        title: "Bill Name",
+                      },
+                      {
+                        target: "#bill-form-amount",
+                        content: "The expected amount to be paid.",
+                        title: "Amount",
+                      },
+                      {
+                        target: "#bill-form-date",
+                        content: "The date this bill is due.",
+                        title: "Due Date",
+                      },
+                    ] as any)
+                  }
+                >
+                  Start step-by-step guide
+                </Button>
+              </p>
+            </Card>
+          )}
 
           {editorError ? <ErrorState title={tr("common.saveFailed", locale)} description={editorError} /> : null}
           {(invalidAmount || invalidWindow) && !saveMutation.isPending ? (
@@ -483,36 +503,27 @@ export function UpcomingExpensesPage(): ReactNode {
               </p>
             </div>
           ) : null}
-          <label className="ui-field">
-            <span className="ui-label">Name</span>
+          <label className="ui-field" id="bill-form-name">
+            <span className="ui-label">{tr("upcoming.editor.label.name", locale)}</span>
             <input className="ui-input" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
           </label>
-          <label className="ui-field">
-            <span className="ui-label">Amount</span>
+          <label className="ui-field" id="bill-form-amount">
+            <span className="ui-label">{tr("upcoming.editor.label.amount", locale)}</span>
             <input className="ui-input" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} />
           </label>
           <label className="ui-field">
-            <span className="ui-label">Currency</span>
-            <select
-              className="ui-input"
-              value={currencySelectOptions.includes(draftCurrency) ? draftCurrency : currencySelectOptions[0] ?? baseCurrency}
-              onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}
-            >
-              {currencySelectOptions.map((curr) => (
-                <option key={curr} value={curr}>
+            <span className="ui-label">{tr("upcoming.editor.label.currency", locale)}</span>
+            <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
+              {currencyOptions.map((curr) => (
+                <option key={`bill-curr-${curr}`} value={curr}>
                   {curr}
                 </option>
               ))}
             </select>
           </label>
-          <label className="ui-field">
-            <span className="ui-label">Due date</span>
-            <input
-              type="date"
-              className="ui-input"
-              value={draft.due_date}
-              onChange={(e) => setDraft((d) => ({ ...d, due_date: e.target.value }))}
-            />
+          <label className="ui-field" id="bill-form-date">
+            <span className="ui-label">{tr("upcoming.editor.label.dueDate", locale)}</span>
+            <input className="ui-input" type="date" value={draft.due_date} onChange={(e) => setDraft((d) => ({ ...d, due_date: e.target.value }))} />
           </label>
           <label className="ui-field">
             <span className="ui-label">Source (optional)</span>

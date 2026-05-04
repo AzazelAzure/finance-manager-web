@@ -645,24 +645,26 @@ export function TransactionsPage(): ReactNode {
         onClose={() => {
           setEditorOpen(false);
           setEditorError("");
+          setShowFormHelp(false);
           if (location.pathname.endsWith("/new")) {
             navigate("/app/transactions", { replace: true });
           }
         }}
-        title={editingTxId ? "Edit transaction" : editorMode === "single" ? "Add transaction" : "Add transfer pair"}
-      >
-        <div className="stack" style={{ marginTop: 12 }}>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button 
-              type="button" 
-              className="ui-btn ui-btn--ghost" 
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span>{editingTxId ? "Edit transaction" : editorMode === "single" ? "Add transaction" : "Add transfer"}</span>
+            <button
+              type="button"
+              className="ui-btn ui-btn--ghost ui-btn--sm"
               onClick={() => setShowFormHelp(!showFormHelp)}
-              title="Show guide"
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px" }}
+              style={{ fontSize: "0.8rem", padding: "2px 8px" }}
             >
-              <HelpCircle size={16} /> {showFormHelp ? "Hide guide" : "Guide"}
+              <HelpCircle size={14} /> {showFormHelp ? "Hide guide" : "Guide"}
             </button>
           </div>
+        }
+      >
+        <div className="stack" style={{ marginTop: 12 }}>
           {showFormHelp && editorMode === "single" ? (
             <div className="ui-state" style={{ textAlign: "left", fontSize: "0.9rem" }}>
               <strong>Single Transaction Guide</strong>
@@ -672,6 +674,7 @@ export function TransactionsPage(): ReactNode {
                 <li><strong>Type:</strong> Expense (money out) or Income (money in).</li>
                 <li><strong>Category:</strong> E.g. "Food" or "Salary" to group spending.</li>
               </ul>
+              <Button variant="secondary" onClick={() => startTour('tx_single_tour', [{target: '#tx-form-source', content: 'Select the account.', title: 'Source'}])}>Start guide</Button>
             </div>
           ) : null}
           {showFormHelp && editorMode === "transfer" ? (
@@ -731,7 +734,7 @@ export function TransactionsPage(): ReactNode {
                   ))}
                 </select>
               </label>
-              <label className="ui-field">
+              <label className="ui-field" id="tx-form-source">
                 <span className="ui-label">Source</span>
                 <SourceSelect
                   sources={sourcesQuery.data ?? []}
@@ -739,14 +742,11 @@ export function TransactionsPage(): ReactNode {
                   emptyLabel={tr("common.selectSource", locale)}
                   unknownSourceLabel={tr("common.unknownSourceHint", locale)}
                   onSourceChange={(source) => {
-                    const row = (sourcesQuery.data ?? []).find((r) => r.source === source);
                     setSingleDraft((d) => ({
                       ...d,
                       source,
-                      currency: row
-                        ? String(row.currency ?? "")
-                            .trim()
-                            .toUpperCase() || d.currency
+                      currency: source
+                        ? (sourcesQuery.data ?? []).find((s) => s.source === source)?.currency ?? d.currency
                         : d.currency,
                     }));
                   }}
@@ -768,16 +768,7 @@ export function TransactionsPage(): ReactNode {
             </>
           ) : (
             <>
-              <label className="ui-field">
-                <span className="ui-label">Date</span>
-                <input
-                  className="ui-input"
-                  type="date"
-                  value={transferDraft.date}
-                  onChange={(e) => setTransferDraft((d) => ({ ...d, date: e.target.value }))}
-                />
-              </label>
-              <label className="ui-field">
+              <label className="ui-field" id="tx-xfer-from">
                 <span className="ui-label">From source</span>
                 <SourceSelect
                   sources={sourcesQuery.data ?? []}
@@ -787,7 +778,7 @@ export function TransactionsPage(): ReactNode {
                   onSourceChange={(source) => setTransferDraft((d) => ({ ...d, from_source: source }))}
                 />
               </label>
-              <label className="ui-field">
+              <label className="ui-field" id="tx-xfer-to">
                 <span className="ui-label">To source</span>
                 <SourceSelect
                   sources={sourcesQuery.data ?? []}
@@ -797,7 +788,7 @@ export function TransactionsPage(): ReactNode {
                   onSourceChange={(source) => setTransferDraft((d) => ({ ...d, to_source: source }))}
                 />
               </label>
-              <label className="ui-field">
+              <label className="ui-field" id="tx-xfer-sent">
                 <span className="ui-label">Sent amount</span>
                 <input
                   className="ui-input"
@@ -819,7 +810,7 @@ export function TransactionsPage(): ReactNode {
                   ))}
                 </select>
               </label>
-              <label className="ui-field">
+              <label className="ui-field" id="tx-xfer-received">
                 <span className="ui-label">Received amount</span>
                 <input
                   className="ui-input"
@@ -849,6 +840,48 @@ export function TransactionsPage(): ReactNode {
                     )} will move from ${transferDraft.from_source || "source A"} to ${transferDraft.to_source || "source B"}, receiving ${formatMoney(transferDraft.received_amount, transferDraft.received_currency)}.`
                   : "Enter amounts and sources to preview transfer impact."}
               </p>
+              {showFormHelp && (
+                <Card style={{ background: "var(--bg-depth-2)", border: "1px dashed var(--accent-primary)" }}>
+                  <p style={{ fontSize: "0.9rem", margin: 0 }}>
+                    <strong>Transfer Guide:</strong> Use this to move money between accounts.
+                    <br />
+                    • <strong>Sent amount:</strong> Put the amount sent here. Include any fees in the total.
+                    <br />
+                    • <strong>Received amount:</strong> The final amount that landed in the target account.
+                    <br />
+                    <Button
+                      variant="secondary"
+                      style={{ marginTop: 8 }}
+                      onClick={() =>
+                        startTour("tx_transfer_tour", [
+                          {
+                            target: "#tx-xfer-from",
+                            content: "Select where the money is coming from.",
+                            title: "Origin",
+                          },
+                          {
+                            target: "#tx-xfer-to",
+                            content: "Select the destination account.",
+                            title: "Destination",
+                          },
+                          {
+                            target: "#tx-xfer-sent",
+                            content: "Put the amount sent here. Include any fees in the total.",
+                            title: "Sent Amount",
+                          },
+                          {
+                            target: "#tx-xfer-received",
+                            content: "The final amount that landed in the target account. This can be different if currency conversion occurred.",
+                            title: "Received Amount",
+                          },
+                        ] as any)
+                      }
+                    >
+                      Start step-by-step guide
+                    </Button>
+                  </p>
+                </Card>
+              )}
             </>
           )}
           <label className="ui-field">
