@@ -316,10 +316,11 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                     <br />
                     • <strong>Received amount:</strong> The final amount that landed in the target account.
                     <br />
-                    <Button
-                      variant="primary"
+                    <button
+                      className="ui-btn ui-btn--primary"
                       style={{ marginTop: 8 }}
-                      onClick={() =>
+                      onClick={() => {
+                        console.log("Starting quick_transfer_tour");
                         startTour("quick_transfer_tour", [
                           {
                             target: "#quick-xfer-from",
@@ -346,11 +347,11 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                             content: "Add a note for this transfer.",
                             title: "Description",
                           },
-                        ] as any, true)
-                      }
+                        ] as any, true);
+                      }}
                     >
                       Start step-by-step guide
-                    </Button>
+                    </button>
                   </p>
                 </Card>
               )}
@@ -396,10 +397,11 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                     <br />
                     • <strong>Source:</strong> The account or wallet involved.
                     <br />
-                    <Button
-                      variant="primary"
+                    <button
+                      className="ui-btn ui-btn--primary"
                       style={{ marginTop: 8 }}
-                      onClick={() =>
+                      onClick={() => {
+                        console.log(`Starting quick_${activeType?.toLowerCase()}_tour`);
                         startTour(`quick_${activeType?.toLowerCase()}_tour`, [
                           {
                             target: "#quick-single-amount",
@@ -426,11 +428,11 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                             content: "Add a note for future reference.",
                             title: "Description",
                           },
-                        ] as any, true)
-                      }
+                        ] as any, true);
+                      }}
                     >
                       Start step-by-step guide
-                    </Button>
+                    </button>
                   </p>
                 </Card>
               )}
