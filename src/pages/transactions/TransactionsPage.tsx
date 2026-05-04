@@ -169,7 +169,7 @@ export function TransactionsPage(): ReactNode {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { startTour } = useTour();
+  const { startTour, isTourCompleted } = useTour();
   const searchString = searchParams.toString();
   const profileQuery = useQuery({
     queryKey: ["app-profile"] as const,
@@ -498,8 +498,11 @@ export function TransactionsPage(): ReactNode {
   };
 
   useEffect(() => {
+    if (isTourCompleted("transactions_linear_tour")) {
+      return;
+    }
     // Start the linear tour when the page loads
-    startTour('transactions_linear_tour', [
+    startTour("transactions_linear_tour", [
       { 
         target: '#tx-filters', 
         title: 'Refine History',
@@ -516,7 +519,7 @@ export function TransactionsPage(): ReactNode {
         content: 'A comprehensive list of all your historical records. You can click any row to see details or use the action buttons to edit/delete.' 
       }
     ]);
-  }, [startTour]);
+  }, [startTour, isTourCompleted]);
 
   return (
     <div className="stack">

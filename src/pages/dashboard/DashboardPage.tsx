@@ -65,7 +65,7 @@ export function DashboardPage(): ReactNode {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const nav = useNavigate();
-  const { startTour } = useTour();
+  const { startTour, isTourCompleted } = useTour();
   const searchString = searchParams.toString();
   const appliedKey = useMemo(
     () => appliedSnapshotKey(new URLSearchParams(searchString)),
@@ -151,9 +151,11 @@ export function DashboardPage(): ReactNode {
 
   // Trigger linear tour when data is loaded
   useEffect(() => {
-    if (data) {
-      const timer = setTimeout(() => {
-        startTour('dashboard_linear_tour', [
+    if (!data || isTourCompleted("dashboard_linear_tour")) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      startTour("dashboard_linear_tour", [
           { 
             target: '#tour-kpis', 
             title: 'Period Summary',
@@ -196,10 +198,9 @@ export function DashboardPage(): ReactNode {
             content: 'Check the real-time balance of all your connected sources (Bank, Gcash, Cash, etc.) in one place.' 
           }
         ] as any);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [data, startTour]);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [data, startTour, isTourCompleted]);
 
   const onDrillCategory = useCallback(
     (name: string) => {

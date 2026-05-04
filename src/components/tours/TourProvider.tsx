@@ -73,19 +73,23 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     [completedTours, isTourCompleted, updateProfile]
   );
 
-  const startTour = useCallback((id: string, steps: Step[], force = false) => {
-    console.log(`[TourProvider] startTour called for: ${id}`);
-    setSteps(steps);
-    setActiveTourId(id);
-    setJoyrideKey(Date.now());
-    setRun(false);
-    
-    // Use setTimeout to ensure the 'run=false' state is processed before re-enabling
-    setTimeout(() => {
-      console.log(`[TourProvider] setRun(true) for: ${id}`);
-      setRun(true);
-    }, 100);
-  }, []);
+  const startTour = useCallback(
+    (id: string, tourSteps: Step[], force = false) => {
+      if (isTourCompleted(id) && !force) {
+        return;
+      }
+      setSteps(tourSteps);
+      setActiveTourId(id);
+      setJoyrideKey(Date.now());
+      setRun(false);
+
+      // Use setTimeout to ensure the 'run=false' state is processed before re-enabling
+      setTimeout(() => {
+        setRun(true);
+      }, 100);
+    },
+    [isTourCompleted],
+  );
 
   const handleJoyrideCallback = useCallback(
     (data: any) => {
