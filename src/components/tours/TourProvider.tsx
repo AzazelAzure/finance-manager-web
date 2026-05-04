@@ -141,7 +141,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
           styles={{
             // @ts-ignore
             options: {
-              zIndex: 10000,
+              zIndex: 20000,
               primaryColor: '#10b981', // Tailwind green
             },
           }} as any
