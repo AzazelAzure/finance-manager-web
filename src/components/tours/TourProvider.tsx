@@ -80,17 +80,22 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     setJoyrideKey(Date.now());
     setRun(false);
     
-    // Use requestAnimationFrame to ensure the 'run=false' state is processed before re-enabling
-    requestAnimationFrame(() => {
+    // Use setTimeout to ensure the 'run=false' state is processed before re-enabling
+    setTimeout(() => {
+      console.log(`[TourProvider] setRun(true) for: ${id}`);
       setRun(true);
-    });
+    }, 100);
   }, []);
 
   const handleJoyrideCallback = useCallback(
     (data: any) => {
-      const { status } = data;
+      const { status, type } = data;
       const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
       
+      if (type === 'error') {
+        console.error('[TourProvider] Joyride error:', data);
+      }
+
       if (finishedStatuses.includes(status as string)) {
         setRun(false);
         if (activeTourId) {
