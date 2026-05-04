@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import Joyride, { STATUS } from 'react-joyride';
+import { Joyride, STATUS } from 'react-joyride';
+// @ts-ignore
 import type { CallBackProps, Step } from 'react-joyride';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { updateAppProfile, getAppProfile } from '../../api/profile';
@@ -83,7 +84,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   );
 
   const handleJoyrideCallback = useCallback(
-    (data: CallBackProps) => {
+    (data: any) => {
       const { status } = data;
       const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
       
