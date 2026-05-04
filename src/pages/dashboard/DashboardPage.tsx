@@ -154,10 +154,47 @@ export function DashboardPage(): ReactNode {
     if (data) {
       const timer = setTimeout(() => {
         startTour('dashboard_linear_tour', [
-          { target: '#tour-kpis', content: 'Use KPI cards to spot period trends quickly.', disableBeacon: true, title: 'KPI Cards' },
-          { target: '#tour-filters', content: 'Apply filters first, then refresh to compare snapshots.', title: 'Dashboard Filters' },
-          { target: '#tour-quick-actions', content: 'Quick add supports income, expense, transfer, and bill flows.', title: 'Quick Add' },
-          { target: '#tour-charts', content: 'Chart slices drill to detailed transactions.', title: 'Charts' }
+          { 
+            target: '#tour-kpis', 
+            title: 'Period Summary',
+            content: 'Summary of your Income, Expenses, and Net Flow for the selected period. Green indicates a surplus, Red a deficit.', 
+            disableBeacon: true 
+          },
+          { 
+            target: '#tour-filters', 
+            title: 'Smart Filters',
+            content: 'Filter data by date range, specific accounts, or categories. Click the Search icon to apply your changes.' 
+          },
+          { 
+            target: '#tour-quick-actions', 
+            title: 'Instant Logging',
+            content: 'Record a new expense, income, or transfer in seconds. You can also pick from common bills here.' 
+          },
+          { 
+            target: '#tour-flow-chart', 
+            title: 'Income vs Expense Flow',
+            content: 'This bar chart shows your daily income vs expenses. Use it to identify days where you overspend or when your biggest income hits arrive.' 
+          },
+          { 
+            target: '#tour-spend-chart', 
+            title: 'Spending Velocity',
+            content: 'The line chart tracks your cumulative spending throughout the month. It helps you predict if you will stay within budget.' 
+          },
+          { 
+            target: '#tour-category-chart', 
+            title: 'Expense Breakdown',
+            content: 'Visualize which categories consume most of your budget. Click any slice to see the exact transactions.' 
+          },
+          { 
+            target: '#tour-tag-chart', 
+            title: 'Spending by Tag',
+            content: 'Tags help you group transactions across categories (e.g., #vacation). This pie shows your tagged spending distribution.' 
+          },
+          { 
+            target: '#tour-source-balances', 
+            title: 'Account Balances',
+            content: 'Check the real-time balance of all your connected sources (Bank, Gcash, Cash, etc.) in one place.' 
+          }
         ] as any);
       }, 1000);
       return () => clearTimeout(timer);
@@ -238,9 +275,9 @@ export function DashboardPage(): ReactNode {
           <h2 className="muted dashboard-title">
             {tr("dashboard.title", locale)}
           </h2>
-          <p className="muted-text dashboard-subtitle">
+          <h2 className="muted-text dashboard-subtitle">
             {tr("dashboard.subtitle", locale)}
-          </p>
+          </h2>
         </div>
         <Button type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
           {tr("dashboard.refresh", locale)}
@@ -286,41 +323,51 @@ export function DashboardPage(): ReactNode {
 
       <div className="dashboard-root">
         <div className="dashboard-root__row">
-          <HelpModeWrapper id="tour-charts" className="dashboard-root__main dashboard-col" title="Charts" content="Chart slices drill to detailed transactions.">
-            <FlowChart
-              data={data.flow_series}
-              baseCurrency={currency}
-              isLoading={chartLoading}
-              isError={isError}
-              onRetry={() => void refetchSnapshotForced()}
-            />
-            <SpendChart
-              dailySpend={data.daily_spend}
-              dailyIncome={data.daily_income}
-              baseCurrency={currency}
-              isLoading={chartLoading}
-              isError={isError}
-              onRetry={() => void refetchSnapshotForced()}
-            />
-            <CategoryPie
-              expenseByCategory={data.expense_by_category}
-              baseCurrency={currency}
-              isLoading={chartLoading}
-              isError={isError}
-              onRetry={() => void refetchSnapshotForced()}
-              onSelectCategory={onDrillCategory}
-            />
-            <TagPie
-              transactions={txRows}
-              baseCurrency={currency}
-              isLoading={chartLoading}
-              isError={isError}
-              onRetry={() => void refetchSnapshotForced()}
-              onSelectTag={onDrillTag}
-            />
-          </HelpModeWrapper>
+          <div className="dashboard-root__main dashboard-col">
+            <HelpModeWrapper id="tour-flow-chart" title="Income vs Expense Flow" content="Visualize your daily cash flow.">
+              <FlowChart
+                data={data.flow_series}
+                baseCurrency={currency}
+                isLoading={chartLoading}
+                isError={isError}
+                onRetry={() => void refetchSnapshotForced()}
+              />
+            </HelpModeWrapper>
+            <HelpModeWrapper id="tour-spend-chart" title="Spending Velocity" content="Track your cumulative spending vs budget.">
+              <SpendChart
+                dailySpend={data.daily_spend}
+                dailyIncome={data.daily_income}
+                baseCurrency={currency}
+                isLoading={chartLoading}
+                isError={isError}
+                onRetry={() => void refetchSnapshotForced()}
+              />
+            </HelpModeWrapper>
+            <HelpModeWrapper id="tour-category-chart" title="Expense Breakdown" content="See where your money goes by category.">
+              <CategoryPie
+                expenseByCategory={data.expense_by_category}
+                baseCurrency={currency}
+                isLoading={chartLoading}
+                isError={isError}
+                onRetry={() => void refetchSnapshotForced()}
+                onSelectCategory={onDrillCategory}
+              />
+            </HelpModeWrapper>
+            <HelpModeWrapper id="tour-tag-chart" title="Spending by Tag" content="Distribution of tagged transactions.">
+              <TagPie
+                transactions={txRows}
+                baseCurrency={currency}
+                isLoading={chartLoading}
+                isError={isError}
+                onRetry={() => void refetchSnapshotForced()}
+                onSelectTag={onDrillTag}
+              />
+            </HelpModeWrapper>
+          </div>
           <aside className="dashboard-root__side dashboard-col">
-            <SourceBalances rows={data.source_balances} />
+            <HelpModeWrapper id="tour-source-balances" title="Account Balances" content="Real-time wealth distribution across sources.">
+              <SourceBalances rows={data.source_balances} />
+            </HelpModeWrapper>
             <ProfileOverview profile={profileQuery.data} isError={profileQuery.isError} />
           </aside>
         </div>
