@@ -91,7 +91,10 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       if (finishedStatuses.includes(status as string)) {
         setRun(false);
         if (activeTourId) {
-          markTourCompleted(activeTourId);
+          // Do not persist help mode contextual notes
+          if (!activeTourId.startsWith('help_')) {
+            markTourCompleted(activeTourId);
+          }
           setActiveTourId(null);
         }
       }
@@ -178,6 +181,15 @@ export function HelpModeWrapper({
       id={id}
       className={className}
       onClickCapture={handleClick}
+      tabIndex={isHelpModeActive ? 0 : undefined}
+      role={isHelpModeActive ? 'button' : undefined}
+      aria-label={isHelpModeActive ? `Help for ${title || id}` : undefined}
+      onKeyDown={(e) => {
+        if (isHelpModeActive && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          handleClick(e as any);
+        }
+      }}
       style={
         isHelpModeActive
           ? { cursor: 'help', outline: '2px dashed #10b981', outlineOffset: '2px', borderRadius: '4px' }
