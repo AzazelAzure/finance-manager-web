@@ -38,6 +38,7 @@ export function useTour() {
 export function TourProvider({ children }: { children: React.ReactNode }) {
   const [isHelpModeActive, setHelpModeActive] = useState(false);
   const [run, setRun] = useState(false);
+  const [joyrideKey, setJoyrideKey] = useState(0);
   const [steps, setSteps] = useState<Step[]>([]);
   const [activeTourId, setActiveTourId] = useState<string | null>(null);
 
@@ -75,7 +76,8 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const startTour = useCallback((id: string, steps: Step[], force = false) => {
     console.log(`[TourProvider] startTour called for: ${id}`);
     setSteps(steps);
-    setCurrentTourId(id);
+    setActiveTourId(id);
+    setJoyrideKey(Date.now());
     setRun(false);
     
     // Use requestAnimationFrame to ensure the 'run=false' state is processed before re-enabling
@@ -122,7 +124,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       <TourContext.Provider value={tourValue}>
         {children}
         <Joyride
-          key={currentTourId}
+          key={joyrideKey}
           callback={handleJoyrideCallback}
           continuous
           hideCloseButton
