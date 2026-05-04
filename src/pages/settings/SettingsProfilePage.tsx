@@ -185,6 +185,24 @@ export function SettingsProfilePage(): ReactNode {
     onError: (error) => setSettingsMessage(parseApiError(error)),
   });
 
+  const resetToursMutation = useMutation({
+    mutationFn: async () => {
+      const res = await updateAppProfile({
+        completed_tours: [],
+      });
+      return res;
+    },
+    onSuccess: (res) => {
+      setSettingsMessage(
+        isOfflineQueued(res) ? tr("settings.savedOffline", locale) : "Guided tours reset successfully",
+      );
+      requestPwaReadBypassAfterMutation();
+      void queryClient.invalidateQueries({ queryKey: ["profile"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["app-profile"], refetchType: "all" });
+    },
+    onError: (error) => setSettingsMessage(parseApiError(error)),
+  });
+
   const passwordMutation = useMutation({
     mutationFn: (values: PasswordForm) => patchCurrentUserPassword(values.old_password, values.new_password),
     onSuccess: () => {
@@ -367,6 +385,24 @@ export function SettingsProfilePage(): ReactNode {
                       {settingsMutation.isPending ? "Saving..." : "Save settings"}
                     </Button>
                   </AppForm>
+                </Card>
+                <Card>
+                  <div className="stack" style={{ gap: 8 }}>
+                    <h3 style={{ margin: 0 }}>App Experience</h3>
+                    <p className="muted-text" style={{ margin: 0 }}>
+                      Reset the guided walkthroughs so they appear again.
+                    </p>
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => {
+                        setSettingsMessage("");
+                        resetToursMutation.mutate();
+                      }}
+                      disabled={resetToursMutation.isPending}
+                    >
+                      {resetToursMutation.isPending ? "Resetting..." : "Reset guided tours"}
+                    </Button>
+                  </div>
                 </Card>
               </TabPanel>
             ),
