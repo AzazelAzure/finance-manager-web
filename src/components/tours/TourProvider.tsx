@@ -121,6 +121,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       <TourContext.Provider value={tourValue}>
         {children}
         <Joyride
+          key={currentTourId}
           callback={handleJoyrideCallback}
           continuous
           hideCloseButton
