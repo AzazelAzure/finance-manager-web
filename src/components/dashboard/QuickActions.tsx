@@ -317,7 +317,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                     • <strong>Received amount:</strong> The final amount that landed in the target account.
                     <br />
                     <Button
-                      variant="secondary"
+                      variant="primary"
                       style={{ marginTop: 8 }}
                       onClick={() =>
                         startTour("quick_transfer_tour", [
@@ -341,7 +341,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                             content: "The final amount that landed in the target account. This can be different if currency conversion occurred.",
                             title: "Received Amount",
                           },
-                        ] as any)
+                        ] as any, true)
                       }
                     >
                       Start step-by-step guide
@@ -392,7 +392,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                     • <strong>Source:</strong> The account or wallet involved.
                     <br />
                     <Button
-                      variant="secondary"
+                      variant="primary"
                       style={{ marginTop: 8 }}
                       onClick={() =>
                         startTour(`quick_${activeType?.toLowerCase()}_tour`, [
@@ -406,7 +406,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                             content: "Select the source account for this transaction.",
                             title: "Source",
                           },
-                        ] as any)
+                        ] as any, true)
                       }
                     >
                       Start step-by-step guide

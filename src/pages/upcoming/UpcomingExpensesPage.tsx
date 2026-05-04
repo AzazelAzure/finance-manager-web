@@ -465,7 +465,7 @@ export function UpcomingExpensesPage(): ReactNode {
                 • <strong>Due date:</strong> When you expect to pay this.
                 <br />
                 <Button
-                  variant="secondary"
+                  variant="primary"
                   style={{ marginTop: 8 }}
                   onClick={() =>
                     startTour("bill_form_tour", [
@@ -484,7 +484,7 @@ export function UpcomingExpensesPage(): ReactNode {
                         content: "The date this bill is due.",
                         title: "Due Date",
                       },
-                    ] as any)
+                    ] as any, true)
                   }
                 >
                   Start step-by-step guide

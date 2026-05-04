@@ -674,7 +674,7 @@ export function TransactionsPage(): ReactNode {
                 <li><strong>Type:</strong> Expense (money out) or Income (money in).</li>
                 <li><strong>Category:</strong> E.g. "Food" or "Salary" to group spending.</li>
               </ul>
-              <Button variant="secondary" onClick={() => startTour('tx_single_tour', [{target: '#tx-form-source', content: 'Select the account.', title: 'Source'}])}>Start guide</Button>
+              <Button variant="primary" onClick={() => startTour('tx_single_tour', [{target: '#tx-form-source', content: 'Select the account.', title: 'Source'}], true)}>Start guide</Button>
             </div>
           ) : null}
           {showFormHelp && editorMode === "transfer" ? (
@@ -850,7 +850,7 @@ export function TransactionsPage(): ReactNode {
                     • <strong>Received amount:</strong> The final amount that landed in the target account.
                     <br />
                     <Button
-                      variant="secondary"
+                      variant="primary"
                       style={{ marginTop: 8 }}
                       onClick={() =>
                         startTour("tx_transfer_tour", [
@@ -874,7 +874,7 @@ export function TransactionsPage(): ReactNode {
                             content: "The final amount that landed in the target account. This can be different if currency conversion occurred.",
                             title: "Received Amount",
                           },
-                        ] as any)
+                        ] as any, true)
                       }
                     >
                       Start step-by-step guide
