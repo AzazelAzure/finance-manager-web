@@ -240,7 +240,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
             // @ts-ignore
             options: {
               zIndex: 20000,
-              primaryColor: '#10b981', // Tailwind green
+              primaryColor: 'var(--accent)',
             },
           }} as any
         />
@@ -297,11 +297,17 @@ export function HelpModeWrapper({
           handleClick(e as any);
         }
       }}
-      style={
-        isHelpModeActive
-          ? { cursor: 'help', outline: '2px dashed #10b981', outlineOffset: '2px', borderRadius: '4px' }
-          : undefined
-      }
+      style={{
+        borderRadius: '4px',
+        transition: 'box-shadow 0.28s ease',
+        ...(isHelpModeActive
+          ? {
+              cursor: 'help',
+              boxShadow:
+                '0 0 0 2px var(--accent), 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent), 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent)',
+            }
+          : { boxShadow: '0 0 0 0 transparent' }),
+      }}
     >
       {children}
     </div>
