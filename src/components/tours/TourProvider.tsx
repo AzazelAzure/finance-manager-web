@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
 import { Joyride, STATUS } from 'react-joyride';
 // @ts-ignore
 import type { CallBackProps, Step } from 'react-joyride';
@@ -41,6 +41,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const [joyrideKey, setJoyrideKey] = useState(0);
   const [steps, setSteps] = useState<Step[]>([]);
   const [activeTourId, setActiveTourId] = useState<string | null>(null);
+  const lastStartWasForceRef = useRef(false);
 
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({
@@ -75,6 +76,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 
   const startTour = useCallback(
     (id: string, tourSteps: Step[], force = false) => {
+      lastStartWasForceRef.current = force;
       if (isTourCompleted(id) && !force) {
         return;
       }
@@ -105,13 +107,20 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
         if (activeTourId) {
           // Do not persist help mode contextual notes
           if (!activeTourId.startsWith('help_')) {
-            markTourCompleted(activeTourId);
+            const wasForce = lastStartWasForceRef.current;
+            lastStartWasForceRef.current = false;
+            const alreadyDone = completedTours.includes(activeTourId);
+            if (!wasForce || !alreadyDone) {
+              markTourCompleted(activeTourId);
+            }
+          } else {
+            lastStartWasForceRef.current = false;
           }
           setActiveTourId(null);
         }
       }
     },
-    [activeTourId, markTourCompleted]
+    [activeTourId, completedTours, markTourCompleted]
   );
 
   const helpModeValue = useMemo(

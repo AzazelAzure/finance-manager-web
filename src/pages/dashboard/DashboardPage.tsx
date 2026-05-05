@@ -32,7 +32,54 @@ import { firstCurrency } from "./dashboardUtil";
 import { tr, useLocale } from "../../lib/i18n";
 import { preferOfflineCaches } from "../../offline/connectivity";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
+import { HelpCircle } from "lucide-react";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
+
+const DASHBOARD_LINEAR_TOUR_STEPS = [
+  {
+    target: "#tour-kpis",
+    title: "Period Summary",
+    content:
+      "Summary of your Income, Expenses, and Net Flow for the selected period. Green indicates a surplus, Red a deficit.",
+    disableBeacon: true,
+  },
+  {
+    target: "#tour-filters",
+    title: "Smart Filters",
+    content: "Filter data by date range, specific accounts, or categories. Click the Search icon to apply your changes.",
+  },
+  {
+    target: "#tour-quick-actions",
+    title: "Instant Logging",
+    content: "Record a new expense, income, or transfer in seconds. You can also pick from common bills here.",
+  },
+  {
+    target: "#tour-flow-chart",
+    title: "Income vs Expense Flow",
+    content:
+      "This bar chart shows your daily income vs expenses. Use it to identify days where you overspend or when your biggest income hits arrive.",
+  },
+  {
+    target: "#tour-spend-chart",
+    title: "Spending Velocity",
+    content: "The line chart tracks your cumulative spending throughout the month. It helps you predict if you will stay within budget.",
+  },
+  {
+    target: "#tour-category-chart",
+    title: "Expense Breakdown",
+    content: "Visualize which categories consume most of your budget. Click any slice to see the exact transactions.",
+  },
+  {
+    target: "#tour-tag-chart",
+    title: "Spending by Tag",
+    content: "Tags help you group transactions across categories (e.g., #vacation). This pie shows your tagged spending distribution.",
+  },
+  {
+    target: "#tour-source-balances",
+    title: "Account Balances",
+    content: "Check the real-time balance of all your connected sources (Bank, Gcash, Cash, etc.) in one place.",
+  },
+] as const;
 
 function balanceCurrency(data: SnapshotResponse | undefined, profile: { base_currency: string } | undefined): string {
   if (profile?.base_currency) {
@@ -149,58 +196,16 @@ export function DashboardPage(): ReactNode {
     return Array.from(ccy);
   }, [sourceQuery.data, profileQuery.data, currency]);
 
-  // Trigger linear tour when data is loaded
+  // Trigger linear tour when data is loaded (first visit only)
   useEffect(() => {
     if (!data || isTourCompleted("dashboard_linear_tour")) {
       return;
     }
     const timer = setTimeout(() => {
-      startTour("dashboard_linear_tour", [
-          { 
-            target: '#tour-kpis', 
-            title: 'Period Summary',
-            content: 'Summary of your Income, Expenses, and Net Flow for the selected period. Green indicates a surplus, Red a deficit.', 
-            disableBeacon: true 
-          },
-          { 
-            target: '#tour-filters', 
-            title: 'Smart Filters',
-            content: 'Filter data by date range, specific accounts, or categories. Click the Search icon to apply your changes.' 
-          },
-          { 
-            target: '#tour-quick-actions', 
-            title: 'Instant Logging',
-            content: 'Record a new expense, income, or transfer in seconds. You can also pick from common bills here.' 
-          },
-          { 
-            target: '#tour-flow-chart', 
-            title: 'Income vs Expense Flow',
-            content: 'This bar chart shows your daily income vs expenses. Use it to identify days where you overspend or when your biggest income hits arrive.' 
-          },
-          { 
-            target: '#tour-spend-chart', 
-            title: 'Spending Velocity',
-            content: 'The line chart tracks your cumulative spending throughout the month. It helps you predict if you will stay within budget.' 
-          },
-          { 
-            target: '#tour-category-chart', 
-            title: 'Expense Breakdown',
-            content: 'Visualize which categories consume most of your budget. Click any slice to see the exact transactions.' 
-          },
-          { 
-            target: '#tour-tag-chart', 
-            title: 'Spending by Tag',
-            content: 'Tags help you group transactions across categories (e.g., #vacation). This pie shows your tagged spending distribution.' 
-          },
-          { 
-            target: '#tour-source-balances', 
-            title: 'Account Balances',
-            content: 'Check the real-time balance of all your connected sources (Bank, Gcash, Cash, etc.) in one place.' 
-          }
-        ] as any);
+      startTour("dashboard_linear_tour", [...DASHBOARD_LINEAR_TOUR_STEPS] as any);
     }, 1000);
     return () => clearTimeout(timer);
-  }, [data, startTour, isTourCompleted]);
+  }, [data, isTourCompleted, startTour]);
 
   const onDrillCategory = useCallback(
     (name: string) => {
@@ -280,9 +285,21 @@ export function DashboardPage(): ReactNode {
             {tr("dashboard.subtitle", locale)}
           </h2>
         </div>
-        <Button type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
-          {tr("dashboard.refresh", locale)}
-        </Button>
+        <div className="dashboard-header__actions" style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label="Start guide"
+            title="Start guide"
+            onClick={() => startTour("dashboard_linear_tour", [...DASHBOARD_LINEAR_TOUR_STEPS] as any, true)}
+          >
+            <HelpCircle size={18} aria-hidden />
+            <span className="sr-only">Start guide</span>
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
+            {tr("dashboard.refresh", locale)}
+          </Button>
+        </div>
       </div>
 
       <div className="dashboard-root__quick">

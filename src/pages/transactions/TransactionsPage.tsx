@@ -36,6 +36,24 @@ import {
 } from "../../lib/transactionsQueryParams";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
 
+const TRANSACTIONS_LINEAR_TOUR_STEPS = [
+  {
+    target: "#tx-filters",
+    title: "Refine History",
+    content: 'Narrow down your search by date range, transaction type, or specific source accounts. Click "Apply" to refresh the list.',
+  },
+  {
+    target: "#tx-add",
+    title: "New Records",
+    content: 'Log single transactions or account transfers. Use the "? Guide" inside the forms for step-by-step help.',
+  },
+  {
+    target: "#tx-table",
+    title: "Your Ledger",
+    content: "A comprehensive list of all your historical records. You can click any row to see details or use the action buttons to edit/delete.",
+  },
+] as const;
+
 type DeleteState = Record<string, number>;
 type EditorMode = "single" | "transfer";
 
@@ -501,32 +519,30 @@ export function TransactionsPage(): ReactNode {
     if (isTourCompleted("transactions_linear_tour")) {
       return;
     }
-    // Start the linear tour when the page loads
-    startTour("transactions_linear_tour", [
-      { 
-        target: '#tx-filters', 
-        title: 'Refine History',
-        content: 'Narrow down your search by date range, transaction type, or specific source accounts. Click "Apply" to refresh the list.' 
-      },
-      { 
-        target: '#tx-add', 
-        title: 'New Records',
-        content: 'Log single transactions or account transfers. Use the "? Guide" inside the forms for step-by-step help.' 
-      },
-      { 
-        target: '#tx-table', 
-        title: 'Your Ledger',
-        content: 'A comprehensive list of all your historical records. You can click any row to see details or use the action buttons to edit/delete.' 
-      }
-    ]);
-  }, [startTour, isTourCompleted]);
+    const timer = setTimeout(() => {
+      startTour("transactions_linear_tour", [...TRANSACTIONS_LINEAR_TOUR_STEPS] as any);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [isTourCompleted, startTour]);
 
   return (
     <div className="stack">
       <div className="app-toolbar app-surface">
-        <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-          Transactions
-        </h2>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
+            Transactions
+          </h2>
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label="Start guide"
+            title="Start guide"
+            onClick={() => startTour("transactions_linear_tour", [...TRANSACTIONS_LINEAR_TOUR_STEPS] as any, true)}
+          >
+            <HelpCircle size={18} aria-hidden />
+            <span className="sr-only">Start guide</span>
+          </Button>
+        </div>
         <div className="app-toolbar__actions" id="tx-add">
           <Link to="/app/transactions/calendar" className="ui-btn ui-btn--secondary">
             Calendar
