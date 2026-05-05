@@ -824,6 +824,15 @@ export function TransactionsPage(): ReactNode {
             </>
           ) : (
             <>
+              <label className="ui-field" id="tx-xfer-date">
+                <span className="ui-label">Date</span>
+                <input
+                  className="ui-input"
+                  type="date"
+                  value={transferDraft.date}
+                  onChange={(e) => setTransferDraft((d) => ({ ...d, date: e.target.value }))}
+                />
+              </label>
               <label className="ui-field" id="tx-xfer-from">
                 <span className="ui-label">From source</span>
                 <SourceSelect

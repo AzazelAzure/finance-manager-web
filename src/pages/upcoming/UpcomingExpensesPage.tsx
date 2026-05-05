@@ -481,6 +481,7 @@ export function UpcomingExpensesPage(): ReactNode {
         onClose={() => {
           setEditorOpen(false);
           setEditorError("");
+          setShowFormHelp(false);
         }}
         title={editingName ? tr("upcoming.editExpense", locale) : tr("upcoming.addExpense", locale)}
       >

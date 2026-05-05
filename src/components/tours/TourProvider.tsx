@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Joyride, STATUS } from 'react-joyride';
 // @ts-ignore
 import type { CallBackProps, Step } from 'react-joyride';
@@ -35,6 +35,25 @@ export function useTour() {
   return ctx;
 }
 
+const TOUR_TARGET_POLL_MS = 2000;
+
+function isJoyrideTargetInDocument(target: Step['target'] | undefined): boolean {
+  if (target == null) return true;
+  if (typeof target === 'string') {
+    const sel = target.trim();
+    if (!sel) return true;
+    try {
+      return document.querySelector(sel) != null;
+    } catch {
+      return false;
+    }
+  }
+  if (typeof Element !== 'undefined' && target instanceof Element) {
+    return target.isConnected;
+  }
+  return false;
+}
+
 export function TourProvider({ children }: { children: React.ReactNode }) {
   const [isHelpModeActive, setHelpModeActive] = useState(false);
   const [run, setRun] = useState(false);
@@ -42,6 +61,21 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const [steps, setSteps] = useState<Step[]>([]);
   const [activeTourId, setActiveTourId] = useState<string | null>(null);
   const lastStartWasForceRef = useRef(false);
+  const cancelTourTargetPollRef = useRef<(() => void) | null>(null);
+  const isMountedRef = useRef(true);
+
+  const cancelActiveTourTargetPoll = useCallback(() => {
+    cancelTourTargetPollRef.current?.();
+    cancelTourTargetPollRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      cancelActiveTourTargetPoll();
+    };
+  }, [cancelActiveTourTargetPoll]);
 
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({
@@ -80,17 +114,68 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       if (isTourCompleted(id) && !force) {
         return;
       }
+      cancelActiveTourTargetPoll();
+
       setSteps(tourSteps);
       setActiveTourId(id);
       setJoyrideKey(Date.now());
       setRun(false);
 
-      // Use setTimeout to ensure the 'run=false' state is processed before re-enabling
-      setTimeout(() => {
-        setRun(true);
-      }, 100);
+      const firstTarget: Step['target'] | undefined = tourSteps[0]?.target;
+      const targetReady = () => isJoyrideTargetInDocument(firstTarget);
+
+      const armRun = () => {
+        if (isMountedRef.current) {
+          setRun(true);
+        }
+      };
+
+      if (targetReady()) {
+        queueMicrotask(armRun);
+        return;
+      }
+
+      const deadline = Date.now() + TOUR_TARGET_POLL_MS;
+      let rafId = 0;
+
+      const cleanupLocal = () => {
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = 0;
+        }
+      };
+
+      const finish = () => {
+        cleanupLocal();
+        if (cancelTourTargetPollRef.current === cancelPoll) {
+          cancelTourTargetPollRef.current = null;
+        }
+        armRun();
+      };
+
+      const tick = () => {
+        if (Date.now() >= deadline) {
+          finish();
+          return;
+        }
+        if (targetReady()) {
+          finish();
+          return;
+        }
+        rafId = requestAnimationFrame(tick);
+      };
+
+      const cancelPoll = () => {
+        cleanupLocal();
+        if (cancelTourTargetPollRef.current === cancelPoll) {
+          cancelTourTargetPollRef.current = null;
+        }
+      };
+
+      cancelTourTargetPollRef.current = cancelPoll;
+      rafId = requestAnimationFrame(tick);
     },
-    [isTourCompleted],
+    [isTourCompleted, cancelActiveTourTargetPoll],
   );
 
   const handleJoyrideCallback = useCallback(

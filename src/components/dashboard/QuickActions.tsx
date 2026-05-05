@@ -320,7 +320,6 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                       className="ui-btn ui-btn--primary"
                       style={{ marginTop: 8 }}
                       onClick={() => {
-                        console.log("Starting quick_transfer_tour");
                         startTour("quick_transfer_tour", [
                           {
                             target: "#quick-xfer-from",
@@ -401,7 +400,6 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
                       className="ui-btn ui-btn--primary"
                       style={{ marginTop: 8 }}
                       onClick={() => {
-                        console.log(`Starting quick_${activeType?.toLowerCase()}_tour`);
                         startTour(`quick_${activeType?.toLowerCase()}_tour`, [
                           {
                             target: "#quick-single-amount",
