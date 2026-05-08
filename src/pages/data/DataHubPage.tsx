@@ -25,6 +25,7 @@ import {
 import type { SourceRow, TransactionRecord } from "../../api/types";
 import { tr, useLocale } from "../../lib/i18n";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
+import { SOURCE_ACCOUNT_TYPES, SOURCE_ACCOUNT_TYPE_OPTIONS } from "../../lib/sourceAccountTypes";
 
 type EntityType = "source" | "category" | "tag";
 
@@ -227,11 +228,14 @@ export function DataHubPage(): ReactNode {
   }
 
   function openSourceEdit(row: SourceRow): void {
+    const normalizedType = row.acc_type.trim().toUpperCase();
     setEditor({ entity: "source", mode: "edit", currentName: row.source });
     setEditorError("");
     setSourceDraft({
       source: row.source,
-      acc_type: row.acc_type,
+      acc_type: SOURCE_ACCOUNT_TYPES.includes(normalizedType as (typeof SOURCE_ACCOUNT_TYPES)[number])
+        ? normalizedType
+        : "CHECKING",
       amount: row.amount,
       currency: row.currency,
     });
@@ -255,7 +259,7 @@ export function DataHubPage(): ReactNode {
     editor?.entity === "source" && (editor.mode === "create" || editor.mode === "edit")
       ? Boolean(
           sourceDraft.source.trim() &&
-            sourceDraft.acc_type.trim() &&
+            SOURCE_ACCOUNT_TYPES.includes(sourceDraft.acc_type.trim().toUpperCase() as (typeof SOURCE_ACCOUNT_TYPES)[number]) &&
             sourceDraft.currency.trim().length === 3 &&
             !Number.isNaN(Number(sourceDraft.amount)),
         )
@@ -424,11 +428,17 @@ export function DataHubPage(): ReactNode {
               </label>
               <label className="ui-field">
                 <span className="ui-label">Account type</span>
-                <input
-                  className="ui-input"
+                <select
+                  className="ui-select"
                   value={sourceDraft.acc_type}
-                  onChange={(e) => setSourceDraft((prev) => ({ ...prev, acc_type: e.target.value.toUpperCase() }))}
-                />
+                  onChange={(e) => setSourceDraft((prev) => ({ ...prev, acc_type: e.target.value }))}
+                >
+                  {SOURCE_ACCOUNT_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="ui-field">
                 <span className="ui-label">Amount</span>

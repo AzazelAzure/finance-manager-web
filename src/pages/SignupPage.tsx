@@ -110,7 +110,7 @@ export function SignupPage(): ReactNode {
       </p>
       <Card className="auth-card">
         <AppForm form={form} onSubmit={onValid} className="stack" id="signup-form" autoComplete="off">
-          <TextField name="username" label="Username" autoComplete="off" unlockOnFocus />
+          <TextField name="username" label="Username" autoComplete="off" autoFocus unlockOnFocus />
           <TextField name="user_email" label="Email" type="email" autoComplete="off" unlockOnFocus />
           <TextField name="password" label="Password" type="password" autoComplete="off" unlockOnFocus />
           <TextField

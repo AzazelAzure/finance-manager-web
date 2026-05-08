@@ -24,6 +24,7 @@ import {
 } from "../../state/onboarding";
 import { tr, useLocale } from "../../lib/i18n";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
+import { SOURCE_ACCOUNT_TYPE_OPTIONS } from "../../lib/sourceAccountTypes";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -246,7 +247,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
             }}
             className="stack"
           >
-            <TextField name="base_currency" label="Base currency" />
+            <TextField name="base_currency" label="Base currency" autoFocus />
             <SelectField name="timezone" label="Timezone" options={timezoneSelectOptions} />
             <SelectField
               name="start_week"
@@ -273,17 +274,11 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
             }}
             className="stack"
           >
-            <TextField name="source" label="Source name" />
+            <TextField name="source" label="Source name" autoFocus />
             <SelectField
               name="acc_type"
               label="Account type"
-              options={[
-                { value: "CHECKING", label: "Checking" },
-                { value: "SAVINGS", label: "Savings" },
-                { value: "CASH", label: "Cash" },
-                { value: "EWALLET", label: "E-wallet" },
-                { value: "INVESTMENT", label: "Investment" },
-              ]}
+              options={SOURCE_ACCOUNT_TYPE_OPTIONS}
             />
             <TextField name="amount" label="Starting balance" />
             <TextField name="currency" label="Currency" />
@@ -304,7 +299,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
             }}
             className="stack"
           >
-            <TextField name="category" label="Category name" />
+            <TextField name="category" label="Category name" autoFocus />
             <Button type="submit" disabled={step3Mutation.isPending}>
               {step3Mutation.isPending ? tr("common.saving", locale) : tr("common.continue", locale)}
             </Button>
@@ -332,7 +327,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
             </Button>
             {createFirstTx ? (
               <>
-                <TextField name="tx_amount" label="Amount" />
+                <TextField name="tx_amount" label="Amount" autoFocus />
                 <SelectField
                   name="tx_source"
                   label="Source"
