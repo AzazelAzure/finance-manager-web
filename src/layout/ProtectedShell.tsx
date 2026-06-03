@@ -5,11 +5,14 @@ import {
   LayoutDashboard,
   List,
   LogOut,
+  PlayCircle,
   User,
   Wallet,
 } from "lucide-react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { setLocale, tr, trFmt, useLocale } from "../lib/i18n";
+import { OnboardingSandbox } from "../components/tours/OnboardingSandbox";
+import { useTour } from "../components/tours/TourProvider";
 import { useSession } from "../state/SessionContext";
 import { useState, type ReactNode } from "react";
 import { useHelpMode } from "../components/tours/TourProvider";
@@ -101,8 +104,11 @@ export function ProtectedShell(): ReactNode {
   const navigate = useNavigate();
   const { logout } = useSession();
   const { isHelpModeActive, toggleHelpMode } = useHelpMode();
-  
+  const { hasCompletedGlobalTour } = useTour();
+
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [replaySandbox, setReplaySandbox] = useState(false);
+  const showSandbox = !hasCompletedGlobalTour() || replaySandbox;
   const [logoutOutboxStep, setLogoutOutboxStep] = useState(false);
   const [logoutOutboxCount, setLogoutOutboxCount] = useState(0);
   const title = tr(TITLE[loc.pathname] ?? "shell.title.app", locale);
@@ -128,6 +134,10 @@ export function ProtectedShell(): ReactNode {
           <button type="button" className={`shell-nav-link ${isHelpModeActive ? "shell-nav-link--active" : ""}`} onClick={toggleHelpMode}>
             <BookOpen size={20} className="shell-nav-icon" />
             <span className="shell-nav-label">{tr("shell.nav.guide", locale)}</span>
+          </button>
+          <button type="button" className="shell-nav-link" onClick={() => setReplaySandbox(true)}>
+            <PlayCircle size={20} className="shell-nav-icon" />
+            <span className="shell-nav-label">Replay Tour</span>
           </button>
           <button
             className="shell-nav-link shell-nav-link--danger"
@@ -308,6 +318,7 @@ export function ProtectedShell(): ReactNode {
           )}
         </div>
       </Modal>
+      {showSandbox && <OnboardingSandbox onDismiss={() => setReplaySandbox(false)} />}
     </div>
   );
 }

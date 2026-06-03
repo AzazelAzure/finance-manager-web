@@ -25,6 +25,7 @@ interface TourContextType {
   startTour: (tourId: string, steps: Step[], force?: boolean) => void;
   markTourCompleted: (tourId: string) => void;
   isTourCompleted: (tourId: string) => boolean;
+  hasCompletedGlobalTour: () => boolean;
 }
 
 const TourContext = createContext<TourContextType | null>(null);
@@ -217,9 +218,13 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     [isHelpModeActive]
   );
 
+  const hasCompletedGlobalTour = useCallback(() => {
+    return isTourCompleted('global_onboarding');
+  }, [isTourCompleted]);
+
   const tourValue = useMemo(
-    () => ({ startTour, markTourCompleted, isTourCompleted }),
-    [startTour, markTourCompleted, isTourCompleted]
+    () => ({ startTour, markTourCompleted, isTourCompleted, hasCompletedGlobalTour }),
+    [startTour, markTourCompleted, isTourCompleted, hasCompletedGlobalTour]
   );
 
   return (
@@ -263,41 +268,21 @@ export function HelpModeWrapper({
   className?: string;
 }) {
   const { isHelpModeActive } = useHelpMode();
-  const { startTour } = useTour();
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (isHelpModeActive) {
-      e.preventDefault();
-      e.stopPropagation();
-      // Keep help mode active so the user can click multiple widgets
-      startTour(`help_${id}_${Date.now()}`, [
-        {
-          target: `#${id}`,
-          title,
-          content,
-          disableBeacon: true,
-          hideFooter: true,
-          hideBackButton: true,
-        } as any,
-      ]);
-    }
-  };
+  const [showTooltip, setShowTooltip] = useState(false);
 
   return (
     <div
       id={id}
       className={className}
-      onClickCapture={handleClick}
       tabIndex={isHelpModeActive ? 0 : undefined}
-      role={isHelpModeActive ? 'button' : undefined}
+      role={isHelpModeActive ? 'note' : undefined}
       aria-label={isHelpModeActive ? `Help for ${title || id}` : undefined}
-      onKeyDown={(e) => {
-        if (isHelpModeActive && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          handleClick(e as any);
-        }
-      }}
+      onMouseEnter={() => isHelpModeActive && setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+      onFocus={() => isHelpModeActive && setShowTooltip(true)}
+      onBlur={() => setShowTooltip(false)}
       style={{
+        position: 'relative',
         borderRadius: '4px',
         transition: 'box-shadow 0.28s ease',
         ...(isHelpModeActive
@@ -310,6 +295,12 @@ export function HelpModeWrapper({
       }}
     >
       {children}
+      {showTooltip && isHelpModeActive && (
+        <div className="ui-help-tooltip">
+          {title && <strong>{title}</strong>}
+          <div>{content}</div>
+        </div>
+      )}
     </div>
   );
 }
