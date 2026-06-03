@@ -149,7 +149,8 @@ api.interceptors.response.use(
     return r;
   },
   async (err: AxiosError) => {
-    if (isLikelyNetworkFailure(err)) {
+    const isServerError = !!err.response || err.code === "ERR_BAD_REQUEST" || err.code === "ERR_BAD_RESPONSE" || ((err as any).status && (err as any).status >= 400);
+    if (isLikelyNetworkFailure(err) && !isServerError) {
       markApiReachable(false);
 
       // Retroactively queue allowlisted writes that failed due to network error.

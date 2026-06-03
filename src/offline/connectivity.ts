@@ -64,6 +64,12 @@ export function isLikelyNetworkFailure(err: AxiosError): boolean {
   if (err.response) {
     return false;
   }
+  if (err.code === "ERR_BAD_REQUEST" || err.code === "ERR_BAD_RESPONSE" || err.code === "ERR_CANCELED") {
+    return false;
+  }
+  if ((err as any).status && (err as any).status >= 400) {
+    return false;
+  }
   if (!err.request) {
     return false;
   }
