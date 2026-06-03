@@ -120,6 +120,10 @@ export async function drainOutbox(): Promise<void> {
           emitSyncState({ phase: "error", detail: "Upgrade required — sync paused." });
           return;
         }
+        if (isAxiosError(err) && err.response && err.response.status >= 400 && err.response.status < 500) {
+          emitSyncState({ phase: "error", detail: "Transaction failed. Please fix it." });
+          return;
+        }
         wantsRetryAfterReachableError = true;
         emitSyncState({
           phase: "error",
