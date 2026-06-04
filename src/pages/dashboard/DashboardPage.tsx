@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery, useQueryClient, type QueryFunctionContext } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, type ReactNode } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getAppProfile } from "../../api/profile";
 import { fetchAppSnapshot } from "../../api/snapshot";
@@ -33,6 +33,7 @@ import { tr, useLocale } from "../../lib/i18n";
 import { preferOfflineCaches } from "../../offline/connectivity";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
+import { WelcomeTourModal, WELCOME_STEPS } from "../../components/tours/WelcomeTourModal";
 
 function balanceCurrency(data: SnapshotResponse | undefined, profile: { base_currency: string } | undefined): string {
   if (profile?.base_currency) {
@@ -214,39 +215,11 @@ export function DashboardPage(): ReactNode {
     );
   }
 
-  useEffect(() => {
-    if (data) {
-      startTour('dashboard_linear_tour', [
-        { 
-          target: '#tour-kpis', 
-          title: 'Financial Health at a Glance',
-          content: 'These Key Performance Indicators (KPIs) give you a high-level view of your cash flow. "Leaks" represent categorized expenses that you flagged as unnecessary. Keeping leaks low is key to building wealth.', 
-          skipBeacon: true 
-        },
-        { 
-          target: '#tour-filters', 
-          title: 'Analyze Specific Periods',
-          content: 'You can filter your data by month, year, or custom dates. Regularly reviewing past months helps you spot seasonal spending habits and prepare for the future.', 
-          skipBeacon: true 
-        },
-        { 
-          target: '#tour-quick-actions', 
-          title: 'Log Transactions Quickly',
-          content: 'Use these shortcuts to record income or expenses on the fly. Keeping your ledger up-to-date ensures your charts and budgets accurately reflect your reality.', 
-          skipBeacon: true 
-        },
-        { 
-          target: '#tour-charts', 
-          title: 'Visualize Your Spending',
-          content: 'These charts break down where your money is actually going. Click on any category slice to drill down and see the specific transactions making up that total.', 
-          skipBeacon: true 
-        }
-      ]);
-    }
-  }, [data, startTour]);
+  // Welcome tour is now handled by WelcomeTourModal (modal gate + Joyride)
 
   return (
     <div className="stack dashboard-page">
+      <WelcomeTourModal dataReady={!!data} />
       <div className="dashboard-header">
         <div>
           <h2 className="muted dashboard-title">
@@ -258,32 +231,7 @@ export function DashboardPage(): ReactNode {
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button type="button" variant="secondary" onClick={() => {
-            startTour(`dashboard_linear_tour_${Date.now()}`, [
-              { 
-                target: '#tour-kpis', 
-                title: 'Financial Health at a Glance',
-                content: 'These Key Performance Indicators (KPIs) give you a high-level view of your cash flow. "Leaks" represent categorized expenses that you flagged as unnecessary. Keeping leaks low is key to building wealth.', 
-                skipBeacon: true 
-              },
-              { 
-                target: '#tour-filters', 
-                title: 'Analyze Specific Periods',
-                content: 'You can filter your data by month, year, or custom dates. Regularly reviewing past months helps you spot seasonal spending habits and prepare for the future.', 
-                skipBeacon: true 
-              },
-              { 
-                target: '#tour-quick-actions', 
-                title: 'Log Transactions Quickly',
-                content: 'Use these shortcuts to record income or expenses on the fly. Keeping your ledger up-to-date ensures your charts and budgets accurately reflect your reality.', 
-                skipBeacon: true 
-              },
-              { 
-                target: '#tour-charts', 
-                title: 'Visualize Your Spending',
-                content: 'These charts break down where your money is actually going. Click on any category slice to drill down and see the specific transactions making up that total.', 
-                skipBeacon: true 
-              }
-            ]);
+            startTour(`welcome_replay_${Date.now()}`, WELCOME_STEPS);
           }}>
             Replay Tour
           </Button>
