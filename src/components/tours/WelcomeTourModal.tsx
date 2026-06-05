@@ -11,41 +11,114 @@ const WELCOME_TOUR_ID = 'onboarding_welcome_tour';
  * Each step targets an actual element in the rendered Dashboard + ProtectedShell.
  */
 const WELCOME_STEPS: Step[] = [
+  // ── Welcome ──
   {
     target: '.dashboard-page',
     title: 'Welcome to Hive Financial Manager!',
-    content: 'This is your financial dashboard — a real-time snapshot of your money. Everything you see here updates as you log transactions. Let\'s walk through the key areas.',
+    content: 'This is your financial dashboard — a real-time snapshot of your money. Everything here updates as you log transactions. Let\'s walk through each piece.',
     placement: 'center',
     skipBeacon: true,
   },
+
+  // ── KPI Cards ──
   {
     target: '#tour-kpis',
-    title: 'Financial Health at a Glance',
-    content: 'These KPI cards show your income, expenses, and "leaks" for the current period. Leaks track hidden costs in account transfers — ATM withdrawal fees, cash-out/cash-in fees, transfer charges, and similar losses that silently chip away at your balance.',
+    title: 'Your Key Numbers',
+    content: 'These KPI cards summarize your period at a glance: total income, total outgoing expenses, net cash flow, assets, remaining budget, safe-to-spend, leaks, and transaction count.',
     skipBeacon: true,
   },
+
+  // ── Leaks detail (still targets KPIs but focuses on concept) ──
+  {
+    target: '#tour-kpis',
+    title: 'What Are "Leaks"?',
+    content: 'Leaks track hidden costs in account transfers — ATM withdrawal fees, cash-out/cash-in fees, transfer charges, and similar losses that silently chip away at your balance. Minimizing leaks is one of the easiest ways to save more.',
+    skipBeacon: true,
+  },
+
+  // ── Quick Actions buttons ──
   {
     target: '#tour-quick-actions',
-    title: 'Log Transactions Quickly',
-    content: 'Use these shortcuts to record income or expenses on the fly. The sooner you log transactions, the more accurate your charts and budgets will be.',
+    title: 'Quick Actions',
+    content: 'These buttons let you quickly log income, expenses, or transfers without leaving the dashboard. The Transfer button handles multi-currency moves between your accounts.',
     skipBeacon: true,
   },
+
+  // ── Filters ──
   {
     target: '#tour-filters',
-    title: 'Analyze Specific Periods',
-    content: 'Filter your data by month, year, or custom dates. Regularly reviewing past months helps you spot seasonal spending habits and plan ahead.',
+    title: 'Period Filters',
+    content: 'Filter by month, year, or custom date range. You can also filter by source, category, tag, or currency to slice your data exactly the way you need.',
+    skipBeacon: true,
+  },
+
+  // ── Replay & Refresh buttons ──
+  {
+    target: '#tour-replay-btn',
+    title: 'Replay Tour',
+    content: 'Use this button anytime to walk through this tour again. It\'s always here on the dashboard header.',
     skipBeacon: true,
   },
   {
-    target: '#tour-charts',
-    title: 'Visualize Your Spending',
-    content: 'These charts break down where your money goes. Click any category slice to drill into the specific transactions making up that total.',
+    target: '#tour-refresh-btn',
+    title: 'Refresh Data',
+    content: 'Hit Refresh to re-fetch the latest data from the server. Useful after logging new transactions to see updated charts and totals.',
     skipBeacon: true,
   },
+
+  // ── Individual Charts ──
+  {
+    target: '#tour-flow-chart',
+    title: 'Cash Flow Chart',
+    content: 'This chart shows your income vs. expenses over time, so you can spot months where spending exceeded earnings and track your trend.',
+    skipBeacon: true,
+  },
+  {
+    target: '#tour-spend-chart',
+    title: 'Daily Spending & Income',
+    content: 'A day-by-day view of your spending and income. Spikes here help you identify one-off big expenses or paydays.',
+    skipBeacon: true,
+  },
+  {
+    target: '#tour-category-pie',
+    title: 'Expense by Category',
+    content: 'See where your money goes by category. Click any slice to drill down into the individual transactions that make up that category\'s total.',
+    skipBeacon: true,
+  },
+  {
+    target: '#tour-tag-pie',
+    title: 'Spending by Tag',
+    content: 'Tags are flexible labels you can attach to any transaction — like "vacation", "groceries", or "work". This chart groups tagged spending so you can track custom themes.',
+    skipBeacon: true,
+  },
+
+  // ── Sidebar Totals ──
+  {
+    target: '#tour-source-balances',
+    title: 'Source Balances',
+    content: 'A quick snapshot of each account\'s current balance. Negative balances are flagged with a warning icon so you can spot overdrawn accounts instantly.',
+    skipBeacon: true,
+  },
+  {
+    target: '#tour-profile-overview',
+    title: 'Profile Settings',
+    content: 'Your base currency, tracked sources, and spend accounts are summarized here. Click "Edit Profile" to change your currency, add new sources, or adjust which accounts count toward spending.',
+    skipBeacon: true,
+  },
+
+  // ── Recent Transactions ──
+  {
+    target: '#tour-recent-tx',
+    title: 'Recent Transactions',
+    content: 'Your most recent entries are listed here for quick review. Head to the full Transactions page for search, edit, and delete capabilities.',
+    skipBeacon: true,
+  },
+
+  // ── Navigation ──
   {
     target: '.protected-side-nav',
     title: 'Navigate the App',
-    content: 'Use the sidebar to access Transactions, Calendar, Upcoming Expenses, Data Hub, and your Profile Settings. Each page has its own quick guide you can trigger later. Tap the Guide (book) icon anytime to toggle Help Mode — hover over any section to see a quick tooltip.',
+    content: 'Use the sidebar to access Transactions, Calendar, Upcoming Expenses, Data Hub, and your Profile Settings. Each page has its own quick guide you can trigger later. Tap the Guide (book) icon to toggle Help Mode — hover over any section for a quick tooltip.',
     placement: 'right',
     skipBeacon: true,
   },

@@ -230,12 +230,12 @@ export function DashboardPage(): ReactNode {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <Button type="button" variant="secondary" onClick={() => {
+          <Button id="tour-replay-btn" type="button" variant="secondary" onClick={() => {
             startTour(`welcome_replay_${Date.now()}`, WELCOME_STEPS);
           }}>
             Replay Tour
           </Button>
-          <Button type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
+          <Button id="tour-refresh-btn" type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
             {tr("dashboard.refresh", locale)}
           </Button>
         </div>
@@ -281,44 +281,58 @@ export function DashboardPage(): ReactNode {
       <div className="dashboard-root">
         <div className="dashboard-root__row">
           <HelpModeWrapper id="tour-charts" className="dashboard-root__main dashboard-col" title="Charts" content="Chart slices drill to detailed transactions.">
-            <FlowChart
-              data={data.flow_series}
-              baseCurrency={currency}
-              isLoading={chartLoading}
-              isError={isError}
-              onRetry={() => void refetchSnapshotForced()}
-            />
-            <SpendChart
-              dailySpend={data.daily_spend}
-              dailyIncome={data.daily_income}
-              baseCurrency={currency}
-              isLoading={chartLoading}
-              isError={isError}
-              onRetry={() => void refetchSnapshotForced()}
-            />
-            <CategoryPie
-              expenseByCategory={data.expense_by_category}
-              baseCurrency={currency}
-              isLoading={chartLoading}
-              isError={isError}
-              onRetry={() => void refetchSnapshotForced()}
-              onSelectCategory={onDrillCategory}
-            />
-            <TagPie
-              transactions={txRows}
-              baseCurrency={currency}
-              isLoading={chartLoading}
-              isError={isError}
-              onRetry={() => void refetchSnapshotForced()}
-              onSelectTag={onDrillTag}
-            />
+            <div id="tour-flow-chart">
+              <FlowChart
+                data={data.flow_series}
+                baseCurrency={currency}
+                isLoading={chartLoading}
+                isError={isError}
+                onRetry={() => void refetchSnapshotForced()}
+              />
+            </div>
+            <div id="tour-spend-chart">
+              <SpendChart
+                dailySpend={data.daily_spend}
+                dailyIncome={data.daily_income}
+                baseCurrency={currency}
+                isLoading={chartLoading}
+                isError={isError}
+                onRetry={() => void refetchSnapshotForced()}
+              />
+            </div>
+            <div id="tour-category-pie">
+              <CategoryPie
+                expenseByCategory={data.expense_by_category}
+                baseCurrency={currency}
+                isLoading={chartLoading}
+                isError={isError}
+                onRetry={() => void refetchSnapshotForced()}
+                onSelectCategory={onDrillCategory}
+              />
+            </div>
+            <div id="tour-tag-pie">
+              <TagPie
+                transactions={txRows}
+                baseCurrency={currency}
+                isLoading={chartLoading}
+                isError={isError}
+                onRetry={() => void refetchSnapshotForced()}
+                onSelectTag={onDrillTag}
+              />
+            </div>
           </HelpModeWrapper>
           <aside className="dashboard-root__side dashboard-col">
-            <SourceBalances rows={data.source_balances} />
-            <ProfileOverview profile={profileQuery.data} isError={profileQuery.isError} />
+            <div id="tour-source-balances">
+              <SourceBalances rows={data.source_balances} />
+            </div>
+            <div id="tour-profile-overview">
+              <ProfileOverview profile={profileQuery.data} isError={profileQuery.isError} />
+            </div>
           </aside>
         </div>
-        <RecentTransactions rows={txRows} baseCurrency={currency} />
+        <div id="tour-recent-tx">
+          <RecentTransactions rows={txRows} baseCurrency={currency} />
+        </div>
       </div>
     </div>
   );
