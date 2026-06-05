@@ -21,7 +21,7 @@ const WELCOME_STEPS: Step[] = [
   {
     target: '#tour-kpis',
     title: 'Financial Health at a Glance',
-    content: 'These KPI cards show your income, expenses, and "leaks" for the current period. Leaks are expenses you\'ve flagged as unnecessary — tracking them is key to building savings.',
+    content: 'These KPI cards show your income, expenses, and "leaks" for the current period. Leaks track hidden costs in account transfers — ATM withdrawal fees, cash-out/cash-in fees, transfer charges, and similar losses that silently chip away at your balance.',
     skipBeacon: true,
   },
   {
@@ -45,13 +45,8 @@ const WELCOME_STEPS: Step[] = [
   {
     target: '.protected-side-nav',
     title: 'Navigate the App',
-    content: 'Use the sidebar to access Transactions, Calendar, Upcoming Expenses, Data Hub, and your Profile Settings. Each page has its own quick guide you can trigger later.',
-    skipBeacon: true,
-  },
-  {
-    target: '.protected-bottom-bar',
-    title: 'Help & Guide Mode',
-    content: 'Click the Guide (book) icon anytime to toggle Help Mode — hover over any section to see a quick tooltip. You can also replay this tour from the "Replay Tour" button on the dashboard.',
+    content: 'Use the sidebar to access Transactions, Calendar, Upcoming Expenses, Data Hub, and your Profile Settings. Each page has its own quick guide you can trigger later. Tap the Guide (book) icon anytime to toggle Help Mode — hover over any section to see a quick tooltip.',
+    placement: 'right',
     skipBeacon: true,
   },
 ];
