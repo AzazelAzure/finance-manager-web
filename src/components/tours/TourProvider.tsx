@@ -70,11 +70,18 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     [completedTours, isTourCompleted, updateProfile]
   );
 
+  /** Default step overrides injected into every tour step. */
+  const STEP_DEFAULTS: Partial<Step> = {
+    buttons: ['skip', 'back', 'close', 'primary'],
+    closeButtonAction: 'skip',
+    locale: { skip: 'Exit Tour', last: 'Done' },
+  };
+
   const startTour = useCallback(
     (tourId: string, tourSteps: Step[]) => {
       if (!isTourCompleted(tourId)) {
         setActiveTourId(tourId);
-        setSteps(tourSteps);
+        setSteps(tourSteps.map((s) => ({ ...STEP_DEFAULTS, ...s })));
         setRun(true);
       }
     },
@@ -118,9 +125,9 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
         <Joyride
           onEvent={handleJoyrideCallback}
           continuous
-          // removed hideCloseButton
           run={run}
           steps={steps}
+          scrollToFirstStep
         />
       </TourContext.Provider>
     </HelpModeContext.Provider>
