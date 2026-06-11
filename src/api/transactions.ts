@@ -57,20 +57,20 @@ export async function listTransactions(
     for (const cache of allCaches) {
       if (Array.isArray(cache.payload)) {
         for (const tx of cache.payload as TransactionRecord[]) {
-          if (tx && tx.id) {
-            txMap.set(tx.id, tx);
+          if (tx && tx.tx_id) {
+            txMap.set(tx.tx_id, tx);
           }
         }
       }
     }
     let merged = Array.from(txMap.values());
     if (filters.start_date) {
-      merged = merged.filter((tx) => tx.transaction_date >= filters.start_date!);
+      merged = merged.filter((tx) => tx.date >= filters.start_date!);
     }
     if (filters.end_date) {
-      merged = merged.filter((tx) => tx.transaction_date <= filters.end_date!);
+      merged = merged.filter((tx) => tx.date <= filters.end_date!);
     }
-    merged.sort((a, b) => b.transaction_date.localeCompare(a.transaction_date));
+    merged.sort((a, b) => b.date.localeCompare(a.date));
     return merged;
   };
 
