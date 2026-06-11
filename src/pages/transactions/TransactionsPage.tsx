@@ -35,7 +35,7 @@ import {
   type TransactionsFilterDraft,
 } from "../../lib/transactionsQueryParams";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
-import { TRANSACTIONS_TOUR_ID, TRANSACTIONS_TOUR_STEPS } from "../../components/tours/TransactionsTourSteps";
+import { TRANSACTIONS_TOUR_ID, buildTransactionsSteps } from "../../components/tours/TransactionsTourSteps";
 
 type DeleteState = Record<string, number>;
 type EditorMode = "single" | "transfer";
@@ -499,8 +499,8 @@ export function TransactionsPage(): ReactNode {
   };
 
   useEffect(() => {
-    startTour(TRANSACTIONS_TOUR_ID, TRANSACTIONS_TOUR_STEPS);
-  }, [startTour]);
+    startTour(TRANSACTIONS_TOUR_ID, buildTransactionsSteps(locale));
+  }, [startTour, locale]);
 
   return (
     <div className="stack">
@@ -526,9 +526,9 @@ export function TransactionsPage(): ReactNode {
             </div>
           </HelpModeWrapper>
           <Button variant="secondary" onClick={() => {
-            startTour(`tx_replay_${Date.now()}`, TRANSACTIONS_TOUR_STEPS);
+            startTour(`tx_replay_${Date.now()}`, buildTransactionsSteps(locale));
           }}>
-            Replay Tour
+            {tr('tour.replayTour', locale)}
           </Button>
         </div>
       </div>

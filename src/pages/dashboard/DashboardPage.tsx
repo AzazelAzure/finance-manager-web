@@ -33,7 +33,7 @@ import { tr, useLocale } from "../../lib/i18n";
 import { preferOfflineCaches } from "../../offline/connectivity";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
-import { WelcomeTourModal, WELCOME_STEPS } from "../../components/tours/WelcomeTourModal";
+import { WelcomeTourModal, buildWelcomeSteps } from "../../components/tours/WelcomeTourModal";
 
 function balanceCurrency(data: SnapshotResponse | undefined, profile: { base_currency: string } | undefined): string {
   if (profile?.base_currency) {
@@ -231,9 +231,9 @@ export function DashboardPage(): ReactNode {
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button id="tour-replay-btn" type="button" variant="secondary" onClick={() => {
-            startTour(`welcome_replay_${Date.now()}`, WELCOME_STEPS);
+            startTour(`welcome_replay_${Date.now()}`, buildWelcomeSteps(locale));
           }}>
-            Replay Tour
+            {tr('tour.replayTour', locale)}
           </Button>
           <Button id="tour-refresh-btn" type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
             {tr("dashboard.refresh", locale)}

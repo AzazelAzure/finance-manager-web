@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo } from
 import { Joyride, STATUS, type Step } from 'react-joyride';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { updateAppProfile, getAppProfile } from '../../api/profile';
+import { tr, useLocale } from '../../lib/i18n';
 
 // Help Mode Context
 interface HelpModeContextType {
@@ -70,12 +71,14 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     [completedTours, isTourCompleted, updateProfile]
   );
 
+  const locale = useLocale();
+
   /** Default step overrides injected into every tour step. */
-  const STEP_DEFAULTS: Partial<Step> = {
+  const STEP_DEFAULTS: Partial<Step> = useMemo(() => ({
     buttons: ['skip', 'back', 'close', 'primary'],
-    closeButtonAction: 'skip',
-    locale: { skip: 'Exit Tour', last: 'Done' },
-  };
+    closeButtonAction: 'skip' as const,
+    locale: { skip: tr('tour.exitTour', locale), last: tr('tour.done', locale) },
+  }), [locale]);
 
   const startTour = useCallback(
     (tourId: string, tourSteps: Step[]) => {
