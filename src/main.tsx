@@ -7,6 +7,7 @@ import App from "./App";
 import { queryClient } from "./lib/queryClient";
 import { initDataThemeFromStorage } from "./lib/theme";
 import { OfflineRoot } from "./offline/OfflineRoot";
+import { SwUpdateBanner } from "./components/SwUpdateBanner";
 import { registerPwaServiceWorker } from "./registerPwa";
 import { SessionProvider } from "./state/SessionContext";
 
@@ -18,6 +19,7 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
         <BrowserRouter>
+          <SwUpdateBanner />
           <OfflineRoot />
           <App />
         </BrowserRouter>
