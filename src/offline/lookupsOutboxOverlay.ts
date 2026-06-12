@@ -4,7 +4,7 @@
 
 import type { SourceRow } from "../api/types";
 import type { OutboxRow } from "./db";
-import { listOutboxOrdered } from "./outbox";
+import { listOutboxOrdered, parseOutboxBody } from "./outbox";
 
 const CAT_LIST = /^\/finance\/categories\/?$/;
 const TAG_LIST = /^\/finance\/tags\/?$/;
@@ -62,7 +62,8 @@ function parseSourcePayload(body: unknown): Partial<SourceRow> | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
-function extractStringsFromTxBody(body: unknown, key: string): string[] {
+function extractStringsFromTxBody(rawBody: unknown, key: string): string[] {
+  const body = parseOutboxBody(rawBody);
   if (!body || typeof body !== "object") {
     return [];
   }
@@ -78,7 +79,8 @@ function extractStringsFromTxBody(body: unknown, key: string): string[] {
   return out;
 }
 
-function extractTagsFromTxBody(body: unknown): string[] {
+function extractTagsFromTxBody(rawBody: unknown): string[] {
+  const body = parseOutboxBody(rawBody);
   if (!body || typeof body !== "object") {
     return [];
   }
@@ -96,7 +98,8 @@ function extractTagsFromTxBody(body: unknown): string[] {
   return out;
 }
 
-function extractSourcesFromTxBody(body: unknown): Array<{ source: string; currency: string }> {
+function extractSourcesFromTxBody(rawBody: unknown): Array<{ source: string; currency: string }> {
+  const body = parseOutboxBody(rawBody);
   if (!body || typeof body !== "object") {
     return [];
   }

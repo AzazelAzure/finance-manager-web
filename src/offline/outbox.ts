@@ -9,6 +9,18 @@ function normPathForOutbox(url: string): string {
   return p.endsWith("/") || p.length === 0 ? p : `${p}/`;
 }
 
+export function parseOutboxBody(body: unknown): unknown {
+  if (typeof body === "string") {
+    try {
+      return JSON.parse(body);
+    } catch {
+      return body;
+    }
+  }
+  return body;
+}
+
+
 function randomIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -104,7 +116,7 @@ export async function updateQueuedTransactionPostBody(
     return false;
   }
   const bi = ident.bodyIndex;
-  const body = row.body;
+  const body = parseOutboxBody(row.body);
   if (Array.isArray(body)) {
     if (bi < 0 || bi >= body.length) {
       return false;
