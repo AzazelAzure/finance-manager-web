@@ -44,6 +44,47 @@ export type TransactionFilters = {
   previous_week?: string;
 };
 
+export async function buildFallbackTxList(
+  filters: Record<string, string | undefined>,
+): Promise<TransactionRecord[]> {
+  const allCaches = await offlineDb.caches.filter((r) => r.id.startsWith("txlist:")).toArray();
+  const txMap = new Map<string, TransactionRecord>();
+  for (const cache of allCaches) {
+    if (Array.isArray(cache.payload)) {
+      for (const tx of cache.payload as TransactionRecord[]) {
+        if (tx && tx.tx_id) {
+          txMap.set(tx.tx_id, tx);
+        }
+      }
+    }
+  }
+  let merged = Array.from(txMap.values());
+  if (filters.start_date) {
+    merged = merged.filter((tx) => tx.date >= filters.start_date!);
+  }
+  if (filters.end_date) {
+    merged = merged.filter((tx) => tx.date <= filters.end_date!);
+  }
+  if (filters.tx_type) {
+    merged = merged.filter((tx) => tx.tx_type === filters.tx_type);
+  }
+  if (filters.category) {
+    merged = merged.filter((tx) => tx.category === filters.category);
+  }
+  if (filters.source) {
+    merged = merged.filter((tx) => tx.source === filters.source);
+  }
+  if (filters.currency_code) {
+    const want = filters.currency_code.trim().toUpperCase();
+    merged = merged.filter((tx) => (tx.currency || "").trim().toUpperCase() === want);
+  }
+  if (filters.tag_name) {
+    merged = merged.filter((tx) => (tx.tags ?? []).includes(filters.tag_name!));
+  }
+  merged.sort((a, b) => b.date.localeCompare(a.date));
+  return merged;
+}
+
 export async function listTransactions(
   filters: TransactionFilters = {},
   opts?: PwaReadBypassOpts,
@@ -51,48 +92,9 @@ export async function listTransactions(
   const filterRecord = filters as Record<string, unknown>;
   let rows: TransactionRecord[] | undefined;
 
-  const buildFallbackList = async (): Promise<TransactionRecord[]> => {
-    const allCaches = await offlineDb.caches.filter((r) => r.id.startsWith("txlist:")).toArray();
-    const txMap = new Map<string, TransactionRecord>();
-    for (const cache of allCaches) {
-      if (Array.isArray(cache.payload)) {
-        for (const tx of cache.payload as TransactionRecord[]) {
-          if (tx && tx.tx_id) {
-            txMap.set(tx.tx_id, tx);
-          }
-        }
-      }
-    }
-    let merged = Array.from(txMap.values());
-    if (filters.start_date) {
-      merged = merged.filter((tx) => tx.date >= filters.start_date!);
-    }
-    if (filters.end_date) {
-      merged = merged.filter((tx) => tx.date <= filters.end_date!);
-    }
-    if (filters.tx_type) {
-      merged = merged.filter((tx) => tx.tx_type === filters.tx_type);
-    }
-    if (filters.category) {
-      merged = merged.filter((tx) => tx.category === filters.category);
-    }
-    if (filters.source) {
-      merged = merged.filter((tx) => tx.source === filters.source);
-    }
-    if (filters.currency_code) {
-      const want = filters.currency_code.trim().toUpperCase();
-      merged = merged.filter((tx) => (tx.currency || "").trim().toUpperCase() === want);
-    }
-    if (filters.tag_name) {
-      merged = merged.filter((tx) => (tx.tags ?? []).includes(filters.tag_name!));
-    }
-    merged.sort((a, b) => b.date.localeCompare(a.date));
-    return merged;
-  };
-
   if (preferOfflineCaches()) {
     const cached = await readTxListCache(filterRecord);
-    rows = cached ? (cached as TransactionRecord[]) : await buildFallbackList();
+    rows = cached ? (cached as TransactionRecord[]) : await buildFallbackTxList(filters as Record<string, string | undefined>);
   } else if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
     const cacheId = txListCacheKey(filterRecord);
     const row = await offlineDb.caches.get(cacheId);
@@ -113,7 +115,7 @@ export async function listTransactions(
       }
     } else {
       if (!window.navigator.onLine) {
-        rows = await buildFallbackList();
+        rows = await buildFallbackTxList(filters as Record<string, string | undefined>);
       } else {
         try {
           const { data } = await api.get<TransactionRecord[] | TransactionsListResponse>("/finance/transactions/", {
@@ -123,7 +125,7 @@ export async function listTransactions(
           rows = parsed;
           void writeTxListCache(filterRecord, rows as unknown[], Date.now()).catch(() => undefined);
         } catch (err) {
-          rows = await buildFallbackList();
+          rows = await buildFallbackTxList(filters as Record<string, string | undefined>);
         }
       }
     }

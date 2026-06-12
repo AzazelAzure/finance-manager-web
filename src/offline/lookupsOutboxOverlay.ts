@@ -9,6 +9,8 @@ import { listOutboxOrdered } from "./outbox";
 const CAT_LIST = /^\/finance\/categories\/?$/;
 const TAG_LIST = /^\/finance\/tags\/?$/;
 const SRC_LIST = /^\/finance\/sources\/?$/;
+const TX_LIST = /^\/finance\/transactions\/?$/;
+const TX_DETAIL = /^\/finance\/transactions\/([^/]+)\/?$/;
 
 function normPath(url: string): string {
   const p = url.split("?")[0];
@@ -60,6 +62,60 @@ function parseSourcePayload(body: unknown): Partial<SourceRow> | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
+function extractStringsFromTxBody(body: unknown, key: string): string[] {
+  if (!body || typeof body !== "object") {
+    return [];
+  }
+  const arr = Array.isArray(body) ? body : [body];
+  const out: string[] = [];
+  for (const item of arr) {
+    if (!item || typeof item !== "object") continue;
+    const v = (item as Record<string, unknown>)[key];
+    if (typeof v === "string" && v.trim()) {
+      out.push(v.trim());
+    }
+  }
+  return out;
+}
+
+function extractTagsFromTxBody(body: unknown): string[] {
+  if (!body || typeof body !== "object") {
+    return [];
+  }
+  const arr = Array.isArray(body) ? body : [body];
+  const out: string[] = [];
+  for (const item of arr) {
+    if (!item || typeof item !== "object") continue;
+    const v = (item as Record<string, unknown>).tags;
+    if (Array.isArray(v)) {
+      for (const t of v) {
+        if (typeof t === "string" && t.trim()) out.push(t.trim());
+      }
+    }
+  }
+  return out;
+}
+
+function extractSourcesFromTxBody(body: unknown): Array<{ source: string; currency: string }> {
+  if (!body || typeof body !== "object") {
+    return [];
+  }
+  const arr = Array.isArray(body) ? body : [body];
+  const out: Array<{ source: string; currency: string }> = [];
+  for (const item of arr) {
+    if (!item || typeof item !== "object") continue;
+    const s = (item as Record<string, unknown>).source;
+    const c = (item as Record<string, unknown>).currency;
+    if (typeof s === "string" && s.trim()) {
+      out.push({
+        source: s.trim(),
+        currency: typeof c === "string" && c.trim() ? c.trim().toUpperCase() : "USD",
+      });
+    }
+  }
+  return out;
+}
+
 /** Pure FIFO merge for tests and callers that already have outbox rows. */
 export function mergeCategoryOutboxFifo(list: string[], rows: OutboxRow[]): string[] {
   let next = [...list];
@@ -75,6 +131,13 @@ export function mergeCategoryOutboxFifo(list: string[], rows: OutboxRow[]): stri
         next.push(name);
       }
       continue;
+    }
+    if ((method === "POST" && TX_LIST.test(norm)) || (method === "PATCH" && TX_DETAIL.test(norm))) {
+      for (const name of extractStringsFromTxBody(row.body, "category")) {
+        if (!next.some((c) => c.trim().toLowerCase() === name.toLowerCase())) {
+          next.push(name);
+        }
+      }
     }
     const patchMatch = row.url.split("?")[0].match(/^\/finance\/categories\/([^/]+)\/?$/);
     if (method === "PATCH" && patchMatch) {
@@ -151,6 +214,13 @@ export function mergeTagOutboxFifo(list: string[], rows: OutboxRow[]): string[] 
     }
     const method = row.method.toUpperCase();
     const norm = normPath(row.url);
+    if ((method === "POST" && TX_LIST.test(norm)) || (method === "PATCH" && TX_DETAIL.test(norm))) {
+      for (const name of extractTagsFromTxBody(row.body)) {
+        if (!next.some((t) => t.toLowerCase() === name.toLowerCase())) {
+          next.push(name);
+        }
+      }
+    }
     if (!TAG_LIST.test(norm)) {
       continue;
     }
@@ -212,6 +282,19 @@ export function mergeSourceOutboxFifo(list: SourceRow[], rows: OutboxRow[]): Sou
         }
       }
       continue;
+    }
+    if ((method === "POST" && TX_LIST.test(norm)) || (method === "PATCH" && TX_DETAIL.test(norm))) {
+      for (const { source, currency } of extractSourcesFromTxBody(row.body)) {
+        const k = sourceKey(source);
+        if (k && k !== "unknown" && !byKey.has(k)) {
+          byKey.set(k, {
+            source,
+            acc_type: "CHECKING",
+            amount: "0",
+            currency,
+          });
+        }
+      }
     }
     const m = pathRaw.match(/^\/finance\/sources\/([^/]+)\/?$/);
     if (method === "PATCH" && m) {
