@@ -70,6 +70,22 @@ export async function listTransactions(
     if (filters.end_date) {
       merged = merged.filter((tx) => tx.date <= filters.end_date!);
     }
+    if (filters.tx_type) {
+      merged = merged.filter((tx) => tx.tx_type === filters.tx_type);
+    }
+    if (filters.category) {
+      merged = merged.filter((tx) => tx.category === filters.category);
+    }
+    if (filters.source) {
+      merged = merged.filter((tx) => tx.source === filters.source);
+    }
+    if (filters.currency_code) {
+      const want = filters.currency_code.trim().toUpperCase();
+      merged = merged.filter((tx) => (tx.currency || "").trim().toUpperCase() === want);
+    }
+    if (filters.tag_name) {
+      merged = merged.filter((tx) => (tx.tags ?? []).includes(filters.tag_name!));
+    }
     merged.sort((a, b) => b.date.localeCompare(a.date));
     return merged;
   };
