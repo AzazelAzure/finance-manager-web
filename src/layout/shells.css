@@ -435,8 +435,7 @@
 }
 
 .shell-nav-link:hover .shell-nav-label,
-.shell-nav-link:focus-visible .shell-nav-label,
-.shell-nav-link[aria-current="page"] .shell-nav-label {
+.shell-nav-link:focus-visible .shell-nav-label {
   opacity: 1;
   transform: translate(0, -50%);
 }

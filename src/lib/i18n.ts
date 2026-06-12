@@ -321,6 +321,114 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "onboarding.finishing": "Finishing...",
     "onboarding.finish": "Finish onboarding",
     "onboarding.skip": "Skip onboarding",
+    "tour.exitTour": "Exit Tour",
+    "tour.done": "Done",
+    "tour.replayTour": "Replay Tour",
+    "tour.skipForNow": "Skip for now",
+    "tour.startTour": "Start Tour",
+    "tour.welcomeModalBody":
+      "It looks like this is your first time here. Would you like a quick guided tour of the dashboard? It only takes a minute and will help you get the most out of your financial tracking.",
+    "tour.replayHint":
+      "You can replay this tour anytime from the \"Replay Tour\" button on the dashboard.",
+    "tour.dashboard.welcome.title": "Welcome to Hive Financial Manager!",
+    "tour.dashboard.welcome.content":
+      "This is your financial dashboard — a real-time snapshot of your money. Everything here updates as you log transactions. Let's walk through each piece.",
+    "tour.dashboard.kpis.title": "Your Key Numbers",
+    "tour.dashboard.kpis.content":
+      "These KPI cards summarize your period at a glance: total income, total outgoing expenses, net cash flow, assets, remaining budget, safe-to-spend, leaks, and transaction count.",
+    "tour.dashboard.leaks.title": "What Are \"Leaks\"?",
+    "tour.dashboard.leaks.content":
+      "Leaks track hidden costs in account transfers — ATM withdrawal fees, cash-out/cash-in fees, transfer charges, and similar losses that silently chip away at your balance. Minimizing leaks is one of the easiest ways to save more.",
+    "tour.dashboard.quickActions.title": "Quick Actions",
+    "tour.dashboard.quickActions.content":
+      "These buttons let you quickly log income, expenses, or transfers without leaving the dashboard. The Transfer button handles multi-currency moves between your accounts.",
+    "tour.dashboard.filters.title": "Period Filters",
+    "tour.dashboard.filters.content":
+      "Filter by month, year, or custom date range. You can also filter by source, category, tag, or currency to slice your data exactly the way you need.",
+    "tour.dashboard.replayBtn.title": "Replay Tour",
+    "tour.dashboard.replayBtn.content":
+      "Use this button anytime to walk through this tour again. It's always here on the dashboard header.",
+    "tour.dashboard.refreshBtn.title": "Refresh Data",
+    "tour.dashboard.refreshBtn.content":
+      "Hit Refresh to re-fetch the latest data from the server. Useful after logging new transactions to see updated charts and totals.",
+    "tour.dashboard.flowChart.title": "Cash Flow Chart",
+    "tour.dashboard.flowChart.content":
+      "This chart shows your income vs. expenses over time, so you can spot months where spending exceeded earnings and track your trend.",
+    "tour.dashboard.spendChart.title": "Daily Spending & Income",
+    "tour.dashboard.spendChart.content":
+      "A day-by-day view of your spending and income. Spikes here help you identify one-off big expenses or paydays.",
+    "tour.dashboard.categoryPie.title": "Expense by Category",
+    "tour.dashboard.categoryPie.content":
+      "See where your money goes by category. Click any slice to drill down into the individual transactions that make up that category's total.",
+    "tour.dashboard.tagPie.title": "Spending by Tag",
+    "tour.dashboard.tagPie.content":
+      "Tags are flexible labels you can attach to any transaction — like \"vacation\", \"groceries\", or \"work\". This chart groups tagged spending so you can track custom themes.",
+    "tour.dashboard.sourceBalances.title": "Source Balances",
+    "tour.dashboard.sourceBalances.content":
+      "A quick snapshot of each account's current balance. Negative balances are flagged with a warning icon so you can spot overdrawn accounts instantly.",
+    "tour.dashboard.profileOverview.title": "Profile Settings",
+    "tour.dashboard.profileOverview.content":
+      "Your base currency, tracked sources, and spend accounts are summarized here. Click \"Edit Profile\" to change your currency, add new sources, or adjust which accounts count toward spending.",
+    "tour.dashboard.recentTx.title": "Recent Transactions",
+    "tour.dashboard.recentTx.content":
+      "Your most recent entries are listed here for quick review. Head to the full Transactions page for search, edit, and delete capabilities.",
+    "tour.dashboard.sideNav.title": "Navigate the App",
+    "tour.dashboard.sideNav.content":
+      "Use the sidebar to access Transactions, Calendar, Upcoming Expenses, Data Hub, and your Profile Settings. Each page has its own quick guide you can trigger later. Tap the Guide (book) icon to toggle Help Mode — hover over any section for a quick tooltip.",
+    "tour.tx.overview.title": "Transactions Page",
+    "tour.tx.overview.content":
+      "This is your full transaction ledger. Here you can view, filter, add, edit, and delete every financial entry across all your accounts.",
+    "tour.tx.navLinks.title": "Calendar & Deep Dive",
+    "tour.tx.navLinks.content":
+      "Switch to Calendar view to see transactions on a monthly calendar, or Deep Dive for advanced analytics and charts on your spending patterns.",
+    "tour.tx.addButtons.title": "Add Transactions",
+    "tour.tx.addButtons.content":
+      "Use \"Add transaction\" for single entries (income, expense) or \"Add transfer\" for account-to-account moves. Transfers automatically track fees as leaks when sent and received amounts differ.",
+    "tour.tx.filters.title": "Filter Your Transactions",
+    "tour.tx.filters.content":
+      "Narrow down by period, transaction type, tag, category, source, or currency. Hit \"Apply\" to reload results, or \"Reset\" to clear all filters.",
+    "tour.tx.filterPeriod.title": "Period Filter",
+    "tour.tx.filterPeriod.content":
+      "Choose current month, last month, previous week, or a custom date range. Custom lets you specify exact start and end dates.",
+    "tour.tx.filterType.title": "Type Filter",
+    "tour.tx.filterType.content":
+      "Filter by Expense, Income, Transfer Out, or Transfer In to isolate specific transaction types.",
+    "tour.tx.filterActions.title": "Apply & Reset",
+    "tour.tx.filterActions.content":
+      "Apply commits your filter selections and reloads the table. Reset clears everything back to defaults.",
+    "tour.tx.table.title": "Transaction Table",
+    "tour.tx.table.content":
+      "Your transactions are listed here with date, type, description, amount, source, category, and tags. Click column headers to sort.",
+    "tour.tx.editDelete.title": "Edit & Delete",
+    "tour.tx.editDelete.content":
+      "Each row has inline Edit and Delete buttons. Delete requires a second click to confirm. Edited transactions update immediately across all dashboards and charts.",
+    "tour.calendar.overview.title": "Transactions Calendar",
+    "tour.calendar.overview.content":
+      "View your financial activity on a monthly calendar. Color-coded cells show spending intensity, and you can drill into any day's transactions.",
+    "tour.calendar.navLinks.title": "Ledger & Deep Dive",
+    "tour.calendar.navLinks.content":
+      "Switch to the Ledger for the full transaction table, or Deep Dive for spending analytics and visualizations.",
+    "tour.calendar.filters.title": "Date & Display Controls",
+    "tour.calendar.filters.content":
+      "Set the date range, choose base or original currency display, and pick a heat metric (net amount, expense only, or transaction count) to color-code the calendar cells.",
+    "tour.calendar.dailyChart.title": "Daily Activity Chart",
+    "tour.calendar.dailyChart.content":
+      "This bar chart shows your selected metric for each day in the range. Use it to spot high-activity or high-spend days at a glance.",
+    "tour.calendar.monthGrid.title": "Month Grid",
+    "tour.calendar.monthGrid.content":
+      "Click any day to see its transactions below. Cells are heat-mapped by your chosen metric — darker means more activity. Yellow bars indicate upcoming bill due dates.",
+    "tour.calendar.dayDetail.title": "Day Detail",
+    "tour.calendar.dayDetail.content":
+      "Shows transactions and due expenses for the selected day. Click a day on the grid above to update this panel.",
+    "tour.calendar.monthlyTotals.title": "Monthly Totals",
+    "tour.calendar.monthlyTotals.content":
+      "A summary bar chart comparing totals across months in your selected range. Useful for spotting seasonal trends.",
+    "tour.calendar.dueEvents.title": "Due Events Table",
+    "tour.calendar.dueEvents.content":
+      "All upcoming expense due dates in your selected range, showing name, amount, and paid status. Helps you plan ahead for bills.",
+    "tour.calendar.dayDrill.title": "Day Drill Table",
+    "tour.calendar.dayDrill.content":
+      "The full transaction detail for the selected day — date, type, description, amount, and source. Use this for a deep look at any single day.",
   },
   "tl-PH": {
     "hero.eyebrow": "Luminaw ang pananalapi, para sa araw-araw",
@@ -637,6 +745,114 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "onboarding.finishing": "Tinatapos...",
     "onboarding.finish": "Tapusin ang onboarding",
     "onboarding.skip": "Laktawan ang onboarding",
+    "tour.exitTour": "Lumabas sa Tour",
+    "tour.done": "Tapos na",
+    "tour.replayTour": "I-ulit ang Tour",
+    "tour.skipForNow": "Laktawan muna",
+    "tour.startTour": "Simulan ang Tour",
+    "tour.welcomeModalBody":
+      "Mukhang unang beses mo dito. Gusto mo bang mag-tour ng dashboard? Isang minuto lang at makakatulong ito para mas magamit mo ang financial tracking.",
+    "tour.replayHint":
+      "Maaari mong i-replay ang tour na ito anumang oras mula sa \"I-ulit ang Tour\" na button sa dashboard.",
+    "tour.dashboard.welcome.title": "Maligayang pagdating sa Hive Financial Manager!",
+    "tour.dashboard.welcome.content":
+      "Ito ang financial dashboard mo — real-time na snapshot ng pera mo. Nag-a-update lahat dito habang nagle-log ka ng transaksyon. Tingnan natin bawat bahagi.",
+    "tour.dashboard.kpis.title": "Mga Pangunahing Numero Mo",
+    "tour.dashboard.kpis.content":
+      "Ang mga KPI card na ito ang buod ng period mo: kabuuang income, outgoing expenses, net cash flow, assets, natitirang budget, safe-to-spend, leaks, at bilang ng transaksyon.",
+    "tour.dashboard.leaks.title": "Ano ang \"Leaks\"?",
+    "tour.dashboard.leaks.content":
+      "Sinusubaybayan ng Leaks ang mga nakatagong gastos sa account transfers — ATM withdrawal fees, cash-out/cash-in fees, transfer charges, at iba pang pagkalugi na tahimik na kumakain sa balanse mo. Isa sa pinakamadaling paraan ng pag-iipon ang pagbawas ng leaks.",
+    "tour.dashboard.quickActions.title": "Mabilis na Aksyon",
+    "tour.dashboard.quickActions.content":
+      "Ang mga button na ito ay para mabilis na mag-log ng income, expenses, o transfers nang hindi umaalis sa dashboard. Ang Transfer button ay para sa multi-currency moves sa pagitan ng mga account mo.",
+    "tour.dashboard.filters.title": "Mga Filter ng Period",
+    "tour.dashboard.filters.content":
+      "Mag-filter ayon sa buwan, taon, o custom na petsa. Maaari ring mag-filter ayon sa source, category, tag, o currency para eksakto ang data na kailangan mo.",
+    "tour.dashboard.replayBtn.title": "I-ulit ang Tour",
+    "tour.dashboard.replayBtn.content":
+      "Gamitin ang button na ito anumang oras para i-ulit ang tour. Nasa dashboard header ito palagi.",
+    "tour.dashboard.refreshBtn.title": "I-refresh ang Data",
+    "tour.dashboard.refreshBtn.content":
+      "I-click ang Refresh para kunin ang pinakabagong data mula sa server. Kapaki-pakinabang pagkatapos mag-log ng bagong transaksyon para makita ang updated na charts at totals.",
+    "tour.dashboard.flowChart.title": "Chart ng Cash Flow",
+    "tour.dashboard.flowChart.content":
+      "Ipinapakita ng chart na ito ang income vs. expenses sa paglipas ng panahon, para makita mo ang mga buwan kung saan lumampas ang gastos sa kita.",
+    "tour.dashboard.spendChart.title": "Arawang Gastos at Kita",
+    "tour.dashboard.spendChart.content":
+      "Araw-araw na view ng gastos at kita mo. Ang mga pagtaas dito ay tumutulong tukuyin ang malalaking gastos o araw ng sahod.",
+    "tour.dashboard.categoryPie.title": "Gastos ayon sa Category",
+    "tour.dashboard.categoryPie.content":
+      "Tingnan kung saan napupunta ang pera mo ayon sa category. I-click ang anumang slice para tingnan ang mga transaksyon na bumubuo ng kabuuan ng category.",
+    "tour.dashboard.tagPie.title": "Gastos ayon sa Tag",
+    "tour.dashboard.tagPie.content":
+      "Ang mga tag ay flexible na label na maaaring ikabit sa anumang transaksyon — tulad ng \"bakasyon\", \"grocery\", o \"trabaho\". Ginagrupong ng chart na ito ang tagged spending para masubaybayan mo ang custom na tema.",
+    "tour.dashboard.sourceBalances.title": "Mga Balanse ng Source",
+    "tour.dashboard.sourceBalances.content":
+      "Mabilis na snapshot ng kasalukuyang balanse ng bawat account. May warning icon ang mga negatibong balanse para agad makita ang overdrawn na accounts.",
+    "tour.dashboard.profileOverview.title": "Mga Setting ng Profile",
+    "tour.dashboard.profileOverview.content":
+      "Nandito ang buod ng base currency, tracked sources, at spend accounts mo. I-click ang \"Edit Profile\" para baguhin ang currency, magdagdag ng sources, o i-adjust kung aling accounts ang kasama sa spending.",
+    "tour.dashboard.recentTx.title": "Mga Kamakailang Transaksyon",
+    "tour.dashboard.recentTx.content":
+      "Nakalista dito ang mga pinakabago mong entries para sa mabilis na review. Pumunta sa Transactions page para sa search, edit, at delete.",
+    "tour.dashboard.sideNav.title": "Mag-navigate sa App",
+    "tour.dashboard.sideNav.content":
+      "Gamitin ang sidebar para ma-access ang Transactions, Calendar, Upcoming Expenses, Data Hub, at Profile Settings. May sariling guide ang bawat page. I-tap ang Guide (book) icon para i-toggle ang Help Mode — i-hover ang anumang section para sa mabilis na tooltip.",
+    "tour.tx.overview.title": "Pahina ng Mga Transaksyon",
+    "tour.tx.overview.content":
+      "Ito ang kumpletong transaction ledger mo. Dito maaari mong tingnan, i-filter, idagdag, i-edit, at i-delete ang bawat financial entry sa lahat ng accounts mo.",
+    "tour.tx.navLinks.title": "Calendar at Deep Dive",
+    "tour.tx.navLinks.content":
+      "Lumipat sa Calendar view para makita ang transaksyon sa buwanang kalendaryo, o Deep Dive para sa advanced analytics at charts ng spending patterns mo.",
+    "tour.tx.addButtons.title": "Magdagdag ng Transaksyon",
+    "tour.tx.addButtons.content":
+      "Gamitin ang \"Add transaction\" para sa single entries (income, expense) o \"Add transfer\" para sa account-to-account moves. Awtomatikong sinusubaybayan ng transfers ang fees bilang leaks kapag magkaiba ang sent at received amounts.",
+    "tour.tx.filters.title": "I-filter ang Mga Transaksyon Mo",
+    "tour.tx.filters.content":
+      "Pakiputan ayon sa period, transaction type, tag, category, source, o currency. I-click ang \"Apply\" para i-reload ang results, o \"Reset\" para i-clear lahat ng filters.",
+    "tour.tx.filterPeriod.title": "Filter ng Period",
+    "tour.tx.filterPeriod.content":
+      "Piliin ang kasalukuyang buwan, nakaraang buwan, nakaraang linggo, o custom na date range. Sa custom maaari mong tukuyin ang eksaktong start at end dates.",
+    "tour.tx.filterType.title": "Filter ng Uri",
+    "tour.tx.filterType.content":
+      "Mag-filter ayon sa Expense, Income, Transfer Out, o Transfer In para ihiwalay ang specific na transaction types.",
+    "tour.tx.filterActions.title": "Apply at Reset",
+    "tour.tx.filterActions.content":
+      "Iko-commit ng Apply ang filter selections mo at ire-reload ang table. Iki-clear ng Reset ang lahat pabalik sa default.",
+    "tour.tx.table.title": "Talahanayan ng Transaksyon",
+    "tour.tx.table.content":
+      "Nakalista dito ang mga transaksyon mo na may petsa, uri, paglalarawan, halaga, source, category, at tags. I-click ang column headers para mag-sort.",
+    "tour.tx.editDelete.title": "I-edit at I-delete",
+    "tour.tx.editDelete.content":
+      "May inline na Edit at Delete buttons ang bawat row. Kailangan ng pangalawang click ang Delete para kumpirmahin. Agad na nag-a-update ang na-edit na transaksyon sa lahat ng dashboards at charts.",
+    "tour.calendar.overview.title": "Kalendaryo ng Transaksyon",
+    "tour.calendar.overview.content":
+      "Tingnan ang financial activity mo sa buwanang kalendaryo. Ang may kulay na mga cell ay nagpapakita ng spending intensity, at maaari mong i-drill ang transaksyon ng anumang araw.",
+    "tour.calendar.navLinks.title": "Ledger at Deep Dive",
+    "tour.calendar.navLinks.content":
+      "Lumipat sa Ledger para sa kumpletong transaction table, o Deep Dive para sa spending analytics at visualizations.",
+    "tour.calendar.filters.title": "Mga Kontrol ng Petsa at Display",
+    "tour.calendar.filters.content":
+      "I-set ang date range, piliin ang base o original currency display, at pumili ng heat metric (net amount, expense only, o transaction count) para i-color-code ang mga calendar cell.",
+    "tour.calendar.dailyChart.title": "Chart ng Arawang Aktibidad",
+    "tour.calendar.dailyChart.content":
+      "Ipinapakita ng bar chart na ito ang napiling metric mo para sa bawat araw sa range. Gamitin ito para makita agad ang mga araw na may mataas na aktibidad o gastos.",
+    "tour.calendar.monthGrid.title": "Grid ng Buwan",
+    "tour.calendar.monthGrid.content":
+      "I-click ang anumang araw para makita ang mga transaksyon nito sa ibaba. Ang mga cell ay heat-mapped ayon sa napiling metric — mas madilim ibig sabihin mas maraming aktibidad. Ang dilaw na bar ay nagpapahiwatig ng mga paparating na due dates ng bill.",
+    "tour.calendar.dayDetail.title": "Detalye ng Araw",
+    "tour.calendar.dayDetail.content":
+      "Ipinapakita ang mga transaksyon at due expenses para sa napiling araw. I-click ang isang araw sa grid sa itaas para i-update ang panel na ito.",
+    "tour.calendar.monthlyTotals.title": "Buwanang Kabuuan",
+    "tour.calendar.monthlyTotals.content":
+      "Isang summary bar chart na naghahambing ng mga kabuuan sa mga buwan sa napiling range. Kapaki-pakinabang para makita ang seasonal trends.",
+    "tour.calendar.dueEvents.title": "Talahanayan ng Mga Due Event",
+    "tour.calendar.dueEvents.content":
+      "Lahat ng due dates ng upcoming expense sa napiling range, na nagpapakita ng pangalan, halaga, at paid status. Tumutulong ito para magplano nang maaga para sa mga bayarin.",
+    "tour.calendar.dayDrill.title": "Talahanayan ng Arawang Drill",
+    "tour.calendar.dayDrill.content":
+      "Ang kumpletong detalye ng transaksyon para sa napiling araw — petsa, uri, paglalarawan, halaga, at source. Gamitin ito para sa malalim na pagtingin sa anumang araw.",
   },
 };
 

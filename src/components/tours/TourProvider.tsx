@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride';
+import { Joyride, STATUS, type Step } from 'react-joyride';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { updateAppProfile, getAppProfile } from '../../api/profile';
+import { tr, useLocale } from '../../lib/i18n';
 
 // Help Mode Context
 interface HelpModeContextType {
@@ -70,11 +71,20 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     [completedTours, isTourCompleted, updateProfile]
   );
 
+  const locale = useLocale();
+
+  /** Default step overrides injected into every tour step. */
+  const STEP_DEFAULTS: Partial<Step> = useMemo(() => ({
+    buttons: ['skip', 'back', 'close', 'primary'],
+    closeButtonAction: 'skip' as const,
+    locale: { skip: tr('tour.exitTour', locale), last: tr('tour.done', locale) },
+  }), [locale]);
+
   const startTour = useCallback(
     (tourId: string, tourSteps: Step[]) => {
       if (!isTourCompleted(tourId)) {
         setActiveTourId(tourId);
-        setSteps(tourSteps);
+        setSteps(tourSteps.map((s) => ({ ...STEP_DEFAULTS, ...s })));
         setRun(true);
       }
     },
@@ -82,7 +92,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   );
 
   const handleJoyrideCallback = useCallback(
-    (data: CallBackProps) => {
+    (data: any) => {
       const { status } = data;
       const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
       
@@ -116,20 +126,11 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       <TourContext.Provider value={tourValue}>
         {children}
         <Joyride
-          callback={handleJoyrideCallback}
+          onEvent={handleJoyrideCallback}
           continuous
-          hideCloseButton
           run={run}
-          scrollToFirstStep
-          showProgress
-          showSkipButton
           steps={steps}
-          styles={{
-            options: {
-              zIndex: 10000,
-              primaryColor: '#10b981', // Tailwind green
-            },
-          }}
+          scrollToFirstStep
         />
       </TourContext.Provider>
     </HelpModeContext.Provider>
@@ -149,39 +150,47 @@ export function HelpModeWrapper({
   children: React.ReactNode;
   className?: string;
 }) {
-  const { isHelpModeActive, setHelpMode } = useHelpMode();
-  const { startTour } = useTour();
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (isHelpModeActive) {
-      e.preventDefault();
-      e.stopPropagation();
-      setHelpMode(false); // Disable help mode after clicking to view the tip
-      startTour(`help_${id}_${Date.now()}`, [
-        {
-          target: `#${id}`,
-          title,
-          content,
-          disableBeacon: true,
-          hideFooter: true,
-          hideBackButton: true,
-        },
-      ]);
-    }
-  };
+  const { isHelpModeActive } = useHelpMode();
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div
       id={id}
       className={className}
-      onClickCapture={handleClick}
-      style={
-        isHelpModeActive
-          ? { cursor: 'help', outline: '2px dashed #10b981', outlineOffset: '2px', borderRadius: '4px' }
-          : undefined
-      }
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        position: 'relative',
+        ...(isHelpModeActive
+          ? { outline: '2px dashed #10b981', outlineOffset: '2px', borderRadius: '4px', cursor: 'help' }
+          : {})
+      }}
     >
       {children}
+      {isHelpModeActive && isHovered && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '100%',
+            left: '50%',
+            transform: 'translate(-50%, -8px)',
+            background: 'var(--bg-surface, #1e293b)',
+            color: 'var(--text-main, #f8fafc)',
+            padding: '0.75rem',
+            borderRadius: '6px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)',
+            width: 'max-content',
+            maxWidth: '300px',
+            zIndex: 10001,
+            pointerEvents: 'none',
+            border: '1px solid var(--border, #334155)',
+            textAlign: 'left'
+          }}
+        >
+          {title && <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: 600, color: '#10b981' }}>{title}</h4>}
+          <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: '1.4' }}>{content}</p>
+        </div>
+      )}
     </div>
   );
 }

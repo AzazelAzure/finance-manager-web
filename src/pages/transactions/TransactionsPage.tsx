@@ -35,6 +35,7 @@ import {
   type TransactionsFilterDraft,
 } from "../../lib/transactionsQueryParams";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
+import { TRANSACTIONS_TOUR_ID, buildTransactionsSteps } from "../../components/tours/TransactionsTourSteps";
 
 type DeleteState = Record<string, number>;
 type EditorMode = "single" | "transfer";
@@ -498,13 +499,8 @@ export function TransactionsPage(): ReactNode {
   };
 
   useEffect(() => {
-    // Start the linear tour when the page loads
-    startTour('transactions_linear_tour', [
-      { target: '#tx-filters', content: 'Filter by period, type, or source and apply to reload results.', title: 'Filters' },
-      { target: '#tx-add', content: 'Use Add transaction or Add transfer for proper payloads.', title: 'Add Transactions' },
-      { target: '#tx-table', content: 'Edit and delete actions are in-line per row.', title: 'Transaction List' }
-    ]);
-  }, [startTour]);
+    startTour(TRANSACTIONS_TOUR_ID, buildTransactionsSteps(locale));
+  }, [startTour, locale]);
 
   return (
     <div className="stack">
@@ -513,12 +509,14 @@ export function TransactionsPage(): ReactNode {
           Transactions
         </h2>
         <div className="app-toolbar__actions">
-          <Link to="/app/transactions/calendar" className="ui-btn ui-btn--secondary">
-            Calendar
-          </Link>
-          <Link to="/app/transactions/deep-dive" className="ui-btn ui-btn--secondary">
-            Deep dive
-          </Link>
+          <div id="tx-nav-links" style={{ display: "flex", gap: "8px" }}>
+            <Link to="/app/transactions/calendar" className="ui-btn ui-btn--secondary">
+              Calendar
+            </Link>
+            <Link to="/app/transactions/deep-dive" className="ui-btn ui-btn--secondary">
+              Deep dive
+            </Link>
+          </div>
           <HelpModeWrapper id="tx-add" title="Add Transactions" content="Use Add transaction or Add transfer for proper payloads.">
             <div style={{ display: "flex", gap: "8px" }}>
               <Button onClick={() => openEditorForCreate("single")}>Add transaction</Button>
@@ -527,6 +525,11 @@ export function TransactionsPage(): ReactNode {
               </Button>
             </div>
           </HelpModeWrapper>
+          <Button variant="secondary" onClick={() => {
+            startTour(`tx_replay_${Date.now()}`, buildTransactionsSteps(locale));
+          }}>
+            {tr('tour.replayTour', locale)}
+          </Button>
         </div>
       </div>
 
@@ -552,7 +555,7 @@ export function TransactionsPage(): ReactNode {
       <HelpModeWrapper id="tx-filters" title="Filters" content="Filter by period, type, or source and apply to reload results.">
         <Card>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
-          <label className="ui-field">
+          <label id="tx-filter-period" className="ui-field">
             <span className="ui-label">Period</span>
             <select
               className="ui-input"
@@ -565,7 +568,7 @@ export function TransactionsPage(): ReactNode {
               <option value="custom">Custom</option>
             </select>
           </label>
-          <label className="ui-field">
+          <label id="tx-filter-type" className="ui-field">
             <span className="ui-label">Type</span>
             <select className="ui-input" value={localDraft.txType} onChange={(e) => setLocalDraft((d) => ({ ...d, txType: e.target.value }))}>
               <option value="">All</option>
@@ -611,7 +614,7 @@ export function TransactionsPage(): ReactNode {
             <option key={t} value={t} />
           ))}
         </datalist>
-        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+        <div id="tx-filter-actions" style={{ display: "flex", gap: 8, marginTop: 10 }}>
           <Button variant="secondary" onClick={onApply}>
             Apply
           </Button>
