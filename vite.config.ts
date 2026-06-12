@@ -17,7 +17,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "pwa-192.png", "pwa-512.png", "manifest.webmanifest"],
+      includeAssets: ["favicon.png", "pwa-192.png", "pwa-512.png", "manifest.webmanifest"],
       manifest: false,
       strategies: "generateSW",
       workbox: {
