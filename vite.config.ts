@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import fs from "fs";
 import { VitePWA } from "vite-plugin-pwa";
 
 const clientBuild = JSON.stringify(
@@ -36,6 +37,15 @@ export default defineConfig({
          */
       },
     }),
+    {
+      name: "version-file",
+      writeBundle() {
+        fs.writeFileSync(
+          "dist/version.json",
+          JSON.stringify({ version: JSON.parse(clientBuild) }),
+        );
+      },
+    },
   ],
   server: {
     host: true,

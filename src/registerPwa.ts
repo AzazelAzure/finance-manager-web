@@ -7,6 +7,9 @@ const APP_START_TIME = Date.now();
 const AUTO_APPLY_THRESHOLD_MS = 10000; // 10 seconds
 
 export function registerPwaServiceWorker(): void {
+  // Check immediately on app startup
+  void checkVersionAndEvict();
+
   const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
@@ -27,6 +30,7 @@ export function registerPwaServiceWorker(): void {
         // Poll for updates every hour
         setInterval(() => {
           if (navigator.onLine) {
+            void checkVersionAndEvict();
             void r.update();
           }
         }, 60 * 60 * 1000);
@@ -34,6 +38,7 @@ export function registerPwaServiceWorker(): void {
         // Check for updates when app comes to foreground
         document.addEventListener("visibilitychange", () => {
           if (document.visibilityState === "visible" && navigator.onLine) {
+            void checkVersionAndEvict();
             void r.update();
           }
         });
@@ -42,4 +47,26 @@ export function registerPwaServiceWorker(): void {
   });
 
   applyServiceWorkerUpdate = updateSW;
+}
+
+/**
+ * Escapes a stuck Service Worker cache by fetching a raw version file
+ * and comparing it against the local build hash.
+ */
+async function checkVersionAndEvict(): Promise<void> {
+  try {
+    const res = await fetch(`/version.json?t=${Date.now()}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.version && data.version !== __FM_CLIENT_BUILD__) {
+      console.warn(`[PWA] Version mismatch detected. Local: ${__FM_CLIENT_BUILD__}, Server: ${data.version}. Evicting cache.`);
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        await reg.unregister();
+      }
+      window.location.reload();
+    }
+  } catch (err) {
+    // Ignore fetch errors if offline
+  }
 }
