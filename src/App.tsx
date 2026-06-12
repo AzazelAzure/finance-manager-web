@@ -2,7 +2,6 @@ import { useSyncExternalStore, type ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { ClientBuildUpgradeGate } from "./components/ClientBuildUpgradeGate";
 import { CookieBanner } from "./components/CookieBanner";
-import { SwUpdateBanner } from "./components/SwUpdateBanner";
 import { SyncProgressOverlay } from "./components/SyncProgressOverlay";
 import { SyncStatusBar } from "./components/SyncStatusBar";
 import { isPwaStandaloneDisplay } from "./lib/pwaDisplay";
@@ -76,7 +75,6 @@ export default function App(): ReactNode {
       <SyncChrome />
       <ClientBuildUpgradeGate />
       <CookieBanner />
-      <SwUpdateBanner />
       <Routes>
         <Route element={<PublicShell />}>
           <Route path="/" element={<LandingPage />} />

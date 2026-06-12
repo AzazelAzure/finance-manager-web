@@ -16,7 +16,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "prompt",
+      registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "pwa-192.png", "pwa-512.png", "manifest.webmanifest"],
       manifest: false,
       strategies: "generateSW",
@@ -25,6 +25,7 @@ export default defineConfig({
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
         clientsClaim: true,
+        skipWaiting: true,
         /**
          * Do not register a separate Workbox route for `request.mode === "navigate"`.
          * generateSW already adds `NavigationRoute(createHandlerBoundToURL("/index.html"))`, which
