@@ -58,18 +58,34 @@ export async function fetchAppSnapshot(
         });
       }
     } else {
+      try {
+        const { data } = await api.get<SnapshotResponse>("/finance/appprofile/snapshot/", {
+          params,
+        });
+        await writeCachePayload(cacheId, data, Date.now());
+        base = data;
+      } catch (err) {
+        if (!window.navigator.onLine) {
+          base = await buildFallbackSnapshot(params);
+        } else {
+          throw err;
+        }
+      }
+    }
+  } else {
+    try {
       const { data } = await api.get<SnapshotResponse>("/finance/appprofile/snapshot/", {
         params,
       });
       await writeCachePayload(cacheId, data, Date.now());
       base = data;
+    } catch (err) {
+      if (!window.navigator.onLine) {
+        base = await buildFallbackSnapshot(params);
+      } else {
+        throw err;
+      }
     }
-  } else {
-    const { data } = await api.get<SnapshotResponse>("/finance/appprofile/snapshot/", {
-      params,
-    });
-    await writeCachePayload(cacheId, data, Date.now());
-    base = data;
   }
   return applyTransactionOutboxToSnapshot(base, params);
 }

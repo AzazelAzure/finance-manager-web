@@ -9,10 +9,7 @@ export function PublicShell(): ReactNode {
     <div className="public-root">
       <header className="public-header">
         <Link to="/" className="public-brand">
-          <span className="public-brand__mark" aria-hidden>
-            <i />
-            <i />
-          </span>
+          <img src="/favicon.png" alt="" className="public-brand__mark" aria-hidden />
           <span>
             <strong>Hive Financial Manager</strong>
             <small>Web Beta</small>

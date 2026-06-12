@@ -130,12 +130,20 @@ export async function listTransactions(
       }
     }
   } else {
-    const { data } = await api.get<TransactionRecord[] | TransactionsListResponse>("/finance/transactions/", {
-      params: filters,
-    });
-    const parsed = Array.isArray(data) ? data : (data.transactions ?? []);
-    rows = parsed;
-    void writeTxListCache(filterRecord, rows as unknown[], Date.now()).catch(() => undefined);
+    try {
+      const { data } = await api.get<TransactionRecord[] | TransactionsListResponse>("/finance/transactions/", {
+        params: filters,
+      });
+      const parsed = Array.isArray(data) ? data : (data.transactions ?? []);
+      rows = parsed;
+      void writeTxListCache(filterRecord, rows as unknown[], Date.now()).catch(() => undefined);
+    } catch (err) {
+      if (!window.navigator.onLine) {
+        rows = await buildFallbackTxList(filters as Record<string, string | undefined>);
+      } else {
+        throw err;
+      }
+    }
   }
   
   return applyTransactionOutboxToList(rows ?? [], filterRecord);

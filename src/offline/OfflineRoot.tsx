@@ -67,7 +67,9 @@ export function OfflineRoot(): ReactNode {
     if (!session?.isAuthenticated || !allow) {
       return;
     }
-    void seedOfflineWindow();
+    if (isPwaStandaloneDisplay()) {
+      void seedOfflineWindow();
+    }
   }, [session?.isAuthenticated, allow]);
 
   useEffect(() => {
