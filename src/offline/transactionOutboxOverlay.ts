@@ -25,6 +25,7 @@ import { readCachePayload } from "./cache";
 import type { CurrencyConverter } from "./exchangeRates";
 import { loadCurrencyConverter } from "./exchangeRates";
 import { applySourceOutboxToList } from "./lookupsOutboxOverlay";
+import { parseOutboxBody } from "./outbox";
 import { offlineDb } from "./db";
 import { listOutboxOrdered } from "./outbox";
 
@@ -256,7 +257,8 @@ export function buildPendingTransactionRecordsFromPostBody(body: unknown, idempo
   });
 }
 
-function normalizeTransactionPostBody(body: unknown): TransactionCreateRequest[] {
+function normalizeTransactionPostBody(rawBody: unknown): TransactionCreateRequest[] {
+  const body = parseOutboxBody(rawBody);
   if (Array.isArray(body)) {
     return body.filter((b): b is TransactionCreateRequest => Boolean(b) && typeof b === "object" && "date" in b);
   }
