@@ -13,10 +13,12 @@
   border-radius: var(--radius-lg);
   border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
   background:
-    radial-gradient(circle at 20% 18%, var(--hero-glow-1), transparent 42%),
-    radial-gradient(circle at 82% 22%, var(--hero-glow-2), transparent 38%),
+    radial-gradient(circle at 10% 10%, var(--hero-glow-1), transparent 50%),
+    radial-gradient(circle at 90% 90%, var(--hero-glow-2), transparent 60%),
+    radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--hero-glow-1) 80%, transparent), transparent 70%),
     var(--gradient-surface);
   box-shadow: var(--shadow-md);
+  backdrop-filter: blur(16px);
 }
 
 .landing-hero::after {
@@ -60,9 +62,86 @@
   margin-top: var(--space-2);
 }
 
+.landing-hero__visual {
+  margin-top: var(--space-6);
+  perspective: 1200px;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes tilt-up {
+  from { transform: rotateX(20deg) translateY(40px) scale(0.95); opacity: 0; }
+  to { transform: rotateX(0deg) translateY(0) scale(1); opacity: 1; }
+}
+
+.landing-hero__mockup {
+  width: 100%;
+  max-width: 800px;
+  height: 380px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-bottom: none;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 40px -10px var(--hero-glow-1);
+  transform-origin: bottom center;
+  animation: tilt-up both;
+  animation-timeline: view();
+  animation-range: entry 10% cover 60%;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow: hidden;
+}
+
+.mockup-header { 
+  height: 1.5rem; 
+  border-radius: var(--radius-sm); 
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent); 
+  width: 30%; 
+}
+.mockup-body { 
+  display: grid; 
+  grid-template-columns: 1fr 1fr; 
+  gap: var(--space-3); 
+  flex: 1; 
+}
+.mockup-card { 
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent); 
+  border-radius: var(--radius-md); 
+  border: 1px solid var(--border); 
+}
+.mockup-chart { 
+  grid-column: 1 / -1; 
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent); 
+  border-radius: var(--radius-md); 
+  border: 1px solid var(--border); 
+  margin-top: auto; 
+  height: 120px; 
+}
+
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .landing-section {
   padding: var(--space-7) 0;
   border-top: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  animation: reveal both;
+  animation-timeline: view();
+  animation-range: entry 5% cover 25%;
 }
 
 .landing-section h2 {
@@ -135,7 +214,9 @@
   border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
   border-radius: var(--radius-md);
   padding: var(--space-4);
-  background: var(--gradient-surface);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: var(--shadow-sm);
 }
 
@@ -189,7 +270,9 @@
   border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
   border-radius: var(--radius-md);
   padding: var(--space-4);
-  background: var(--gradient-surface);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: var(--shadow-md);
 }
 
@@ -247,10 +330,14 @@
   background: color-mix(in srgb, var(--surface) 92%, var(--surface-2));
 }
 
-.roadmap-grid {
+.history-timeline,
+.roadmap-timeline {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
   grid-template-columns: 1fr;
+  padding-left: var(--space-4);
+  position: relative;
+  margin-top: var(--space-5);
 }
 
 .showcase-preview {
@@ -343,33 +430,77 @@
   background: var(--gradient-accent);
 }
 
-@media (min-width: 640px) {
-  .roadmap-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.history-timeline::before,
+.roadmap-timeline::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: color-mix(in srgb, var(--border) 80%, transparent);
 }
 
-@media (min-width: 1200px) {
-  .roadmap-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
+.history-item,
+.roadmap-item {
+  position: relative;
 }
 
+.history-item__marker,
+.roadmap-item__marker {
+  position: absolute;
+  left: calc(var(--space-4) * -1 - 6px);
+  top: var(--space-3);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 4px var(--surface);
+}
+
+.history-item__date {
+  display: block;
+  font-size: var(--font-sm);
+  color: var(--muted);
+  margin-bottom: var(--space-1);
+}
+
+.history-item__title,
 .roadmap-card__title {
   margin: 0 0 0.35rem;
   font-size: var(--font-md);
 }
 
+.history-item__desc,
 .roadmap-card p {
   margin: 0;
   color: var(--muted);
   font-size: var(--font-sm);
 }
 
+.roadmap-card__badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-2);
+  background: var(--surface-2);
+  color: var(--fg);
+}
+
+.roadmap-item--done .roadmap-card__badge { background: color-mix(in srgb, var(--green-500) 20%, transparent); color: var(--green-400); }
+.roadmap-item--now .roadmap-card__badge { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); }
+.roadmap-item--now .roadmap-item__marker { background: var(--accent); box-shadow: 0 0 0 4px var(--surface), 0 0 12px var(--accent); }
+
 .cta-block {
   text-align: center;
   padding: var(--space-8) var(--space-4);
-  background: var(--gradient-surface);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: var(--radius-lg);
   border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
   box-shadow: var(--shadow-md);
@@ -434,5 +565,11 @@
 
   .showcase__tab:hover {
     transform: none;
+  }
+
+  .landing-section {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

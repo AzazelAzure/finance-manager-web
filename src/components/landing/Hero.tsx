@@ -26,6 +26,17 @@ export function Hero(): ReactNode {
           </Button>
         </Link>
       </div>
+
+      <div className="landing-hero__visual" aria-hidden="true">
+        <div className="landing-hero__mockup">
+          <div className="mockup-header"></div>
+          <div className="mockup-body">
+            <div className="mockup-card"></div>
+            <div className="mockup-card"></div>
+            <div className="mockup-chart"></div>
+          </div>
+        </div>
+      </div>
     </header>
   );
 }
