@@ -26,6 +26,33 @@ export function Hero(): ReactNode {
           </Button>
         </Link>
       </div>
+
+      <div className="landing-hero__visual" aria-hidden="true">
+        <div className="landing-hero__mockup">
+          <div className="mockup-header">
+            <div className="mockup-header-circle"></div>
+            <div className="mockup-header-line"></div>
+          </div>
+          <div className="mockup-body">
+            <div className="mockup-card">
+              <div className="mockup-card-title"></div>
+              <div className="mockup-card-value"></div>
+            </div>
+            <div className="mockup-card">
+              <div className="mockup-card-title"></div>
+              <div className="mockup-card-value"></div>
+            </div>
+            <div className="mockup-chart">
+              <div className="mockup-chart-bar" style={{height: '30%'}}></div>
+              <div className="mockup-chart-bar" style={{height: '50%'}}></div>
+              <div className="mockup-chart-bar" style={{height: '80%'}}></div>
+              <div className="mockup-chart-bar" style={{height: '40%'}}></div>
+              <div className="mockup-chart-bar" style={{height: '60%'}}></div>
+              <div className="mockup-chart-bar" style={{height: '90%'}}></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </header>
   );
 }
