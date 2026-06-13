@@ -14,7 +14,12 @@ import { buildCalendarResponseFromTransactions } from "../offline/calendarOfflin
 import { loadCurrencyConverter } from "../offline/exchangeRates";
 import { buildVisualizationFromTransactions } from "../offline/visualizationOffline";
 import { replacePendingPostInTxListCaches } from "../offline/optimisticTxEnqueue";
-import { listOutboxOrdered, parsePendingTransactionIdentity, updateQueuedTransactionPostBody } from "../offline/outbox";
+import {
+  deleteQueuedTransactionPost,
+  listOutboxOrdered,
+  parsePendingTransactionIdentity,
+  updateQueuedTransactionPostBody,
+} from "../offline/outbox";
 import { findTransactionRecordById, applyTransactionOutboxToList } from "../offline/transactionOutboxOverlay";
 import { api } from "./client";
 import { listUpcomingExpenses } from "./upcomingExpenses";
@@ -230,6 +235,28 @@ export async function deleteTransaction(
   txId: string,
   opts?: { echo?: TransactionRecord },
 ): Promise<TransactionMutationResult | OfflineQueuedResult> {
+  if (txId.startsWith("pending:")) {
+    const ok = await deleteQueuedTransactionPost(txId);
+    if (!ok) {
+      throw new Error("Could not delete queued transaction draft.");
+    }
+    const ident = parsePendingTransactionIdentity(txId);
+    if (ident) {
+      const row = (await listOutboxOrdered()).find(
+        (r) =>
+          r.idempotencyKey === ident.idempotencyKey &&
+          r.method.toUpperCase() === "POST" &&
+          /^\/finance\/transactions\/?$/.test(
+            (() => {
+              const p = r.url.split("?")[0];
+              return p.endsWith("/") || p.length === 0 ? p : `${p}/`;
+            })(),
+          ),
+      );
+      await replacePendingPostInTxListCaches(ident.idempotencyKey, row?.body);
+    }
+    return { offline_queued: true };
+  }
   const res = await api.request<TransactionMutationResult | OfflineQueuedResult>({
     method: "DELETE",
     url: `/finance/transactions/${encodeURIComponent(txId)}/`,

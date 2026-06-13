@@ -27,6 +27,7 @@ import { useSession } from "../../state/SessionContext";
 import { clearOutbox } from "../../offline/outbox";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 import { tr, useLocale } from "../../lib/i18n";
+import { buildTimezoneOptions } from "../../lib/timezones";
 
 const settingsSchema = z.object({
   spend_accounts_csv: z.string(),
@@ -77,12 +78,7 @@ function parseApiError(error: unknown): string {
   return status ? `HTTP ${status}: Request rejected.` : error.message;
 }
 
-function timezoneOptions(current: string): Array<{ value: string; label: string }> {
-  const supported = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf;
-  const zones = supported ? supported("timeZone") : [];
-  const values = zones.includes(current) || !current ? zones : [current, ...zones];
-  return values.map((z) => ({ value: z, label: z }));
-}
+
 
 function parseSpendAccounts(csv: string): string[] {
   return csv
@@ -259,7 +255,7 @@ export function SettingsProfilePage(): ReactNode {
     return <ErrorState title={tr("settings.failed", locale)} onRetry={() => void profileQuery.refetch()} />;
   }
 
-  const timezoneSelect = timezoneOptions(profileQuery.data?.timezone ?? "UTC");
+  const timezoneSelect = buildTimezoneOptions({ current: profileQuery.data?.timezone ?? "UTC" });
 
   return (
     <div className="stack">

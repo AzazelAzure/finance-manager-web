@@ -23,6 +23,7 @@ import {
   setOnboardingProgress,
 } from "../../state/onboarding";
 import { tr, useLocale } from "../../lib/i18n";
+import { buildTimezoneOptions, detectBrowserTimezone } from "../../lib/timezones";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 
 type Step = 1 | 2 | 3 | 4;
@@ -76,13 +77,7 @@ const STEP_LABELS: Record<Step, string> = {
   4: "Review",
 };
 
-function timezoneOptions(): Array<{ value: string; label: string }> {
-  const supported = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf;
-  const zones = supported ? supported("timeZone") : [];
-  const preferred = "America/Chicago";
-  const values = zones.includes(preferred) ? [preferred, ...zones.filter((z) => z !== preferred)] : [preferred, ...zones];
-  return values.map((z) => ({ value: z, label: z }));
-}
+
 
 export function OnboardingPage({ step }: { step: Step }): ReactNode {
   const locale = useLocale();
@@ -106,7 +101,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
 
   const step1Form = useForm<Step1Form>({
     resolver: zodResolver(step1Schema),
-    defaultValues: { base_currency: "USD", timezone: "America/Chicago", start_week: "1" },
+    defaultValues: { base_currency: "USD", timezone: detectBrowserTimezone(), start_week: "1" },
   });
   const step2Form = useForm<Step2Form>({
     resolver: zodResolver(step2Schema),
@@ -213,7 +208,8 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
 
   const progressLabel = `Step ${step}/4 — ${STEP_LABELS[step]}`;
   const barWidth = `${step * 25}%`;
-  const timezoneSelectOptions = timezoneOptions();
+  const detected = detectBrowserTimezone();
+  const timezoneSelectOptions = buildTimezoneOptions({ detected });
 
   if (expectedPath === "/app/dashboard") {
     return <Navigate to="/app/dashboard" replace />;
