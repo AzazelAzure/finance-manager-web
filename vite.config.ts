@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import fs from "fs";
 import { VitePWA } from "vite-plugin-pwa";
 
 const clientBuild = JSON.stringify(
@@ -17,7 +18,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["favicon.svg", "pwa-192.png", "pwa-512.png", "manifest.webmanifest"],
+      includeAssets: ["favicon.png", "pwa-192.png", "pwa-512.png", "manifest.webmanifest"],
       manifest: false,
       strategies: "generateSW",
       workbox: {
@@ -25,6 +26,7 @@ export default defineConfig({
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
         clientsClaim: true,
+        skipWaiting: true,
         /**
          * Do not register a separate Workbox route for `request.mode === "navigate"`.
          * generateSW already adds `NavigationRoute(createHandlerBoundToURL("/index.html"))`, which
@@ -35,6 +37,15 @@ export default defineConfig({
          */
       },
     }),
+    {
+      name: "version-file",
+      writeBundle() {
+        fs.writeFileSync(
+          "dist/version.json",
+          JSON.stringify({ version: JSON.parse(clientBuild) }),
+        );
+      },
+    },
   ],
   server: {
     host: true,

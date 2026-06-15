@@ -35,24 +35,7 @@ import {
   type TransactionsFilterDraft,
 } from "../../lib/transactionsQueryParams";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
-
-const TRANSACTIONS_LINEAR_TOUR_STEPS = [
-  {
-    target: "#tx-filters",
-    title: "Refine History",
-    content: 'Narrow down your search by date range, transaction type, or specific source accounts. Click "Apply" to refresh the list.',
-  },
-  {
-    target: "#tx-add",
-    title: "New Records",
-    content: 'Log single transactions or account transfers. Use the "? Guide" inside the forms for step-by-step help.',
-  },
-  {
-    target: "#tx-table",
-    title: "Your Ledger",
-    content: "A comprehensive list of all your historical records. You can click any row to see details or use the action buttons to edit/delete.",
-  },
-] as const;
+import { TRANSACTIONS_TOUR_ID, buildTransactionsSteps } from "../../components/tours/TransactionsTourSteps";
 
 type DeleteState = Record<string, number>;
 type EditorMode = "single" | "transfer";
@@ -187,7 +170,7 @@ export function TransactionsPage(): ReactNode {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { startTour, isTourCompleted } = useTour();
+  const { startTour } = useTour();
   const searchString = searchParams.toString();
   const profileQuery = useQuery({
     queryKey: ["app-profile"] as const,
@@ -516,40 +499,24 @@ export function TransactionsPage(): ReactNode {
   };
 
   useEffect(() => {
-    if (isTourCompleted("transactions_linear_tour")) {
-      return;
-    }
-    const timer = setTimeout(() => {
-      startTour("transactions_linear_tour", [...TRANSACTIONS_LINEAR_TOUR_STEPS] as any);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [isTourCompleted, startTour]);
+    startTour(TRANSACTIONS_TOUR_ID, buildTransactionsSteps(locale));
+  }, [startTour, locale]);
 
   return (
     <div className="stack">
       <div className="app-toolbar app-surface">
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-            Transactions
-          </h2>
-          <Button
-            type="button"
-            variant="secondary"
-            aria-label="Start guide"
-            title="Start guide"
-            onClick={() => startTour("transactions_linear_tour", [...TRANSACTIONS_LINEAR_TOUR_STEPS] as any, true)}
-          >
-            <HelpCircle size={18} aria-hidden />
-            <span className="sr-only">Start guide</span>
-          </Button>
-        </div>
-        <div className="app-toolbar__actions" id="tx-add">
-          <Link to="/app/transactions/calendar" className="ui-btn ui-btn--secondary">
-            Calendar
-          </Link>
-          <Link to="/app/transactions/deep-dive" className="ui-btn ui-btn--secondary">
-            Deep dive
-          </Link>
+        <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
+          Transactions
+        </h2>
+        <div className="app-toolbar__actions">
+          <div id="tx-nav-links" style={{ display: "flex", gap: "8px" }}>
+            <Link to="/app/transactions/calendar" className="ui-btn ui-btn--secondary">
+              Calendar
+            </Link>
+            <Link to="/app/transactions/deep-dive" className="ui-btn ui-btn--secondary">
+              Deep dive
+            </Link>
+          </div>
           <HelpModeWrapper id="tx-add" title="Add Transactions" content="Use Add transaction or Add transfer for proper payloads.">
             <div style={{ display: "flex", gap: "8px" }}>
               <Button onClick={() => openEditorForCreate("single")}>Add transaction</Button>
@@ -558,6 +525,11 @@ export function TransactionsPage(): ReactNode {
               </Button>
             </div>
           </HelpModeWrapper>
+          <Button variant="secondary" onClick={() => {
+            startTour(`tx_replay_${Date.now()}`, buildTransactionsSteps(locale));
+          }}>
+            {tr('tour.replayTour', locale)}
+          </Button>
         </div>
       </div>
 
@@ -583,7 +555,7 @@ export function TransactionsPage(): ReactNode {
       <HelpModeWrapper id="tx-filters" title="Filters" content="Filter by period, type, or source and apply to reload results.">
         <Card>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
-          <label className="ui-field">
+          <label id="tx-filter-period" className="ui-field">
             <span className="ui-label">Period</span>
             <select
               className="ui-input"
@@ -596,7 +568,7 @@ export function TransactionsPage(): ReactNode {
               <option value="custom">Custom</option>
             </select>
           </label>
-          <label className="ui-field">
+          <label id="tx-filter-type" className="ui-field">
             <span className="ui-label">Type</span>
             <select className="ui-input" value={localDraft.txType} onChange={(e) => setLocalDraft((d) => ({ ...d, txType: e.target.value }))}>
               <option value="">All</option>
@@ -642,7 +614,7 @@ export function TransactionsPage(): ReactNode {
             <option key={t} value={t} />
           ))}
         </datalist>
-        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+        <div id="tx-filter-actions" style={{ display: "flex", gap: 8, marginTop: 10 }}>
           <Button variant="secondary" onClick={onApply}>
             Apply
           </Button>
@@ -696,6 +668,17 @@ export function TransactionsPage(): ReactNode {
         }
       >
         <div className="stack" style={{ marginTop: 12 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button 
+              type="button" 
+              className="ui-btn ui-btn--ghost" 
+              onClick={() => setShowFormHelp(!showFormHelp)}
+              title="Show guide"
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px" }}
+            >
+              <HelpCircle size={16} /> {showFormHelp ? "Hide guide" : "Guide"}
+            </button>
+          </div>
           {showFormHelp && editorMode === "single" ? (
             <div className="ui-state" style={{ textAlign: "left", fontSize: "0.9rem" }}>
               <strong>Single Transaction Guide</strong>
@@ -705,19 +688,6 @@ export function TransactionsPage(): ReactNode {
                 <li><strong>Type:</strong> Expense (money out) or Income (money in).</li>
                 <li><strong>Category:</strong> E.g. "Food" or "Salary" to group spending.</li>
               </ul>
-              <Button 
-                variant="primary" 
-                style={{ marginTop: 8 }}
-                onClick={() => startTour('tx_single_tour', [
-                  { target: '#tx-form-date', title: 'Date', content: 'When did this happen? It defaults to today.' },
-                  { target: '#tx-form-amount', title: 'Amount', content: 'Enter the absolute value of the transaction.' },
-                  { target: '#tx-form-source', title: 'Payment Source', content: 'Select where the money is coming from (e.g., Gcash, Cash).' },
-                  { target: '#tx-form-cat', title: 'Category', content: 'Categorize your spending to see trends on the Dashboard.' },
-                  { target: '#tx-form-desc', title: 'Description', content: 'Add a small note for future reference.' }
-                ], true)}
-              >
-                Start step-by-step guide
-              </Button>
             </div>
           ) : null}
           {showFormHelp && editorMode === "transfer" ? (
@@ -727,21 +697,8 @@ export function TransactionsPage(): ReactNode {
                 <li><strong>From source:</strong> The account the money left.</li>
                 <li><strong>To source:</strong> The account the money entered.</li>
                 <li><strong>Sent amount:</strong> How much left the <em>From source</em>.</li>
-                <li><strong>Received amount:</strong> How much entered the <em>To source</em>.</li>
+                <li><strong>Received amount:</strong> How much entered the <em>To source</em>. If this differs from Sent amount, the system will track the difference as a <strong>Leak</strong> automatically (e.g., fees, forex differences).</li>
               </ul>
-              <Button 
-                variant="primary" 
-                style={{ marginTop: 8 }}
-                onClick={() => startTour('tx_transfer_tour', [
-                  { target: '#tx-xfer-date', title: 'Date', content: 'When the transfer occurred.' },
-                  { target: '#tx-xfer-from', title: 'From Account', content: 'The source account of the transfer.' },
-                  { target: '#tx-xfer-to', title: 'To Account', content: 'The destination account where the money is going.' },
-                  { target: '#tx-xfer-sent', title: 'Amount Sent', content: 'How much left the source account.' },
-                  { target: '#tx-xfer-received', title: 'Amount Received', content: 'How much entered the destination (helps track transfer fees/leaks).' }
-                ], true)}
-              >
-                Start step-by-step guide
-              </Button>
             </div>
           ) : null}
 

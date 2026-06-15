@@ -43,8 +43,8 @@ export function LoginPage(): ReactNode {
     setFormError("");
     try {
       const data = await login(values.username, values.password);
-      const nextPath =
-        safeFromPath === "/app/dashboard" && consumeForceOnboardingNextLogin() ? "/app/onboarding" : safeFromPath;
+      consumeForceOnboardingNextLogin();
+      const nextPath = safeFromPath;
       setPostLoginPath(nextPath);
       setSession({ access: data.access, refresh: data.refresh });
     } catch (err) {

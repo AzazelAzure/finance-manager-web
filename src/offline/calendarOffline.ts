@@ -1,7 +1,9 @@
-import type { CalendarResponse } from "../api/types";
-import type { TransactionRecord } from "../api/types";
+import type { CalendarDueEventRow, CalendarResponse } from "../api/types";
+import type { TransactionRecord, UpcomingExpenseRecord } from "../api/types";
 import type { CurrencyConverter } from "./exchangeRates";
 import { readCachePayload } from "./cache";
+import { applyUpcomingOutboxToList } from "./upcomingOutboxOverlay";
+import { UPCOMING_LIST_CACHE_ID, normalizeUpcomingRow } from "../api/upcomingExpenses";
 
 function round2(n: number): number {
   return Number(n.toFixed(2));
@@ -119,6 +121,33 @@ export async function buildCalendarResponseFromTransactions(
     .filter((r) => (r.date || "").slice(0, 10) === params.start_date)
     .sort((a, b) => (a.date || "").localeCompare(b.date || "") || a.tx_id.localeCompare(b.tx_id));
 
+  // Populate due_events from cached upcoming expenses (with outbox overlay)
+  let due_events: CalendarDueEventRow[] = [];
+  try {
+    const rawUe = await readCachePayload(UPCOMING_LIST_CACHE_ID);
+    const baseUe = Array.isArray(rawUe)
+      ? rawUe
+          .map((r) => normalizeUpcomingRow(r as Partial<UpcomingExpenseRecord>))
+          .filter((r) => Boolean(r.name))
+      : [];
+    const mergedUe = await applyUpcomingOutboxToList(baseUe);
+    due_events = mergedUe
+      .filter((ue) => {
+        const d = (ue.due_date || "").slice(0, 10);
+        return d >= params.start_date && d <= params.end_date;
+      })
+      .map((ue) => ({
+        date: ue.due_date,
+        expense_name: ue.name,
+        amount: ue.amount,
+        currency: ue.currency,
+        paid_flag: ue.paid_flag,
+        is_recurring: ue.recurring_flag,
+      }));
+  } catch {
+    // If upcoming cache read fails, leave due_events empty gracefully
+  }
+
   return {
     start_date: params.start_date,
     end_date: params.end_date,
@@ -129,7 +158,7 @@ export async function buildCalendarResponseFromTransactions(
     monthly,
     weekly,
     daily,
-    due_events: [],
+    due_events,
     day_drill: dayDrill,
   };
 }

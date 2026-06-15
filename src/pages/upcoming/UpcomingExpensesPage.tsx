@@ -497,43 +497,17 @@ export function UpcomingExpensesPage(): ReactNode {
               <HelpCircle size={16} /> {showFormHelp ? "Hide guide" : "Guide"}
             </button>
           </div>
-          {showFormHelp && (
-            <Card style={{ background: "var(--bg-depth-2)", border: "1px dashed var(--accent-primary)", marginBottom: 12 }}>
-              <p style={{ fontSize: "0.9rem", margin: 0 }}>
-                <strong>Bill/Upcoming Guide:</strong>
-                <br />
-                • <strong>Name:</strong> Friendly name for the bill.
-                <br />
-                • <strong>Due date:</strong> When you expect to pay this.
-                <br />
-                <Button
-                  variant="primary"
-                  style={{ marginTop: 8 }}
-                  onClick={() =>
-                    startTour("bill_form_tour", [
-                      {
-                        target: "#bill-form-name",
-                        content: "Enter a descriptive name for this bill or upcoming expense.",
-                        title: "Bill Name",
-                      },
-                      {
-                        target: "#bill-form-amount",
-                        content: "The expected amount to be paid.",
-                        title: "Amount",
-                      },
-                      {
-                        target: "#bill-form-date",
-                        content: "The date this bill is due.",
-                        title: "Due Date",
-                      },
-                    ] as any, true)
-                  }
-                >
-                  Start step-by-step guide
-                </Button>
-              </p>
-            </Card>
-          )}
+          {showFormHelp ? (
+            <div className="ui-state" style={{ textAlign: "left", fontSize: "0.9rem" }}>
+              <strong>Upcoming Expense Guide</strong>
+              <ul style={{ paddingLeft: 20, margin: "8px 0 0 0" }}>
+                <li><strong>Name:</strong> A descriptive name for the expense.</li>
+                <li><strong>Due date:</strong> When the expense needs to be paid.</li>
+                <li><strong>Recurring:</strong> Check if this repeats periodically.</li>
+                <li><strong>Use start / end window:</strong> Specify the coverage period for this bill.</li>
+              </ul>
+            </div>
+          ) : null}
 
           {editorError ? <ErrorState title={tr("common.saveFailed", locale)} description={editorError} /> : null}
           {(invalidAmount || invalidWindow) && !saveMutation.isPending ? (

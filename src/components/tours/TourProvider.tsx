@@ -1,9 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Joyride, STATUS } from 'react-joyride';
-// @ts-ignore
-import type { CallBackProps, Step } from 'react-joyride';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { Joyride, STATUS, type Step } from 'react-joyride';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { updateAppProfile, getAppProfile } from '../../api/profile';
+import { tr, useLocale } from '../../lib/i18n';
 
 // Help Mode Context
 interface HelpModeContextType {
@@ -22,7 +21,7 @@ export function useHelpMode() {
 
 // Tour Context
 interface TourContextType {
-  startTour: (tourId: string, steps: Step[], force?: boolean) => void;
+  startTour: (tourId: string, steps: Step[]) => void;
   markTourCompleted: (tourId: string) => void;
   isTourCompleted: (tourId: string) => boolean;
 }
@@ -35,47 +34,11 @@ export function useTour() {
   return ctx;
 }
 
-const TOUR_TARGET_POLL_MS = 2000;
-
-function isJoyrideTargetInDocument(target: Step['target'] | undefined): boolean {
-  if (target == null) return true;
-  if (typeof target === 'string') {
-    const sel = target.trim();
-    if (!sel) return true;
-    try {
-      return document.querySelector(sel) != null;
-    } catch {
-      return false;
-    }
-  }
-  if (typeof Element !== 'undefined' && target instanceof Element) {
-    return target.isConnected;
-  }
-  return false;
-}
-
 export function TourProvider({ children }: { children: React.ReactNode }) {
   const [isHelpModeActive, setHelpModeActive] = useState(false);
   const [run, setRun] = useState(false);
-  const [joyrideKey, setJoyrideKey] = useState(0);
   const [steps, setSteps] = useState<Step[]>([]);
   const [activeTourId, setActiveTourId] = useState<string | null>(null);
-  const lastStartWasForceRef = useRef(false);
-  const cancelTourTargetPollRef = useRef<(() => void) | null>(null);
-  const isMountedRef = useRef(true);
-
-  const cancelActiveTourTargetPoll = useCallback(() => {
-    cancelTourTargetPollRef.current?.();
-    cancelTourTargetPollRef.current = null;
-  }, []);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      cancelActiveTourTargetPoll();
-    };
-  }, [cancelActiveTourTargetPoll]);
 
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({
@@ -108,104 +71,40 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     [completedTours, isTourCompleted, updateProfile]
   );
 
+  const locale = useLocale();
+
+  /** Default step overrides injected into every tour step. */
+  const STEP_DEFAULTS: Partial<Step> = useMemo(() => ({
+    buttons: ['skip', 'back', 'close', 'primary'],
+    closeButtonAction: 'skip' as const,
+    locale: { skip: tr('tour.exitTour', locale), last: tr('tour.done', locale) },
+  }), [locale]);
+
   const startTour = useCallback(
-    (id: string, tourSteps: Step[], force = false) => {
-      lastStartWasForceRef.current = force;
-      if (isTourCompleted(id) && !force) {
-        return;
+    (tourId: string, tourSteps: Step[]) => {
+      if (!isTourCompleted(tourId)) {
+        setActiveTourId(tourId);
+        setSteps(tourSteps.map((s) => ({ ...STEP_DEFAULTS, ...s })));
+        setRun(true);
       }
-      cancelActiveTourTargetPoll();
-
-      setSteps(tourSteps);
-      setActiveTourId(id);
-      setJoyrideKey(Date.now());
-      setRun(false);
-
-      const firstTarget: Step['target'] | undefined = tourSteps[0]?.target;
-      const targetReady = () => isJoyrideTargetInDocument(firstTarget);
-
-      const armRun = () => {
-        if (isMountedRef.current) {
-          setRun(true);
-        }
-      };
-
-      if (targetReady()) {
-        queueMicrotask(armRun);
-        return;
-      }
-
-      const deadline = Date.now() + TOUR_TARGET_POLL_MS;
-      let rafId = 0;
-
-      const cleanupLocal = () => {
-        if (rafId) {
-          cancelAnimationFrame(rafId);
-          rafId = 0;
-        }
-      };
-
-      const finish = () => {
-        cleanupLocal();
-        if (cancelTourTargetPollRef.current === cancelPoll) {
-          cancelTourTargetPollRef.current = null;
-        }
-        armRun();
-      };
-
-      const tick = () => {
-        if (Date.now() >= deadline) {
-          finish();
-          return;
-        }
-        if (targetReady()) {
-          finish();
-          return;
-        }
-        rafId = requestAnimationFrame(tick);
-      };
-
-      const cancelPoll = () => {
-        cleanupLocal();
-        if (cancelTourTargetPollRef.current === cancelPoll) {
-          cancelTourTargetPollRef.current = null;
-        }
-      };
-
-      cancelTourTargetPollRef.current = cancelPoll;
-      rafId = requestAnimationFrame(tick);
     },
-    [isTourCompleted, cancelActiveTourTargetPoll],
+    [isTourCompleted]
   );
 
   const handleJoyrideCallback = useCallback(
     (data: any) => {
-      const { status, type } = data;
+      const { status } = data;
       const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
       
-      if (type === 'error') {
-        console.error('[TourProvider] Joyride error:', data);
-      }
-
       if (finishedStatuses.includes(status as string)) {
         setRun(false);
         if (activeTourId) {
-          // Do not persist help mode contextual notes
-          if (!activeTourId.startsWith('help_')) {
-            const wasForce = lastStartWasForceRef.current;
-            lastStartWasForceRef.current = false;
-            const alreadyDone = completedTours.includes(activeTourId);
-            if (!wasForce || !alreadyDone) {
-              markTourCompleted(activeTourId);
-            }
-          } else {
-            lastStartWasForceRef.current = false;
-          }
+          markTourCompleted(activeTourId);
           setActiveTourId(null);
         }
       }
     },
-    [activeTourId, completedTours, markTourCompleted]
+    [activeTourId, markTourCompleted]
   );
 
   const helpModeValue = useMemo(
@@ -227,22 +126,11 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       <TourContext.Provider value={tourValue}>
         {children}
         <Joyride
-          key={joyrideKey}
-          callback={handleJoyrideCallback}
+          onEvent={handleJoyrideCallback}
           continuous
-          hideCloseButton
           run={run}
-          scrollToFirstStep
-          showProgress
-          showSkipButton
           steps={steps}
-          styles={{
-            // @ts-ignore
-            options: {
-              zIndex: 20000,
-              primaryColor: 'var(--accent)',
-            },
-          }} as any
+          scrollToFirstStep
         />
       </TourContext.Provider>
     </HelpModeContext.Provider>
@@ -263,53 +151,46 @@ export function HelpModeWrapper({
   className?: string;
 }) {
   const { isHelpModeActive } = useHelpMode();
-  const { startTour } = useTour();
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (isHelpModeActive) {
-      e.preventDefault();
-      e.stopPropagation();
-      // Keep help mode active so the user can click multiple widgets
-      startTour(`help_${id}_${Date.now()}`, [
-        {
-          target: `#${id}`,
-          title,
-          content,
-          disableBeacon: true,
-          hideFooter: true,
-          hideBackButton: true,
-        } as any,
-      ]);
-    }
-  };
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div
       id={id}
       className={className}
-      onClickCapture={handleClick}
-      tabIndex={isHelpModeActive ? 0 : undefined}
-      role={isHelpModeActive ? 'button' : undefined}
-      aria-label={isHelpModeActive ? `Help for ${title || id}` : undefined}
-      onKeyDown={(e) => {
-        if (isHelpModeActive && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          handleClick(e as any);
-        }
-      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{
-        borderRadius: '4px',
-        transition: 'box-shadow 0.28s ease',
+        position: 'relative',
         ...(isHelpModeActive
-          ? {
-              cursor: 'help',
-              boxShadow:
-                '0 0 0 2px var(--accent), 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent), 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent)',
-            }
-          : { boxShadow: '0 0 0 0 transparent' }),
+          ? { outline: '2px dashed #10b981', outlineOffset: '2px', borderRadius: '4px', cursor: 'help' }
+          : {})
       }}
     >
       {children}
+      {isHelpModeActive && isHovered && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '100%',
+            left: '50%',
+            transform: 'translate(-50%, -8px)',
+            background: 'var(--bg-surface, #1e293b)',
+            color: 'var(--text-main, #f8fafc)',
+            padding: '0.75rem',
+            borderRadius: '6px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)',
+            width: 'max-content',
+            maxWidth: '300px',
+            zIndex: 10001,
+            pointerEvents: 'none',
+            border: '1px solid var(--border, #334155)',
+            textAlign: 'left'
+          }}
+        >
+          {title && <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: 600, color: '#10b981' }}>{title}</h4>}
+          <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: '1.4' }}>{content}</p>
+        </div>
+      )}
     </div>
   );
 }

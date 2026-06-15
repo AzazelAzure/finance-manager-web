@@ -1,68 +1,54 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { CLIENT_BUILD } from "../lib/clientBuild";
-import { dismissSwUpdateBannerForBuild } from "../lib/swUpdateAck";
 import { applyServiceWorkerUpdate } from "../registerPwa";
+import { useLocale, tr } from "../lib/i18n";
 import { Button } from "./ui/Button";
-
-const EVENT = "fm-sw-update-available";
+import { drainOutbox } from "../offline/drain";
 
 export function SwUpdateBanner(): ReactNode {
-  const [visible, setVisible] = useState(false);
+  const locale = useLocale();
+  const [needRefresh, setNeedRefresh] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
-    const onUpdate = (): void => setVisible(true);
-    window.addEventListener(EVENT, onUpdate);
-    return () => window.removeEventListener(EVENT, onUpdate);
+    const onRefresh = (): void => setNeedRefresh(true);
+    window.addEventListener("fm-sw-need-refresh", onRefresh);
+    return () => window.removeEventListener("fm-sw-need-refresh", onRefresh);
   }, []);
 
-  if (!visible) {
-    return null;
-  }
+  if (!needRefresh) return null;
 
   return (
     <div
-      className="fm-sync-banner"
       role="status"
       style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
+        padding: "0.5rem 0.75rem",
+        background: "var(--primary)",
+        color: "white",
         display: "flex",
-        alignItems: "center",
         justifyContent: "space-between",
-        gap: "0.75rem",
-        padding: "0.65rem 1rem",
-        background: "var(--color-surface-elevated, #1e293b)",
-        color: "#f8fafc",
-        borderTop: "1px solid rgba(255,255,255,0.12)",
+        alignItems: "center",
         fontSize: "var(--font-sm)",
+        zIndex: 50,
       }}
     >
-      <span>A new version is ready. Reload to update.</span>
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            dismissSwUpdateBannerForBuild(CLIENT_BUILD);
-            setVisible(false);
-          }}
-        >
-          Later
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          onClick={() => {
-            dismissSwUpdateBannerForBuild(CLIENT_BUILD);
-            void applyServiceWorkerUpdate?.(true);
-          }}
-        >
-          Reload
-        </Button>
-      </div>
+      <span>{tr("pwa.updateAvailable", locale) || "A new version of the app is available!"}</span>
+      <Button
+        type="button"
+        variant="secondary"
+        disabled={updating}
+        onClick={() => {
+          setUpdating(true);
+          void drainOutbox().finally(() => {
+            if (applyServiceWorkerUpdate) {
+              void applyServiceWorkerUpdate(true);
+            } else {
+              window.location.reload();
+            }
+          });
+        }}
+      >
+        {updating ? (tr("pwa.updating", locale) || "Updating...") : (tr("pwa.updateNow", locale) || "Update Now")}
+      </Button>
     </div>
   );
 }

@@ -4,9 +4,9 @@
 
 import type { AppProfileResponse, AppProfileUpdateRequest } from "../api/types";
 import type { OutboxRow } from "./db";
-import { listOutboxOrdered } from "./outbox";
+import { listOutboxOrdered, parseOutboxBody } from "./outbox";
 
-const PROFILE_PATH = /^\/finance\/appprofile\/?$/;
+const PROFILE_PATH = /^\/finance\/profile\/?$/;
 
 function normPath(url: string): string {
   const p = url.split("?")[0];
@@ -25,16 +25,18 @@ export function mergeProfileOutboxFifo(base: AppProfileResponse, rows: OutboxRow
     if (!PROFILE_PATH.test(normPath(row.url))) {
       continue;
     }
-    if (!row.body || typeof row.body !== "object") {
+    const parsedBody = parseOutboxBody(row.body);
+    if (!parsedBody || typeof parsedBody !== "object") {
       continue;
     }
-    const p = row.body as AppProfileUpdateRequest;
+    const p = parsedBody as AppProfileUpdateRequest;
     next = {
       ...next,
       ...(p.spend_accounts !== undefined ? { spend_accounts: [...p.spend_accounts] } : {}),
       ...(p.base_currency !== undefined ? { base_currency: String(p.base_currency).trim().toUpperCase() } : {}),
       ...(p.timezone !== undefined ? { timezone: String(p.timezone) } : {}),
       ...(p.start_week !== undefined ? { start_of_week: Number(p.start_week) } : {}),
+      ...(p.completed_tours !== undefined ? { completed_tours: [...p.completed_tours] } : {}),
     };
   }
   return next;

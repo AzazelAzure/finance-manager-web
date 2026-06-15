@@ -9,6 +9,18 @@ function normPathForOutbox(url: string): string {
   return p.endsWith("/") || p.length === 0 ? p : `${p}/`;
 }
 
+export function parseOutboxBody(body: unknown): unknown {
+  if (typeof body === "string") {
+    try {
+      return JSON.parse(body);
+    } catch {
+      return body;
+    }
+  }
+  return body;
+}
+
+
 function randomIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -104,7 +116,7 @@ export async function updateQueuedTransactionPostBody(
     return false;
   }
   const bi = ident.bodyIndex;
-  const body = row.body;
+  const body = parseOutboxBody(row.body);
   if (Array.isArray(body)) {
     if (bi < 0 || bi >= body.length) {
       return false;
@@ -122,6 +134,48 @@ export async function updateQueuedTransactionPostBody(
     await offlineDb.outbox.update(row.id, {
       body: mergeCreateBodyWithPatch(body as TransactionCreateRequest, patch),
     });
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Delete the queued POST /finance/transactions/ body for a synthetic `pending:*` tx id
+ * (Dexie outbox row update or deletion).
+ */
+export async function deleteQueuedTransactionPost(txId: string): Promise<boolean> {
+  const ident = parsePendingTransactionIdentity(txId);
+  if (!ident) {
+    return false;
+  }
+  const rows = await offlineDb.outbox.orderBy("id").toArray();
+  const row = rows.find(
+    (r) =>
+      r.idempotencyKey === ident.idempotencyKey &&
+      r.method.toUpperCase() === "POST" &&
+      TX_LIST_PATH.test(normPathForOutbox(r.url)),
+  );
+  if (row?.id === undefined) {
+    return false;
+  }
+  const bi = ident.bodyIndex;
+  const body = parseOutboxBody(row.body);
+  if (Array.isArray(body)) {
+    if (bi < 0 || bi >= body.length) {
+      return false;
+    }
+    const next = [...body];
+    next.splice(bi, 1);
+    if (next.length === 0) {
+      await offlineDb.outbox.delete(row.id);
+    } else {
+      await offlineDb.outbox.update(row.id, { body: JSON.stringify(next) });
+    }
+    return true;
+  }
+  if (body && typeof body === "object") {
+    // Single item payload. Deleting it means the whole POST should be aborted.
+    await offlineDb.outbox.delete(row.id);
     return true;
   }
   return false;

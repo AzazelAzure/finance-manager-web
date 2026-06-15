@@ -120,6 +120,10 @@ export async function drainOutbox(): Promise<void> {
           emitSyncState({ phase: "error", detail: "Upgrade required — sync paused." });
           return;
         }
+        if (isAxiosError(err) && err.response && err.response.status >= 400 && err.response.status < 500) {
+          emitSyncState({ phase: "error", detail: "Transaction failed. Please fix it." });
+          return;
+        }
         wantsRetryAfterReachableError = true;
         emitSyncState({
           phase: "error",
@@ -131,15 +135,15 @@ export async function drainOutbox(): Promise<void> {
     emitSyncState({ phase: "syncing", detail: "Refreshing data from the server…" });
     try {
       requestPwaReadBypassAfterMutation();
-      await queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
-      await queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "all" });
-      await queryClient.invalidateQueries({ queryKey: ["sources", "all"], refetchType: "all" });
-      await queryClient.invalidateQueries({ queryKey: ["app-profile"], refetchType: "all" });
-      await queryClient.invalidateQueries({ queryKey: ["tags", "all"], refetchType: "all" });
-      await queryClient.invalidateQueries({ queryKey: ["categories", "all"], refetchType: "all" });
-      await queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"], refetchType: "all" });
-      await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"], refetchType: "all" });
-      await queryClient.invalidateQueries({ queryKey: ["transactions-viz"], refetchType: "all" });
+      await queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      await queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
+      await queryClient.invalidateQueries({ queryKey: ["app-profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["tags", "all"] });
+      await queryClient.invalidateQueries({ queryKey: ["categories", "all"] });
+      await queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"] });
+      await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"] });
+      await queryClient.invalidateQueries({ queryKey: ["transactions-viz"] });
       await queryClient.refetchQueries({ type: "active" });
       void syncMinimalExchangeRates(true);
     } catch {

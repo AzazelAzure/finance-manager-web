@@ -14,7 +14,6 @@ import { tr, useLocale } from "../lib/i18n";
 import { setSession } from "../state/auth";
 import {
   clearOnboardingProgress,
-  isForceOnboardingNextLoginSet,
   markForceOnboardingNextLogin,
 } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
@@ -51,7 +50,7 @@ export function SignupPage(): ReactNode {
   if (isAuthenticated) {
     // Session updates synchronously via useSyncExternalStore; force flag is set before
     // setSession during signup success (see onValid).
-    const next = isForceOnboardingNextLoginSet() ? "/app/onboarding" : "/app/dashboard";
+    const next = "/app/dashboard";
     return <Navigate to={next} replace />;
   }
 

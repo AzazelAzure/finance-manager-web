@@ -1,4 +1,4 @@
-import { useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -12,6 +12,9 @@ import { ChartFrame } from "../../components/dashboard/ChartFrame";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { tr, useLocale } from "../../lib/i18n";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
+import { useTour } from "../../components/tours/TourProvider";
+import { CALENDAR_TOUR_ID, buildCalendarSteps } from "../../components/tours/CalendarTourSteps";
+import { Button } from "../../components/ui/Button";
 
 function formatLocalIso(date: Date): string {
   const y = date.getFullYear();
@@ -91,6 +94,11 @@ export function CalendarPage(): ReactNode {
   const [displayCurrencyMode, setDisplayCurrencyMode] = useState<"base" | "original">("base");
   const [heatMetricMode, setHeatMetricMode] = useState<"net" | "expense_only" | "count">("net");
   const [selectedDay, setSelectedDay] = useState<string>("");
+  const { startTour } = useTour();
+
+  useEffect(() => {
+    startTour(CALENDAR_TOUR_ID, buildCalendarSteps(locale));
+  }, [startTour, locale]);
 
   const query = useQuery({
     queryKey: ["transactions-calendar", startDate, endDate, displayCurrencyMode, heatMetricMode] as const,
@@ -255,16 +263,22 @@ export function CalendarPage(): ReactNode {
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
           {tr("txCalendar.title", locale)}
         </h2>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div id="cal-nav-links" style={{ display: "flex", gap: 8 }}>
           <Link to="/app/transactions" className="ui-btn ui-btn--secondary">
             {tr("txCalendar.ledger", locale)}
           </Link>
           <Link to="/app/transactions/deep-dive" className="ui-btn ui-btn--secondary">
             {tr("txCalendar.deepDive", locale)}
           </Link>
+          <Button variant="secondary" onClick={() => {
+            startTour(`cal_replay_${Date.now()}`, buildCalendarSteps(locale));
+          }}>
+            {tr('tour.replayTour', locale)}
+          </Button>
         </div>
       </div>
 
+      <div id="cal-filters">
       <Card>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
           <label className="ui-field">
@@ -292,12 +306,14 @@ export function CalendarPage(): ReactNode {
           </label>
         </div>
       </Card>
+      </div>
 
       {query.isLoading ? <LoadingState label={tr("txCalendar.loading", locale)} /> : null}
       {query.isError ? <ErrorState title={tr("txCalendar.loadFailed", locale)} onRetry={() => void query.refetch()} /> : null}
 
       {query.data ? (
         <>
+          <div id="cal-daily-chart">
           <ChartFrame
             title={tr("txCalendar.dailyActivity", locale)}
             ariaLabel={tr("txCalendar.dailyActivityAria", locale)}
@@ -323,7 +339,9 @@ export function CalendarPage(): ReactNode {
               </ResponsiveContainer>
             </div>
           </ChartFrame>
+          </div>
 
+          <div id="cal-month-grid">
           <Card>
             <div className="row-between" style={{ marginBottom: "0.75rem" }}>
               <h3 className="muted" style={{ margin: 0 }}>
@@ -399,7 +417,9 @@ export function CalendarPage(): ReactNode {
               })}
             </div>
           </Card>
+          </div>
 
+          <div id="cal-day-detail">
           <Card>
             <h3 className="muted" style={{ margin: "0 0 0.5rem" }}>
               Day detail {selectedDayResolved ? `(${selectedDayResolved})` : ""}
@@ -432,7 +452,9 @@ export function CalendarPage(): ReactNode {
               </p>
             )}
           </Card>
+          </div>
 
+          <div id="cal-monthly-totals">
           <ChartFrame
             title={tr("txCalendar.monthlyTotals", locale)}
             ariaLabel={tr("txCalendar.monthlyTotalsAria", locale)}
@@ -454,7 +476,9 @@ export function CalendarPage(): ReactNode {
               </ResponsiveContainer>
             </div>
           </ChartFrame>
+          </div>
 
+          <div id="cal-due-events">
           <Card>
             <h3 className="muted" style={{ margin: "0 0 0.5rem" }}>
               {tr("txCalendar.dueEvents", locale)}
@@ -471,7 +495,9 @@ export function CalendarPage(): ReactNode {
               emptyTitle={tr("txCalendar.noDueEvents", locale)}
             />
           </Card>
+          </div>
 
+          <div id="cal-day-drill">
           <Card>
             <h3 className="muted" style={{ margin: "0 0 0.5rem" }}>
               {tr("txCalendar.dayDrill", locale)} {selectedDay ? `(${selectedDay})` : ""}
@@ -489,6 +515,7 @@ export function CalendarPage(): ReactNode {
               emptyTitle={tr("txCalendar.noDayDrill", locale)}
             />
           </Card>
+          </div>
         </>
       ) : null}
     </div>

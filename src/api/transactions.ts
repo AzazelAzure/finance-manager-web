@@ -14,7 +14,12 @@ import { buildCalendarResponseFromTransactions } from "../offline/calendarOfflin
 import { loadCurrencyConverter } from "../offline/exchangeRates";
 import { buildVisualizationFromTransactions } from "../offline/visualizationOffline";
 import { replacePendingPostInTxListCaches } from "../offline/optimisticTxEnqueue";
-import { listOutboxOrdered, parsePendingTransactionIdentity, updateQueuedTransactionPostBody } from "../offline/outbox";
+import {
+  deleteQueuedTransactionPost,
+  listOutboxOrdered,
+  parsePendingTransactionIdentity,
+  updateQueuedTransactionPostBody,
+} from "../offline/outbox";
 import { findTransactionRecordById, applyTransactionOutboxToList } from "../offline/transactionOutboxOverlay";
 import { api } from "./client";
 import { listUpcomingExpenses } from "./upcomingExpenses";
@@ -44,15 +49,57 @@ export type TransactionFilters = {
   previous_week?: string;
 };
 
+export async function buildFallbackTxList(
+  filters: Record<string, string | undefined>,
+): Promise<TransactionRecord[]> {
+  const allCaches = await offlineDb.caches.filter((r) => r.id.startsWith("txlist:")).toArray();
+  const txMap = new Map<string, TransactionRecord>();
+  for (const cache of allCaches) {
+    if (Array.isArray(cache.payload)) {
+      for (const tx of cache.payload as TransactionRecord[]) {
+        if (tx && tx.tx_id) {
+          txMap.set(tx.tx_id, tx);
+        }
+      }
+    }
+  }
+  let merged = Array.from(txMap.values());
+  if (filters.start_date) {
+    merged = merged.filter((tx) => tx.date >= filters.start_date!);
+  }
+  if (filters.end_date) {
+    merged = merged.filter((tx) => tx.date <= filters.end_date!);
+  }
+  if (filters.tx_type) {
+    merged = merged.filter((tx) => tx.tx_type === filters.tx_type);
+  }
+  if (filters.category) {
+    merged = merged.filter((tx) => tx.category === filters.category);
+  }
+  if (filters.source) {
+    merged = merged.filter((tx) => tx.source === filters.source);
+  }
+  if (filters.currency_code) {
+    const want = filters.currency_code.trim().toUpperCase();
+    merged = merged.filter((tx) => (tx.currency || "").trim().toUpperCase() === want);
+  }
+  if (filters.tag_name) {
+    merged = merged.filter((tx) => (tx.tags ?? []).includes(filters.tag_name!));
+  }
+  merged.sort((a, b) => b.date.localeCompare(a.date));
+  return merged;
+}
+
 export async function listTransactions(
   filters: TransactionFilters = {},
   opts?: PwaReadBypassOpts,
 ): Promise<TransactionRecord[]> {
   const filterRecord = filters as Record<string, unknown>;
-  let rows: TransactionRecord[];
+  let rows: TransactionRecord[] | undefined;
+
   if (preferOfflineCaches()) {
     const cached = await readTxListCache(filterRecord);
-    rows = cached ? (cached as TransactionRecord[]) : [];
+    rows = cached ? (cached as TransactionRecord[]) : await buildFallbackTxList(filters as Record<string, string | undefined>);
   } else if (preferPwaLocalFirstReads() && !shouldBypassPwaDataCache(opts)) {
     const cacheId = txListCacheKey(filterRecord);
     const row = await offlineDb.caches.get(cacheId);
@@ -72,22 +119,39 @@ export async function listTransactions(
         });
       }
     } else {
+      if (!window.navigator.onLine) {
+        rows = await buildFallbackTxList(filters as Record<string, string | undefined>);
+      } else {
+        try {
+          const { data } = await api.get<TransactionRecord[] | TransactionsListResponse>("/finance/transactions/", {
+            params: filters,
+          });
+          const parsed = Array.isArray(data) ? data : (data.transactions ?? []);
+          rows = parsed;
+          void writeTxListCache(filterRecord, rows as unknown[], Date.now()).catch(() => undefined);
+        } catch (err) {
+          rows = await buildFallbackTxList(filters as Record<string, string | undefined>);
+        }
+      }
+    }
+  } else {
+    try {
       const { data } = await api.get<TransactionRecord[] | TransactionsListResponse>("/finance/transactions/", {
         params: filters,
       });
       const parsed = Array.isArray(data) ? data : (data.transactions ?? []);
       rows = parsed;
       void writeTxListCache(filterRecord, rows as unknown[], Date.now()).catch(() => undefined);
+    } catch (err) {
+      if (!window.navigator.onLine) {
+        rows = await buildFallbackTxList(filters as Record<string, string | undefined>);
+      } else {
+        throw err;
+      }
     }
-  } else {
-    const { data } = await api.get<TransactionRecord[] | TransactionsListResponse>("/finance/transactions/", {
-      params: filters,
-    });
-    const parsed = Array.isArray(data) ? data : (data.transactions ?? []);
-    rows = parsed;
-    void writeTxListCache(filterRecord, rows as unknown[], Date.now()).catch(() => undefined);
   }
-  return applyTransactionOutboxToList(rows, filterRecord);
+  
+  return applyTransactionOutboxToList(rows ?? [], filterRecord);
 }
 
 export async function getTransaction(txId: string): Promise<TransactionRecord> {
@@ -171,6 +235,28 @@ export async function deleteTransaction(
   txId: string,
   opts?: { echo?: TransactionRecord },
 ): Promise<TransactionMutationResult | OfflineQueuedResult> {
+  if (txId.startsWith("pending:")) {
+    const ok = await deleteQueuedTransactionPost(txId);
+    if (!ok) {
+      throw new Error("Could not delete queued transaction draft.");
+    }
+    const ident = parsePendingTransactionIdentity(txId);
+    if (ident) {
+      const row = (await listOutboxOrdered()).find(
+        (r) =>
+          r.idempotencyKey === ident.idempotencyKey &&
+          r.method.toUpperCase() === "POST" &&
+          /^\/finance\/transactions\/?$/.test(
+            (() => {
+              const p = r.url.split("?")[0];
+              return p.endsWith("/") || p.length === 0 ? p : `${p}/`;
+            })(),
+          ),
+      );
+      await replacePendingPostInTxListCaches(ident.idempotencyKey, row?.body);
+    }
+    return { offline_queued: true };
+  }
   const res = await api.request<TransactionMutationResult | OfflineQueuedResult>({
     method: "DELETE",
     url: `/finance/transactions/${encodeURIComponent(txId)}/`,

@@ -2,6 +2,8 @@ import { useState, type ReactNode } from "react";
 import { useSessionOptional } from "../state/SessionContext";
 import { Button } from "./ui/Button";
 
+import { isPwaStandaloneDisplay } from "../lib/pwaDisplay";
+
 const ACK = "fm_offline_history_disclaimer_ack";
 
 export function OfflineHistoryBanner(): ReactNode {
@@ -10,7 +12,7 @@ export function OfflineHistoryBanner(): ReactNode {
     () => typeof localStorage !== "undefined" && localStorage.getItem(ACK) === "1",
   );
 
-  if (!session?.isAuthenticated || dismissed) {
+  if (!session?.isAuthenticated || dismissed || !isPwaStandaloneDisplay()) {
     return null;
   }
 

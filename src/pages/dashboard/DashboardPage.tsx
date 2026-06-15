@@ -32,54 +32,8 @@ import { firstCurrency } from "./dashboardUtil";
 import { tr, useLocale } from "../../lib/i18n";
 import { preferOfflineCaches } from "../../offline/connectivity";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
-import { HelpCircle } from "lucide-react";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
-
-const DASHBOARD_LINEAR_TOUR_STEPS = [
-  {
-    target: "#tour-kpis",
-    title: "Period Summary",
-    content:
-      "Summary of your Income, Expenses, and Net Flow for the selected period. Green indicates a surplus, Red a deficit.",
-    disableBeacon: true,
-  },
-  {
-    target: "#tour-filters",
-    title: "Smart Filters",
-    content: "Filter data by date range, specific accounts, or categories. Click the Search icon to apply your changes.",
-  },
-  {
-    target: "#tour-quick-actions",
-    title: "Instant Logging",
-    content: "Record a new expense, income, or transfer in seconds. You can also pick from common bills here.",
-  },
-  {
-    target: "#tour-flow-chart",
-    title: "Income vs Expense Flow",
-    content:
-      "This bar chart shows your daily income vs expenses. Use it to identify days where you overspend or when your biggest income hits arrive.",
-  },
-  {
-    target: "#tour-spend-chart",
-    title: "Spending Velocity",
-    content: "The line chart tracks your cumulative spending throughout the month. It helps you predict if you will stay within budget.",
-  },
-  {
-    target: "#tour-category-chart",
-    title: "Expense Breakdown",
-    content: "Visualize which categories consume most of your budget. Click any slice to see the exact transactions.",
-  },
-  {
-    target: "#tour-tag-chart",
-    title: "Spending by Tag",
-    content: "Tags help you group transactions across categories (e.g., #vacation). This pie shows your tagged spending distribution.",
-  },
-  {
-    target: "#tour-source-balances",
-    title: "Account Balances",
-    content: "Check the real-time balance of all your connected sources (Bank, Gcash, Cash, etc.) in one place.",
-  },
-] as const;
+import { WelcomeTourModal, buildWelcomeSteps } from "../../components/tours/WelcomeTourModal";
 
 function balanceCurrency(data: SnapshotResponse | undefined, profile: { base_currency: string } | undefined): string {
   if (profile?.base_currency) {
@@ -112,7 +66,7 @@ export function DashboardPage(): ReactNode {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const nav = useNavigate();
-  const { startTour, isTourCompleted } = useTour();
+  const { startTour } = useTour();
   const searchString = searchParams.toString();
   const appliedKey = useMemo(
     () => appliedSnapshotKey(new URLSearchParams(searchString)),
@@ -272,10 +226,11 @@ export function DashboardPage(): ReactNode {
     );
   }
 
-
+  // Welcome tour is now handled by WelcomeTourModal (modal gate + Joyride)
 
   return (
     <div className="stack dashboard-page">
+      <WelcomeTourModal dataReady={!!data} />
       <div className="dashboard-header">
         <div>
           <h2 className="muted dashboard-title">
@@ -297,6 +252,16 @@ export function DashboardPage(): ReactNode {
             <span className="sr-only">Start guide</span>
           </Button>
           <Button type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
+            {tr("dashboard.refresh", locale)}
+          </Button>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button id="tour-replay-btn" type="button" variant="secondary" onClick={() => {
+            startTour(`welcome_replay_${Date.now()}`, buildWelcomeSteps(locale));
+          }}>
+            {tr('tour.replayTour', locale)}
+          </Button>
+          <Button id="tour-refresh-btn" type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
             {tr("dashboard.refresh", locale)}
           </Button>
         </div>
@@ -341,8 +306,8 @@ export function DashboardPage(): ReactNode {
 
       <div className="dashboard-root">
         <div className="dashboard-root__row">
-          <div className="dashboard-root__main dashboard-col">
-            <HelpModeWrapper id="tour-flow-chart" title="Income vs Expense Flow" content="Visualize your daily cash flow.">
+          <HelpModeWrapper id="tour-charts" className="dashboard-root__main dashboard-col" title="Charts" content="Chart slices drill to detailed transactions.">
+            <div id="tour-flow-chart">
               <FlowChart
                 data={data.flow_series}
                 baseCurrency={currency}
@@ -350,8 +315,8 @@ export function DashboardPage(): ReactNode {
                 isError={isError}
                 onRetry={() => void refetchSnapshotForced()}
               />
-            </HelpModeWrapper>
-            <HelpModeWrapper id="tour-spend-chart" title="Spending Velocity" content="Track your cumulative spending vs budget.">
+            </div>
+            <div id="tour-spend-chart">
               <SpendChart
                 dailySpend={data.daily_spend}
                 dailyIncome={data.daily_income}
@@ -360,8 +325,8 @@ export function DashboardPage(): ReactNode {
                 isError={isError}
                 onRetry={() => void refetchSnapshotForced()}
               />
-            </HelpModeWrapper>
-            <HelpModeWrapper id="tour-category-chart" title="Expense Breakdown" content="See where your money goes by category.">
+            </div>
+            <div id="tour-category-pie">
               <CategoryPie
                 expenseByCategory={data.expense_by_category}
                 baseCurrency={currency}
@@ -370,8 +335,8 @@ export function DashboardPage(): ReactNode {
                 onRetry={() => void refetchSnapshotForced()}
                 onSelectCategory={onDrillCategory}
               />
-            </HelpModeWrapper>
-            <HelpModeWrapper id="tour-tag-chart" title="Spending by Tag" content="Distribution of tagged transactions.">
+            </div>
+            <div id="tour-tag-pie">
               <TagPie
                 transactions={txRows}
                 baseCurrency={currency}
@@ -380,16 +345,20 @@ export function DashboardPage(): ReactNode {
                 onRetry={() => void refetchSnapshotForced()}
                 onSelectTag={onDrillTag}
               />
-            </HelpModeWrapper>
-          </div>
+            </div>
+          </HelpModeWrapper>
           <aside className="dashboard-root__side dashboard-col">
-            <HelpModeWrapper id="tour-source-balances" title="Account Balances" content="Real-time wealth distribution across sources.">
+            <div id="tour-source-balances">
               <SourceBalances rows={data.source_balances} />
-            </HelpModeWrapper>
-            <ProfileOverview profile={profileQuery.data} isError={profileQuery.isError} />
+            </div>
+            <div id="tour-profile-overview">
+              <ProfileOverview profile={profileQuery.data} isError={profileQuery.isError} />
+            </div>
           </aside>
         </div>
-        <RecentTransactions rows={txRows} baseCurrency={currency} />
+        <div id="tour-recent-tx">
+          <RecentTransactions rows={txRows} baseCurrency={currency} />
+        </div>
       </div>
     </div>
   );

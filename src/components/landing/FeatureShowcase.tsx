@@ -46,14 +46,11 @@ export function FeatureShowcase(): ReactNode {
             <span>Spend -2,180</span>
             <span>Safe to spend 890</span>
           </div>
-          <div className="showcase-preview__bars" aria-hidden>
-            <i style={{ height: "65%" }} />
-            <i style={{ height: "42%" }} />
-            <i style={{ height: "76%" }} />
-            <i style={{ height: "38%" }} />
-            <i style={{ height: "58%" }} />
-            <i style={{ height: "49%" }} />
-          </div>
+          <ul className="showcase-preview__rows" aria-hidden>
+            <li><b>Checking</b><em>2,540.00 USD</em></li>
+            <li><b>Credit Card</b><em>-450.00 USD</em></li>
+            <li><b>Savings</b><em>6,200.00 USD</em></li>
+          </ul>
         </div>
       );
     }

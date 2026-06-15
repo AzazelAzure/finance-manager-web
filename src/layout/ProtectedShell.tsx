@@ -18,6 +18,7 @@ import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
 import { discardOutboxAndClear, drainOutbox } from "../offline/drain";
 import { outboxDepth } from "../offline/outbox";
+import { SyncIndicator } from "../components/SyncIndicator";
 
 const PRIMARY_NAV: Array<{
   to: string;
@@ -116,7 +117,7 @@ export function ProtectedShell(): ReactNode {
     <div className="protected-root">
       <aside className="protected-sidebar" aria-label="Main navigation (desktop)">
         <div className="protected-brand" aria-hidden>
-          <span className="protected-brand__mark" />
+          <img src="/favicon.png" alt="" className="protected-brand__mark" />
           <span className="protected-brand__text">Hive</span>
         </div>
         <div className="protected-side-nav">
@@ -150,6 +151,7 @@ export function ProtectedShell(): ReactNode {
             <span className="protected-sticky-top__subtitle">{tr("shell.subtitle", locale)}</span>
           </div>
           <div className="protected-header-actions">
+            <SyncIndicator />
             <button
               type="button"
               className="protected-locale-chip"
