@@ -6,6 +6,12 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- **F-007 guided tours (R03):** Modal **form** tours (**Quick Add**, **Transactions**, **Upcoming**) no longer rely on a fixed **`setTimeout`** before **`Joyride`** runs. **`TourProvider`** polls for the **first step’s DOM target** (via **`requestAnimationFrame`**, **2s** cap) and cancels polling on **unmount** or a new **`startTour`**. **Transfer** editor exposes **`#tx-xfer-date`** so the transfer tour’s first step matches the form (date was required for save but missing from the UI).
+
+- **F-007 guided tours (R05+R01):** **`startTour`** in **`TourProvider`** is a no-op when a tour id is already in **`completed_tours`**, unless **`force`** is true (manual replay / reset flows). Dashboard and Transactions **auto-start** effects also guard on **`isTourCompleted`** so linear tours do not re-fire on every visit after completion.
+
+- **Mobile onboarding/account-creation input UX + source acc type safety:** account creation now autofocuses the username field without keeping it read-only at first paint, so mobile reliably opens the keyboard. Onboarding steps now autofocus their primary text field per step. Data Hub source create/edit now uses a strict account-type dropdown aligned with API-accepted values (`CHECKING`, `SAVINGS`, `CASH`, `EWALLET`, `INVESTMENT`) instead of free-text entry.
+
 - **Docker / `vite build`:** removed unused **`mergedTransactionMap`** helper in **`transactionOutboxOverlay.ts`** so **`tsc -b`** passes with **`noUnusedLocals`** (production image build was failing on VPS).
 
 - **Landing Page UX & SEO Overhaul (F-011 / S1.B):** Completely refreshed the public landing page. Added Glassmorphism styling, CSS view-timeline scroll animations, and complex mesh gradients (`--hero-glow`). The hero now features a realistic CSS-driven app mockup instead of flat placeholder elements. Replaced generic feature descriptions with S1.B specific upcoming capabilities (Predictive Budgeting, Pay Cycles, Family Ledger). Converted the roadmap into an interactive timeline view, added a Version History component to highlight recent updates, and integrated `react-helmet-async` for robust SEO meta tag management.

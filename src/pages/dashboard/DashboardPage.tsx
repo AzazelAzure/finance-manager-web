@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery, useQueryClient, type QueryFunctionContext } from "@tanstack/react-query";
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useMemo, useEffect, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getAppProfile } from "../../api/profile";
 import { fetchAppSnapshot } from "../../api/snapshot";
@@ -150,6 +150,17 @@ export function DashboardPage(): ReactNode {
     return Array.from(ccy);
   }, [sourceQuery.data, profileQuery.data, currency]);
 
+  // Trigger linear tour when data is loaded (first visit only)
+  useEffect(() => {
+    if (!data || isTourCompleted("dashboard_linear_tour")) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      startTour("dashboard_linear_tour", [...DASHBOARD_LINEAR_TOUR_STEPS] as any);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [data, isTourCompleted, startTour]);
+
   const onDrillCategory = useCallback(
     (name: string) => {
       const q = appendDrill(searchParams, { category: name });
@@ -225,9 +236,24 @@ export function DashboardPage(): ReactNode {
           <h2 className="muted dashboard-title">
             {tr("dashboard.title", locale)}
           </h2>
-          <p className="muted-text dashboard-subtitle">
+          <h2 className="muted-text dashboard-subtitle">
             {tr("dashboard.subtitle", locale)}
-          </p>
+          </h2>
+        </div>
+        <div className="dashboard-header__actions" style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label="Start guide"
+            title="Start guide"
+            onClick={() => startTour("dashboard_linear_tour", [...DASHBOARD_LINEAR_TOUR_STEPS] as any, true)}
+          >
+            <HelpCircle size={18} aria-hidden />
+            <span className="sr-only">Start guide</span>
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
+            {tr("dashboard.refresh", locale)}
+          </Button>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button id="tour-replay-btn" type="button" variant="secondary" onClick={() => {

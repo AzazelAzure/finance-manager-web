@@ -7,6 +7,7 @@ type Props = {
   label: string;
   type?: "text" | "password" | "email" | "search" | "url";
   autoComplete?: string;
+  autoFocus?: boolean;
   id?: string;
   /**
    * Starts `readOnly` and clears on first focus. Helps prevent aggressive
@@ -20,6 +21,7 @@ export function TextField({
   label,
   type = "text",
   autoComplete,
+  autoFocus = false,
   id: idProp,
   unlockOnFocus = false,
 }: Props): ReactNode {
@@ -27,7 +29,7 @@ export function TextField({
     register,
     formState: { errors },
   } = useFormContext();
-  const [locked, setLocked] = useState(unlockOnFocus);
+  const [locked, setLocked] = useState(unlockOnFocus && !autoFocus);
   const err = errors[name];
   const message = err?.message;
   const id = idProp ?? name;
@@ -42,6 +44,7 @@ export function TextField({
         id={id}
         type={type}
         autoComplete={autoComplete}
+        autoFocus={autoFocus}
         aria-invalid={message ? "true" : "false"}
         aria-describedby={message ? `${id}-err` : undefined}
         {...reg}

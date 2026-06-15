@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useTour } from "../../components/tours/TourProvider";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Link } from "react-router-dom";
@@ -22,6 +23,20 @@ import { formatMoney } from "../../lib/money";
 import { useBreakpoint } from "../../lib/breakpoints";
 import { tr, useLocale } from "../../lib/i18n";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
+
+const UPCOMING_EXPENSES_TOUR_STEPS = [
+  {
+    target: "#upcoming-list",
+    title: "Upcoming Obligations",
+    content: "Upcoming Obligations — View your upcoming bills and scheduled transfers here.",
+    disableBeacon: true,
+  },
+  {
+    target: "#upcoming-add",
+    title: "Schedule New",
+    content: "Schedule New — Add a future expense or recurring bill.",
+  },
+] as const;
 
 type RecurringFilter = "both" | "yes" | "no";
 type PaidFilter = "both" | "yes" | "no";
@@ -113,6 +128,7 @@ export function UpcomingExpensesPage(): ReactNode {
   const [recurring, setRecurring] = useState<RecurringFilter>("both");
   const [paid, setPaid] = useState<PaidFilter>("both");
   const [dateQuick, setDateQuick] = useState<DateQuickFilter>("all");
+  const { startTour, isTourCompleted } = useTour();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingName, setEditingName] = useState<string | null>(null);
   const [draft, setDraft] = useState<UpcomingDraft>(() => emptyUpcomingDraft("USD"));
@@ -147,14 +163,6 @@ export function UpcomingExpensesPage(): ReactNode {
     return [...set].sort();
   }, [baseCurrency, sourcesQuery.data]);
   const currencyOptions = sourceCurrencyOptions.length > 0 ? sourceCurrencyOptions : [baseCurrency];
-  const draftCurrency = draft.currency.trim().toUpperCase();
-  const currencySelectOptions = useMemo(() => {
-    const set = new Set(currencyOptions);
-    if (draftCurrency.length === 3) {
-      set.add(draftCurrency);
-    }
-    return [...set].sort();
-  }, [currencyOptions, draftCurrency]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -305,13 +313,38 @@ export function UpcomingExpensesPage(): ReactNode {
     invalidAmount ||
     invalidWindow;
 
+  useEffect(() => {
+    if (!upcomingQuery.isSuccess) {
+      return;
+    }
+    if (isTourCompleted("upcoming_expenses_tour")) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      startTour("upcoming_expenses_tour", [...UPCOMING_EXPENSES_TOUR_STEPS] as any);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [upcomingQuery.isSuccess, isTourCompleted, startTour]);
+
   return (
     <div className="stack">
       <div className="app-toolbar app-surface">
-        <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-          {tr("upcoming.title", locale)}
-        </h2>
-        <div className="app-toolbar__actions">
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
+            {tr("upcoming.title", locale)}
+          </h2>
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label="Start guide"
+            title="Start guide"
+            onClick={() => startTour("upcoming_expenses_tour", [...UPCOMING_EXPENSES_TOUR_STEPS] as any, true)}
+          >
+            <HelpCircle size={18} aria-hidden />
+            <span className="sr-only">Start guide</span>
+          </Button>
+        </div>
+        <div className="app-toolbar__actions" id="upcoming-add">
           <Link className="ui-btn ui-btn--secondary" to="/app/upcoming-expenses/deep-dive">
             {tr("txCalendar.deepDive", locale)}
           </Link>
@@ -358,94 +391,97 @@ export function UpcomingExpensesPage(): ReactNode {
         </div>
       </Card>
 
-      {upcomingQuery.isError ? (
-        <ErrorState title={tr("upcoming.failedLoad", locale)} onRetry={() => void upcomingQuery.refetch()} />
-      ) : upcomingQuery.isLoading && !upcomingQuery.data ? (
-        <LoadingState label={tr("upcoming.loading", locale)} />
-      ) : atOrAboveMd ? (
-        <Card>
-          <DataTable columns={columns} data={filteredRows} keyField="name" emptyTitle={tr("upcoming.empty", locale)} />
-        </Card>
-      ) : (
-        <div className="stack">
-          {filteredRows.length === 0 ? (
-            <Card>
-              <p className="muted-text" style={{ margin: 0 }}>
-                {tr("upcoming.empty", locale)}
-              </p>
-            </Card>
-          ) : (
-            filteredRows.map((row) => {
-              const isConfirm = Boolean(pendingDelete[row.name]);
-              return (
-                <Card key={row.name}>
-                  <div className="stack" style={{ gap: 8 }}>
-                    <div className="row-between">
-                      <strong>{row.name}</strong>
-                      <span>{formatMoney(row.amount, row.currency)}</span>
+      <div id="upcoming-list">
+        {upcomingQuery.isError ? (
+          <ErrorState title={tr("upcoming.failedLoad", locale)} onRetry={() => void upcomingQuery.refetch()} />
+        ) : upcomingQuery.isLoading && !upcomingQuery.data ? (
+          <LoadingState label={tr("upcoming.loading", locale)} />
+        ) : atOrAboveMd ? (
+          <Card>
+            <DataTable columns={columns} data={filteredRows} keyField="name" emptyTitle={tr("upcoming.empty", locale)} />
+          </Card>
+        ) : (
+          <div className="stack">
+            {filteredRows.length === 0 ? (
+              <Card>
+                <p className="muted-text" style={{ margin: 0 }}>
+                  {tr("upcoming.empty", locale)}
+                </p>
+              </Card>
+            ) : (
+              filteredRows.map((row) => {
+                const isConfirm = Boolean(pendingDelete[row.name]);
+                return (
+                  <Card key={row.name}>
+                    <div className="stack" style={{ gap: 8 }}>
+                      <div className="row-between">
+                        <strong>{row.name}</strong>
+                        <span>{formatMoney(row.amount, row.currency)}</span>
+                      </div>
+                      <div className="row-between">
+                        <span className="muted-text">{tr("upcoming.due", locale)} {row.due_date}</span>
+                        <span className="tx-badge">{row.paid_flag ? tr("common.paid", locale) : tr("common.unpaid", locale)}</span>
+                      </div>
+                      <div className="row-between">
+                        <span className="tx-badge">{row.recurring_flag ? tr("upcoming.recurring", locale) : tr("upcoming.oneTime", locale)}</span>
+                        <span className="muted-text">{row.source || tr("upcoming.noSource", locale)}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          type="button"
+                          className="ui-btn ui-btn--secondary"
+                          onClick={() => {
+                            setEditingName(row.name);
+                            const cur = String(row.currency ?? "")
+                              .trim()
+                              .toUpperCase();
+                            setDraft({
+                              name: row.name,
+                              amount: String(row.amount),
+                              currency: cur.length === 3 ? cur : baseCurrency,
+                              due_date: row.due_date,
+                              source: row.source || "",
+                              paid_flag: row.paid_flag,
+                              recurring_flag: row.recurring_flag,
+                              use_start_end: Boolean(row.start_date || row.end_date),
+                              start_date: row.start_date || "",
+                              end_date: row.end_date || "",
+                            });
+                            setEditorError("");
+                            setEditorOpen(true);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="ui-btn ui-btn--ghost"
+                          onClick={() => {
+                            if (!isConfirm) {
+                              setPendingDelete((prev) => ({ ...prev, [row.name]: true }));
+                              return;
+                            }
+                            deleteMutation.mutate(row.name);
+                          }}
+                        >
+                          {isConfirm ? "Confirm delete?" : "Delete"}
+                        </button>
+                      </div>
                     </div>
-                    <div className="row-between">
-                      <span className="muted-text">{tr("upcoming.due", locale)} {row.due_date}</span>
-                      <span className="tx-badge">{row.paid_flag ? tr("common.paid", locale) : tr("common.unpaid", locale)}</span>
-                    </div>
-                    <div className="row-between">
-                      <span className="tx-badge">{row.recurring_flag ? tr("upcoming.recurring", locale) : tr("upcoming.oneTime", locale)}</span>
-                      <span className="muted-text">{row.source || tr("upcoming.noSource", locale)}</span>
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        type="button"
-                        className="ui-btn ui-btn--secondary"
-                        onClick={() => {
-                          setEditingName(row.name);
-                          const cur = String(row.currency ?? "")
-                            .trim()
-                            .toUpperCase();
-                          setDraft({
-                            name: row.name,
-                            amount: String(row.amount),
-                            currency: cur.length === 3 ? cur : baseCurrency,
-                            due_date: row.due_date,
-                            source: row.source || "",
-                            paid_flag: row.paid_flag,
-                            recurring_flag: row.recurring_flag,
-                            use_start_end: Boolean(row.start_date || row.end_date),
-                            start_date: row.start_date || "",
-                            end_date: row.end_date || "",
-                          });
-                          setEditorError("");
-                          setEditorOpen(true);
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="ui-btn ui-btn--ghost"
-                        onClick={() => {
-                          if (!isConfirm) {
-                            setPendingDelete((prev) => ({ ...prev, [row.name]: true }));
-                            return;
-                          }
-                          deleteMutation.mutate(row.name);
-                        }}
-                      >
-                        {isConfirm ? "Confirm delete?" : "Delete"}
-                      </button>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })
-          )}
-        </div>
-      )}
+                  </Card>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
 
       <Modal
         open={editorOpen}
         onClose={() => {
           setEditorOpen(false);
           setEditorError("");
+          setShowFormHelp(false);
         }}
         title={editingName ? tr("upcoming.editExpense", locale) : tr("upcoming.addExpense", locale)}
       >
@@ -483,36 +519,27 @@ export function UpcomingExpensesPage(): ReactNode {
               </p>
             </div>
           ) : null}
-          <label className="ui-field">
-            <span className="ui-label">Name</span>
+          <label className="ui-field" id="bill-form-name">
+            <span className="ui-label">{tr("upcoming.editor.label.name", locale)}</span>
             <input className="ui-input" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
           </label>
-          <label className="ui-field">
-            <span className="ui-label">Amount</span>
+          <label className="ui-field" id="bill-form-amount">
+            <span className="ui-label">{tr("upcoming.editor.label.amount", locale)}</span>
             <input className="ui-input" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} />
           </label>
           <label className="ui-field">
-            <span className="ui-label">Currency</span>
-            <select
-              className="ui-input"
-              value={currencySelectOptions.includes(draftCurrency) ? draftCurrency : currencySelectOptions[0] ?? baseCurrency}
-              onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}
-            >
-              {currencySelectOptions.map((curr) => (
-                <option key={curr} value={curr}>
+            <span className="ui-label">{tr("upcoming.editor.label.currency", locale)}</span>
+            <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
+              {currencyOptions.map((curr) => (
+                <option key={`bill-curr-${curr}`} value={curr}>
                   {curr}
                 </option>
               ))}
             </select>
           </label>
-          <label className="ui-field">
-            <span className="ui-label">Due date</span>
-            <input
-              type="date"
-              className="ui-input"
-              value={draft.due_date}
-              onChange={(e) => setDraft((d) => ({ ...d, due_date: e.target.value }))}
-            />
+          <label className="ui-field" id="bill-form-date">
+            <span className="ui-label">{tr("upcoming.editor.label.dueDate", locale)}</span>
+            <input className="ui-input" type="date" value={draft.due_date} onChange={(e) => setDraft((d) => ({ ...d, due_date: e.target.value }))} />
           </label>
           <label className="ui-field">
             <span className="ui-label">Source (optional)</span>
