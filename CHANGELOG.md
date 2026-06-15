@@ -6,6 +6,8 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- **PWA Profile Outbox Overlay:** Corrected URL regex from `/^\/finance\/profile\/?$/` to `/^\/finance\/appprofile\/?$/` to match the actual Django API routing, ensuring profile settings saved while offline merge correctly into local-first reads.
+
 - **F-007 guided tours (R03):** Modal **form** tours (**Quick Add**, **Transactions**, **Upcoming**) no longer rely on a fixed **`setTimeout`** before **`Joyride`** runs. **`TourProvider`** polls for the **first step’s DOM target** (via **`requestAnimationFrame`**, **2s** cap) and cancels polling on **unmount** or a new **`startTour`**. **Transfer** editor exposes **`#tx-xfer-date`** so the transfer tour’s first step matches the form (date was required for save but missing from the UI).
 
 - **F-007 guided tours (R05+R01):** **`startTour`** in **`TourProvider`** is a no-op when a tour id is already in **`completed_tours`**, unless **`force`** is true (manual replay / reset flows). Dashboard and Transactions **auto-start** effects also guard on **`isTourCompleted`** so linear tours do not re-fire on every visit after completion.
