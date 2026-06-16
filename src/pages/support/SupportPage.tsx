@@ -177,7 +177,6 @@ export function SupportPage(): ReactNode {
                     />
                     <TextField name="nature" label={tr("support.natureLabel", locale)} />
                     <TextAreaField name="comment" label={tr("support.commentLabel", locale)} rows={5} />
-                    <TextField name="diagnostic_log_key" label="Diagnostic Log Key (Optional)" />
                     <Button type="submit" disabled={bugMutation.isPending}>
                       {bugMutation.isPending ? tr("support.submitting", locale) : tr("support.submit", locale)}
                     </Button>
