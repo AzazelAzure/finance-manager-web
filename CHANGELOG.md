@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- **Support Gating & Cleanup (F-012):** Removed the manual `diagnostic_log_key` input field from the bug report and feature request forms to prevent exposing internal keys to the end-user. Corrected gating message translations in both English and Tagalog to say "Feature requests are currently disabled." instead of account-specific wording.
 
 - **F-007 guided tours (R03):** Modal **form** tours (**Quick Add**, **Transactions**, **Upcoming**) no longer rely on a fixed **`setTimeout`** before **`Joyride`** runs. **`TourProvider`** polls for the **first step’s DOM target** (via **`requestAnimationFrame`**, **2s** cap) and cancels polling on **unmount** or a new **`startTour`**. **Transfer** editor exposes **`#tx-xfer-date`** so the transfer tour’s first step matches the form (date was required for save but missing from the UI).
 
