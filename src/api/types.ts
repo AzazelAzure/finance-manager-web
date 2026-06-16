@@ -52,6 +52,7 @@ export type AppProfileResponse = {
   timezone: string;
   start_of_week: number;
   completed_tours?: string[];
+  feature_requests_enabled?: boolean;
 };
 
 export type AppProfileUpdateRequest = {

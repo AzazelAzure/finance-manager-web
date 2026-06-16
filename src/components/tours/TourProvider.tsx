@@ -21,7 +21,7 @@ export function useHelpMode() {
 
 // Tour Context
 interface TourContextType {
-  startTour: (tourId: string, steps: Step[]) => void;
+  startTour: (tourId: string, steps: Step[], force?: boolean) => void;
   markTourCompleted: (tourId: string) => void;
   isTourCompleted: (tourId: string) => boolean;
 }
@@ -81,14 +81,14 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   }), [locale]);
 
   const startTour = useCallback(
-    (tourId: string, tourSteps: Step[]) => {
-      if (!isTourCompleted(tourId)) {
+    (tourId: string, tourSteps: Step[], force = false) => {
+      if (force || !isTourCompleted(tourId)) {
         setActiveTourId(tourId);
         setSteps(tourSteps.map((s) => ({ ...STEP_DEFAULTS, ...s })));
         setRun(true);
       }
     },
-    [isTourCompleted]
+    [isTourCompleted, STEP_DEFAULTS]
   );
 
   const handleJoyrideCallback = useCallback(

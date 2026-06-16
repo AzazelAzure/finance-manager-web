@@ -3,6 +3,7 @@ import {
   Calendar,
   Database,
   LayoutDashboard,
+  LifeBuoy,
   List,
   LogOut,
   User,
@@ -32,6 +33,7 @@ const PRIMARY_NAV: Array<{
   { to: "/app/upcoming-expenses", label: "Upcoming", icon: Wallet },
   { to: "/app/data", label: "Data", icon: Database },
   { to: "/app/settings/profile", label: "Profile", icon: User },
+  { to: "/app/support", label: "Support", icon: LifeBuoy },
 ];
 
 const TITLE: Record<string, string> = {
@@ -43,6 +45,7 @@ const TITLE: Record<string, string> = {
   "/app/upcoming-expenses/deep-dive": "shell.title.billsInsights",
   "/app/data": "shell.title.dataHub",
   "/app/settings/profile": "shell.title.settings",
+  "/app/support": "shell.title.support",
   "/app/onboarding": "shell.title.onboarding",
   "/app/onboarding/sources": "shell.title.onboarding",
   "/app/onboarding/categories": "shell.title.onboarding",

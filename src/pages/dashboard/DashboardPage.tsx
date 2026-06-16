@@ -34,6 +34,53 @@ import { preferOfflineCaches } from "../../offline/connectivity";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
 import { WelcomeTourModal, buildWelcomeSteps } from "../../components/tours/WelcomeTourModal";
+import { HelpCircle } from "lucide-react";
+
+const DASHBOARD_LINEAR_TOUR_STEPS = [
+  {
+    target: "#tour-kpis",
+    title: "Period Summary",
+    content:
+      "Summary of your Income, Expenses, and Net Flow for the selected period. Green indicates a surplus, Red a deficit.",
+    disableBeacon: true,
+  },
+  {
+    target: "#tour-filters",
+    title: "Smart Filters",
+    content: "Filter data by date range, specific accounts, or categories. Click the Search icon to apply your changes.",
+  },
+  {
+    target: "#tour-quick-actions",
+    title: "Instant Logging",
+    content: "Record a new expense, income, or transfer in seconds. You can also pick from common bills here.",
+  },
+  {
+    target: "#tour-flow-chart",
+    title: "Income vs Expense Flow",
+    content:
+      "This bar chart shows your daily income vs expenses. Use it to identify days where you overspend or when your biggest income hits arrive.",
+  },
+  {
+    target: "#tour-spend-chart",
+    title: "Spending Velocity",
+    content: "The line chart tracks your cumulative spending throughout the month. It helps you predict if you will stay within budget.",
+  },
+  {
+    target: "#tour-category-chart",
+    title: "Expense Breakdown",
+    content: "Visualize which categories consume most of your budget. Click any slice to see the exact transactions.",
+  },
+  {
+    target: "#tour-tag-chart",
+    title: "Spending by Tag",
+    content: "Tags help you group transactions across categories (e.g., #vacation). This pie shows your tagged spending distribution.",
+  },
+  {
+    target: "#tour-source-balances",
+    title: "Account Balances",
+    content: "Check the real-time balance of all your connected sources (Bank, Gcash, Cash, etc.) in one place.",
+  },
+] as const;
 
 function balanceCurrency(data: SnapshotResponse | undefined, profile: { base_currency: string } | undefined): string {
   if (profile?.base_currency) {
@@ -66,7 +113,7 @@ export function DashboardPage(): ReactNode {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const nav = useNavigate();
-  const { startTour } = useTour();
+  const { startTour, isTourCompleted } = useTour();
   const searchString = searchParams.toString();
   const appliedKey = useMemo(
     () => appliedSnapshotKey(new URLSearchParams(searchString)),
