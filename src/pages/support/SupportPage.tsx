@@ -60,14 +60,12 @@ export function SupportPage(): ReactNode {
         severity: z.enum(["LOW", "MEDIUM", "HIGH"]),
         nature: z.string().min(1, tr("support.natureRequired", locale)).max(150, tr("support.natureRequired", locale)),
         comment: z.string().min(10, tr("support.commentRequired", locale)),
-        diagnostic_log_key: z.string().optional(),
       })
     ),
     defaultValues: {
       severity: "MEDIUM" as const,
       nature: "",
       comment: "",
-      diagnostic_log_key: "",
     },
   });
 
@@ -85,13 +83,12 @@ export function SupportPage(): ReactNode {
   });
 
   const bugMutation = useMutation({
-    mutationFn: async (values: { severity: string; nature: string; comment: string; diagnostic_log_key?: string }) => {
+    mutationFn: async (values: { severity: string; nature: string; comment: string }) => {
       const payload = {
         report_type: "BUG",
         severity: values.severity,
         nature: values.nature,
         comment: values.comment,
-        diagnostic_log_key: values.diagnostic_log_key || undefined,
       };
       const res = await api.post("/finance/support/tickets/", payload);
       return res.data;
