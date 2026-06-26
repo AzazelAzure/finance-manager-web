@@ -6,7 +6,7 @@ import type { AppProfileResponse, AppProfileUpdateRequest } from "../api/types";
 import type { OutboxRow } from "./db";
 import { listOutboxOrdered, parseOutboxBody } from "./outbox";
 
-const PROFILE_PATH = /^\/finance\/profile\/?$/;
+const PROFILE_PATH = /^\/finance\/appprofile\/?$/;
 
 function normPath(url: string): string {
   const p = url.split("?")[0];

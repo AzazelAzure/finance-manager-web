@@ -19,6 +19,7 @@ import { UpcomingDeepDivePage } from "./pages/upcoming/UpcomingDeepDivePage";
 import { DataHubPage } from "./pages/data/DataHubPage";
 import { SettingsProfilePage } from "./pages/settings/SettingsProfilePage";
 import { OnboardingPage } from "./pages/onboarding/OnboardingPage";
+import { SupportPage } from "./pages/support/SupportPage";
 import { RequireAuth } from "./routes/RequireAuth";
 import { useSession } from "./state/SessionContext";
 import { TourProvider } from "./components/tours/TourProvider";
@@ -101,6 +102,7 @@ export default function App(): ReactNode {
             />
             <Route path="data" element={<DataHubPage />} />
             <Route path="settings/profile" element={<SettingsProfilePage />} />
+            <Route path="support" element={<SupportPage />} />
             <Route
               path="onboarding"
               element={<OnboardingPage step={1} />}
