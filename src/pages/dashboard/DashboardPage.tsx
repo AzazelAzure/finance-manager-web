@@ -298,17 +298,17 @@ export function DashboardPage(): ReactNode {
             <HelpCircle size={18} aria-hidden />
             <span className="sr-only">Start guide</span>
           </Button>
+          <Button
+            id="tour-replay-btn"
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              startTour(`welcome_replay_${Date.now()}`, buildWelcomeSteps(locale));
+            }}
+          >
+            {tr("tour.replayTour", locale)}
+          </Button>
           <Button type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
-            {tr("dashboard.refresh", locale)}
-          </Button>
-        </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <Button id="tour-replay-btn" type="button" variant="secondary" onClick={() => {
-            startTour(`welcome_replay_${Date.now()}`, buildWelcomeSteps(locale));
-          }}>
-            {tr('tour.replayTour', locale)}
-          </Button>
-          <Button id="tour-refresh-btn" type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
             {tr("dashboard.refresh", locale)}
           </Button>
         </div>
