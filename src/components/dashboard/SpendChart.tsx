@@ -88,13 +88,13 @@ export function SpendChart({ dailySpend, dailyIncome, baseCurrency, isLoading, i
               }}
             />
             <Legend />
-            <Bar dataKey="spend" name={tr("dashboard.chart.dailySpend.spend", locale)} fill="var(--chart-outgoing, var(--accent))" maxBarSize={28} />
+            <Bar dataKey="spend" name={tr("dashboard.chart.dailySpend.spend", locale)} fill="var(--color-negative)" maxBarSize={28} />
             {showIncome ? (
               <Line
                 type="monotone"
                 dataKey="income"
                 name={tr("dashboard.chart.dailySpend.income", locale)}
-                stroke="var(--chart-incoming, var(--success))"
+                stroke="var(--color-positive)"
                 strokeWidth={2}
                 dot={false}
               />

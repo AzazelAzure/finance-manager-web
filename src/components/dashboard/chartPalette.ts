@@ -1,13 +1,13 @@
 /** Recharts / pie fill cycle (theme-friendly). */
 export const CHART_SLICE_COLORS = [
-  "#2563eb",
-  "#16a34a",
-  "#d97706",
-  "#dc2626",
-  "#9333ea",
-  "#0f766e",
-  "#db2777",
-  "#475569",
+  "var(--color-brand-primary)",
+  "var(--color-positive)",
+  "var(--color-warning)",
+  "var(--color-negative)",
+  "var(--color-pending)",
+  "color-mix(in srgb, var(--color-brand-primary) 70%, var(--color-positive))",
+  "color-mix(in srgb, var(--color-negative) 76%, var(--color-warning))",
+  "var(--color-neutral)",
 ] as const;
 
 export function pieColorAt(i: number): string {

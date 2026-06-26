@@ -1,7 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
+import { Fingerprint, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { Helmet } from "react-helmet-async";
 import { Link, Navigate } from "react-router-dom";
 import { z } from "zod";
 import { createUser } from "../api/user";
@@ -103,11 +105,31 @@ export function SignupPage(): ReactNode {
 
   return (
     <section className="stack auth-shell auth-shell--signup">
-      <h1 className="auth-shell__title">{tr("signup.title", locale)}</h1>
-      <p className="muted-text auth-shell__subtitle">
-        {tr("signup.helper", locale)}
-      </p>
+      <Helmet>
+        <title>{tr("signup.seo.title", locale)}</title>
+        <meta name="description" content={tr("signup.seo.desc", locale)} />
+        <link rel="canonical" href="https://thehivemanager.com/signup" />
+      </Helmet>
+      <div className="auth-shell__intro">
+        <div className="auth-shell__brand" aria-hidden>
+          <img src="/favicon.png" alt="" className="auth-shell__mark" />
+          <span>Hive</span>
+        </div>
+        <p className="auth-shell__step">{tr("signup.step", locale)}</p>
+        <h1 className="auth-shell__title">{tr("signup.title", locale)}</h1>
+        <p className="auth-shell__trust">
+          <ShieldCheck size={16} aria-hidden />
+          {tr("signup.trust", locale)}
+        </p>
+        <p className="muted-text auth-shell__subtitle">
+          {tr("signup.helper", locale)}
+        </p>
+      </div>
       <Card className="auth-card">
+        <button type="button" className="auth-biometric" disabled aria-disabled="true">
+          <Fingerprint size={18} aria-hidden />
+          <span>{tr("signup.biometricPlaceholder", locale)}</span>
+        </button>
         <AppForm form={form} onSubmit={onValid} className="stack" id="signup-form" autoComplete="off">
           <TextField name="username" label="Username" autoComplete="off" autoFocus unlockOnFocus />
           <TextField name="user_email" label="Email" type="email" autoComplete="off" unlockOnFocus />

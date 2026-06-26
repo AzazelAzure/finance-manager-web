@@ -1,7 +1,7 @@
 .dashboard-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--spacing-4);
   max-width: 1920px;
   margin: 0 auto;
 }
@@ -16,12 +16,67 @@
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 20%, var(--color-surface-border));
   border-radius: var(--radius-lg);
   background: var(--gradient-surface);
   box-shadow: var(--shadow-sm);
+}
+
+.dashboard-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--spacing-4);
+  padding: var(--spacing-6);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 24%, var(--color-surface-border));
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 8% 4%, color-mix(in srgb, var(--color-positive) 14%, transparent), transparent 36%),
+    var(--gradient-surface);
+  box-shadow: var(--shadow-md), var(--shadow-inset);
+}
+
+.dashboard-hero__eyebrow,
+.dashboard-hero__support-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.dashboard-hero__value {
+  margin: var(--spacing-2) 0 0;
+  color: var(--fg);
+  font-size: clamp(var(--text-2xl), 9vw, var(--text-hero));
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+.dashboard-hero__description,
+.dashboard-hero__support-value {
+  margin: var(--spacing-2) 0 0;
+  color: var(--muted);
+}
+
+.dashboard-hero__support-value {
+  color: var(--fg);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+@media (min-width: 900px) {
+  .dashboard-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(11rem, 16rem);
+    align-items: end;
+  }
 }
 
 .dashboard-section {
@@ -320,8 +375,8 @@
   max-width: 100%;
   font: inherit;
   color: var(--fg);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--color-surface-card) 92%, var(--surface-2));
+  border: 1px solid var(--color-surface-border);
   border-radius: var(--radius-sm);
   padding: 0.45rem 0.5rem;
 }

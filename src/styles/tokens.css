@@ -81,6 +81,58 @@
   --font-2xl: 1.6rem;
 }
 
+/* ------------------------------------------------------------------ */
+/* Design-system tokens — PLAN_CROSS_UI_UX_DESIGN_SYSTEM (T01)         */
+/* Layered additively on top of the existing token system. Variable    */
+/* names here are LOCKED — downstream tasks (T02–T06) reference them.   */
+/* ------------------------------------------------------------------ */
+:root {
+  /* Brand anchor (OKLCH, perceptually even) */
+  --color-brand-primary: oklch(60% 0.18 260); /* blue-purple anchor */
+
+  /* Surfaces — alias the existing theme-adaptive tokens so dark/light
+     switching keeps working through the established cascade. */
+  --color-surface-base: var(--bg);
+  --color-surface-card: var(--surface);
+  --color-surface-border: var(--border);
+
+  /* Semantic budget-pace palette (Copilot Money model). Never used as
+     decoration — green = on track, amber = nearing, red = over. Always
+     pair with icon/sign/label, never color-alone. */
+  --color-positive: oklch(62% 0.18 145); /* green — on track */
+  --color-warning: oklch(70% 0.18 60); /* amber — within 20% over */
+  --color-negative: oklch(60% 0.2 25); /* red — over budget */
+  --color-pending: oklch(65% 0.08 255); /* muted blue-grey — uncleared */
+  --color-neutral: oklch(55% 0.04 255); /* grey — zero / unassigned */
+
+  /* Spacing — strict 4px base grid (px-locked aliases; existing
+     --space-* rem tokens remain valid for current call sites). */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+
+  /* Type scale */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 1rem; /* 16px */
+  --text-lg: 1.25rem; /* 20px */
+  --text-xl: 1.5rem; /* 24px */
+  --text-2xl: 2rem; /* 32px */
+  --text-3xl: 2.5rem; /* 40px */
+  --text-hero: 3rem; /* 48px — hero balance number */
+
+  /* Money display. Inter (self-hosted) supports tabular figures via
+     "tnum"; we apply tabular-nums rather than shipping a new mono font
+     to keep the JS/asset budget lean and the type system coherent. */
+  --font-numeric: "Geist Mono", "SF Mono", ui-monospace, monospace;
+  --font-feature-tabular: "tnum";
+}
+
 html[data-theme="dark"] {
   --bg: #0b0f1a;
   --fg: #e8ecf4;
@@ -114,4 +166,15 @@ html[data-theme="dark"] {
   --hero-glow-1: rgba(99, 102, 241, 0.26);
   --hero-glow-2: rgba(59, 130, 246, 0.2);
   --shell-glow: rgba(129, 140, 248, 0.2);
+}
+
+/* Dark-mode overrides for the design-system semantic palette — higher
+   lightness for legible contrast against #0b0f1a surfaces. */
+html[data-theme="dark"] {
+  --color-brand-primary: oklch(70% 0.16 265);
+  --color-positive: oklch(72% 0.17 145);
+  --color-warning: oklch(80% 0.16 75);
+  --color-negative: oklch(68% 0.19 25);
+  --color-pending: oklch(74% 0.07 255);
+  --color-neutral: oklch(66% 0.03 255);
 }

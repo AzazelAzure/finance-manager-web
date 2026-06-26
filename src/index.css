@@ -54,6 +54,14 @@ a:hover {
   font-size: var(--font-md);
 }
 
+/* Monetary values: tabular figures so digit columns align and don't
+   jitter on update. Apply to any element rendering an amount/balance. */
+.money-value,
+.money {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
 /* Legacy utility aliases (pages still reference) */
 .muted-text {
   margin: 0;
@@ -69,7 +77,49 @@ a:hover {
 .auth-shell {
   max-width: 31rem;
   margin: 0 auto;
-  padding: var(--space-5) 0;
+  padding: var(--spacing-8) 0;
+}
+
+.auth-shell__intro {
+  display: grid;
+  gap: var(--spacing-2);
+  text-align: center;
+}
+
+.auth-shell__brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  justify-self: center;
+  color: var(--fg);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.auth-shell__mark {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-shell__trust,
+.auth-shell__step {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  color: var(--color-neutral);
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.auth-shell__step {
+  color: var(--color-brand-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .auth-shell__title {
@@ -84,8 +134,31 @@ a:hover {
 }
 
 .auth-card {
-  border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+  padding: var(--spacing-6);
+  border-color: color-mix(in srgb, var(--color-brand-primary) 20%, var(--color-surface-border));
   box-shadow: var(--shadow-md), var(--shadow-inset);
+}
+
+.auth-biometric {
+  width: 100%;
+  min-height: 2.75rem;
+  margin: 0 0 var(--spacing-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  border-radius: var(--radius-md);
+  border: 1px dashed color-mix(in srgb, var(--color-pending) 52%, var(--color-surface-border));
+  background: color-mix(in srgb, var(--color-pending) 10%, var(--color-surface-card));
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.auth-biometric:disabled {
+  cursor: not-allowed;
+  opacity: 0.82;
 }
 
 .auth-shell__links {

@@ -5,9 +5,9 @@ import { ChartFrame } from "./ChartFrame";
 import { Button } from "../ui/Button";
 import { tr, useLocale } from "../../lib/i18n";
 
-const IN = "var(--chart-incoming, var(--success))";
-const OUT = "var(--chart-outgoing, var(--accent))";
-const LEAK = "var(--chart-leak)";
+const IN = "var(--color-positive)";
+const OUT = "var(--color-negative)";
+const LEAK = "var(--color-warning)";
 
 type Row = { label: string; incoming: number; outgoing: number; leaks: number };
 
