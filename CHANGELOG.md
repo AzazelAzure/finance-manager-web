@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **SEO P1 auth pages (T16.SL1–SL2):** Localized `login.seo.*` / `signup.seo.*` i18n keys (en-US + tl-PH) and per-route `react-helmet-async` title, description, and canonical tags on `/login` and `/signup`.
+
 ### Fixed
 - **F-007 Guide mode rework:** Global Guide toggle now uses click/focus-activated contextual notes (not hover-only). Form modals (Quick Add, Transactions, Upcoming) use shared `HelpModeWrapper` instead of broken per-modal Guide panels and in-form Joyride. Data Hub and Profile pages gain guide coverage. Page-level “Start guide” buttons removed where they conflicted with Guide mode; explicit **Replay Tour** buttons remain for Joyride onboarding.
 
