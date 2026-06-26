@@ -14,6 +14,7 @@ import { setSession } from "../state/auth";
 import { consumeForceOnboardingNextLogin } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
 import type { ReactNode } from "react";
+import { Helmet } from "react-helmet-async";
 
 const schema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -74,6 +75,14 @@ export function LoginPage(): ReactNode {
 
   return (
     <section className="stack auth-shell auth-shell--login">
+      <Helmet>
+        <title>{tr("login.seo.title", locale) || "Sign In | Hive Financial Manager"}</title>
+        <meta
+          name="description"
+          content={tr("login.seo.desc", locale) || "Log in to your Hive Financial Manager account."}
+        />
+        <link rel="canonical" href="https://thehivemanager.com/login" />
+      </Helmet>
       <h1 className="auth-shell__title">{tr("login.title", locale)}</h1>
       <p className="muted-text auth-shell__subtitle">
         {tr("login.helper", locale)}

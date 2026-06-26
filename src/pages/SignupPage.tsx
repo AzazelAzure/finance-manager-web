@@ -18,6 +18,7 @@ import {
 } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
 import type { ReactNode } from "react";
+import { Helmet } from "react-helmet-async";
 
 const schema = z
   .object({
@@ -103,6 +104,14 @@ export function SignupPage(): ReactNode {
 
   return (
     <section className="stack auth-shell auth-shell--signup">
+      <Helmet>
+        <title>{tr("signup.seo.title", locale) || "Create Account | Hive Financial Manager"}</title>
+        <meta
+          name="description"
+          content={tr("signup.seo.desc", locale) || "Create your free Hive Financial Manager account."}
+        />
+        <link rel="canonical" href="https://thehivemanager.com/signup" />
+      </Helmet>
       <h1 className="auth-shell__title">{tr("signup.title", locale)}</h1>
       <p className="muted-text auth-shell__subtitle">
         {tr("signup.helper", locale)}

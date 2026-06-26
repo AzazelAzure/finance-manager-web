@@ -9,6 +9,10 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
   "en-US": {
     "landing.seo.title": "Hive | Secure, Offline-First Personal Finance",
     "landing.seo.desc": "A private, local-first personal finance app. Track bills, budgets, and accounts with total clarity. No ads, no data selling, just your money under your control.",
+    "login.seo.title": "Sign In | Hive Financial Manager — Track GCash & Maya",
+    "login.seo.desc": "Log in to your Hive Financial Manager account. Secure, private, and offline-first personal budgeting for Filipino households.",
+    "signup.seo.title": "Create Account | Hive Financial Manager — Start Budgeting Free",
+    "signup.seo.desc": "Start tracking your GCash, Maya, and bank expenses. Sign up for a free Hive Financial Manager account today.",
     "hero.eyebrow": "Personal finance, simplified.",
     "hero.title": "Know your money. Plan with confidence.",
     "hero.body": "Dashboards, transactions, bills, and a data hub — tuned for how you really spend and save.",
@@ -522,6 +526,10 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
   "tl-PH": {
     "landing.seo.title": "Hive | Secure, Offline-First Personal Finance",
     "landing.seo.desc": "Isang pribado at local-first na personal finance app. Subaybayan ang mga bill, budget, at account nang malinaw. Walang ads, walang pagbenta ng data, tanging ang iyong pera sa ilalim ng iyong kontrol.",
+    "login.seo.title": "Mag-sign In | Hive Financial Manager — I-track ang GCash at Maya",
+    "login.seo.desc": "Mag-log in sa iyong Hive Financial Manager account. Secure, pribado, at offline-first na budget tracker para sa pamilyang Pilipino.",
+    "signup.seo.title": "Gumawa ng Account | Hive Financial Manager — Magsimula Nang Libre",
+    "signup.seo.desc": "Subaybayan ang iyong GCash, Maya, at mga bank account. Gumawa ng libreng Hive Financial Manager account ngayon.",
     "hero.eyebrow": "Simpleng personal finance.",
     "hero.title": "Kilalanin ang pera mo. Magplano nang may kumpiyansa.",
     "hero.body": "Dashboard, transaksyon, bills, at data hub — akma sa totoong paraan ng paggastos at pag-iipon mo.",
