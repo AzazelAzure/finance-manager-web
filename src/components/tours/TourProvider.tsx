@@ -1,14 +1,25 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  type ReactNode,
+} from 'react';
 import { Joyride, STATUS, type Step } from 'react-joyride';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { updateAppProfile, getAppProfile } from '../../api/profile';
 import { tr, useLocale } from '../../lib/i18n';
+import './help-mode.css';
 
-// Help Mode Context
 interface HelpModeContextType {
   isHelpModeActive: boolean;
   toggleHelpMode: () => void;
   setHelpMode: (active: boolean) => void;
+  activeGuideId: string | null;
+  setActiveGuideId: (id: string | null) => void;
+  clearActiveGuide: () => void;
 }
 
 const HelpModeContext = createContext<HelpModeContextType | null>(null);
@@ -19,7 +30,6 @@ export function useHelpMode() {
   return ctx;
 }
 
-// Tour Context
 interface TourContextType {
   startTour: (tourId: string, steps: Step[], force?: boolean) => void;
   markTourCompleted: (tourId: string) => void;
@@ -36,6 +46,7 @@ export function useTour() {
 
 export function TourProvider({ children }: { children: React.ReactNode }) {
   const [isHelpModeActive, setHelpModeActive] = useState(false);
+  const [activeGuideId, setActiveGuideId] = useState<string | null>(null);
   const [run, setRun] = useState(false);
   const [steps, setSteps] = useState<Step[]>([]);
   const [activeTourId, setActiveTourId] = useState<string | null>(null);
@@ -56,10 +67,8 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const completedTours = profile?.completed_tours || [];
 
   const isTourCompleted = useCallback(
-    (tourId: string) => {
-      return completedTours.includes(tourId);
-    },
-    [completedTours]
+    (tourId: string) => completedTours.includes(tourId),
+    [completedTours],
   );
 
   const markTourCompleted = useCallback(
@@ -68,17 +77,19 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
         updateProfile({ completed_tours: [...completedTours, tourId] });
       }
     },
-    [completedTours, isTourCompleted, updateProfile]
+    [completedTours, isTourCompleted, updateProfile],
   );
 
   const locale = useLocale();
 
-  /** Default step overrides injected into every tour step. */
-  const STEP_DEFAULTS: Partial<Step> = useMemo(() => ({
-    buttons: ['skip', 'back', 'close', 'primary'],
-    closeButtonAction: 'skip' as const,
-    locale: { skip: tr('tour.exitTour', locale), last: tr('tour.done', locale) },
-  }), [locale]);
+  const STEP_DEFAULTS: Partial<Step> = useMemo(
+    () => ({
+      buttons: ['skip', 'back', 'close', 'primary'],
+      closeButtonAction: 'skip' as const,
+      locale: { skip: tr('tour.exitTour', locale), last: tr('tour.done', locale) },
+    }),
+    [locale],
+  );
 
   const startTour = useCallback(
     (tourId: string, tourSteps: Step[], force = false) => {
@@ -88,14 +99,14 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
         setRun(true);
       }
     },
-    [isTourCompleted, STEP_DEFAULTS]
+    [isTourCompleted, STEP_DEFAULTS],
   );
 
   const handleJoyrideCallback = useCallback(
-    (data: any) => {
+    (data: { status?: string }) => {
       const { status } = data;
       const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
-      
+
       if (finishedStatuses.includes(status as string)) {
         setRun(false);
         if (activeTourId) {
@@ -104,21 +115,55 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [activeTourId, markTourCompleted]
+    [activeTourId, markTourCompleted],
   );
+
+  const clearActiveGuide = useCallback(() => setActiveGuideId(null), []);
+
+  const setHelpMode = useCallback((active: boolean) => {
+    setHelpModeActive(active);
+    if (!active) {
+      setActiveGuideId(null);
+    }
+  }, []);
+
+  const toggleHelpMode = useCallback(() => {
+    setHelpModeActive((prev) => {
+      const next = !prev;
+      if (!next) {
+        setActiveGuideId(null);
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isHelpModeActive) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || !activeGuideId) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setActiveGuideId(null);
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [isHelpModeActive, activeGuideId]);
 
   const helpModeValue = useMemo(
     () => ({
       isHelpModeActive,
-      toggleHelpMode: () => setHelpModeActive((prev) => !prev),
-      setHelpMode: setHelpModeActive,
+      toggleHelpMode,
+      setHelpMode,
+      activeGuideId,
+      setActiveGuideId,
+      clearActiveGuide,
     }),
-    [isHelpModeActive]
+    [isHelpModeActive, toggleHelpMode, setHelpMode, activeGuideId, clearActiveGuide],
   );
 
   const tourValue = useMemo(
     () => ({ startTour, markTourCompleted, isTourCompleted }),
-    [startTour, markTourCompleted, isTourCompleted]
+    [startTour, markTourCompleted, isTourCompleted],
   );
 
   return (
@@ -137,6 +182,17 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+export function HelpModeBanner(): ReactNode {
+  const locale = useLocale();
+  const { isHelpModeActive } = useHelpMode();
+  if (!isHelpModeActive) return null;
+  return (
+    <p className="help-mode-banner" role="status">
+      {tr('guide.modeActiveHint', locale)}
+    </p>
+  );
+}
+
 export function HelpModeWrapper({
   id,
   title,
@@ -147,50 +203,61 @@ export function HelpModeWrapper({
   id: string;
   title?: string;
   content: string;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }) {
-  const { isHelpModeActive } = useHelpMode();
-  const [isHovered, setIsHovered] = useState(false);
+  const locale = useLocale();
+  const { isHelpModeActive, activeGuideId, setActiveGuideId, clearActiveGuide } = useHelpMode();
+  const isActive = isHelpModeActive && activeGuideId === id;
+
+  const activateGuide = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isHelpModeActive) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setActiveGuideId(isActive ? null : id);
+    },
+    [isHelpModeActive, isActive, id, setActiveGuideId],
+  );
+
+  const wrapperClass = [
+    className,
+    isHelpModeActive ? 'help-mode-target' : '',
+    isActive ? 'help-mode-target--active' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div
       id={id}
-      className={className}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        position: 'relative',
-        ...(isHelpModeActive
-          ? { outline: '2px dashed #10b981', outlineOffset: '2px', borderRadius: '4px', cursor: 'help' }
-          : {})
-      }}
+      className={wrapperClass || undefined}
+      onClickCapture={isHelpModeActive ? activateGuide : undefined}
+      role={isHelpModeActive ? 'group' : undefined}
+      aria-label={isHelpModeActive && title ? title : undefined}
     >
       {children}
-      {isHelpModeActive && isHovered && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '100%',
-            left: '50%',
-            transform: 'translate(-50%, -8px)',
-            background: 'var(--bg-surface, #1e293b)',
-            color: 'var(--text-main, #f8fafc)',
-            padding: '0.75rem',
-            borderRadius: '6px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)',
-            width: 'max-content',
-            maxWidth: '300px',
-            zIndex: 10001,
-            pointerEvents: 'none',
-            border: '1px solid var(--border, #334155)',
-            textAlign: 'left'
-          }}
-        >
-          {title && <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: 600, color: '#10b981' }}>{title}</h4>}
-          <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: '1.4' }}>{content}</p>
+      {isActive ? (
+        <div className="help-mode-note" aria-labelledby={`${id}-guide-title`}>
+          <button
+            type="button"
+            className="help-mode-note__close"
+            aria-label={tr('guide.closeNote', locale)}
+            onClick={(e) => {
+              e.stopPropagation();
+              clearActiveGuide();
+            }}
+          >
+            ×
+          </button>
+          {title ? (
+            <h4 id={`${id}-guide-title`} className="help-mode-note__title">
+              {title}
+            </h4>
+          ) : null}
+          <p className="help-mode-note__body">{content}</p>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

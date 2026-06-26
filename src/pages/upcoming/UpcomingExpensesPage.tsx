@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useTour } from "../../components/tours/TourProvider";
+import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { HelpCircle } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { DataTable, type ColumnDef } from "../../components/ui/DataTable";
@@ -134,7 +133,6 @@ export function UpcomingExpensesPage(): ReactNode {
   const [draft, setDraft] = useState<UpcomingDraft>(() => emptyUpcomingDraft("USD"));
   const [editorError, setEditorError] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Record<string, boolean>>({});
-  const [showFormHelp, setShowFormHelp] = useState(false);
 
   const upcomingQuery = useQuery({
     queryKey: ["upcoming-expenses", "all"] as const,
@@ -329,26 +327,22 @@ export function UpcomingExpensesPage(): ReactNode {
   return (
     <div className="stack">
       <div className="app-toolbar app-surface">
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-            {tr("upcoming.title", locale)}
-          </h2>
+        <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
+          {tr("upcoming.title", locale)}
+        </h2>
+        <div className="app-toolbar__actions">
           <Button
             type="button"
             variant="secondary"
-            aria-label="Start guide"
-            title="Start guide"
             onClick={() => startTour("upcoming_expenses_tour", [...UPCOMING_EXPENSES_TOUR_STEPS] as any, true)}
           >
-            <HelpCircle size={18} aria-hidden />
-            <span className="sr-only">Start guide</span>
+            {tr("tour.replayTour", locale)}
           </Button>
-        </div>
-        <div className="app-toolbar__actions" id="upcoming-add">
           <Link className="ui-btn ui-btn--secondary" to="/app/upcoming-expenses/deep-dive">
             {tr("txCalendar.deepDive", locale)}
           </Link>
           <Button
+            id="upcoming-add"
             onClick={() => {
               setEditingName(null);
               setDraft(emptyUpcomingDraft(baseCurrency));
@@ -361,6 +355,7 @@ export function UpcomingExpensesPage(): ReactNode {
         </div>
       </div>
 
+      <HelpModeWrapper id="upcoming-filters" title={tr("guide.upcoming.filters.title", locale)} content={tr("guide.upcoming.filters.content", locale)}>
       <Card>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
           <label className="ui-field">
@@ -390,7 +385,9 @@ export function UpcomingExpensesPage(): ReactNode {
           </label>
         </div>
       </Card>
+      </HelpModeWrapper>
 
+      <HelpModeWrapper id="upcoming-list-wrap" title={tr("guide.upcoming.list.title", locale)} content={tr("guide.upcoming.list.content", locale)}>
       <div id="upcoming-list">
         {upcomingQuery.isError ? (
           <ErrorState title={tr("upcoming.failedLoad", locale)} onRetry={() => void upcomingQuery.refetch()} />
@@ -475,40 +472,17 @@ export function UpcomingExpensesPage(): ReactNode {
           </div>
         )}
       </div>
+      </HelpModeWrapper>
 
       <Modal
         open={editorOpen}
         onClose={() => {
           setEditorOpen(false);
           setEditorError("");
-          setShowFormHelp(false);
         }}
         title={editingName ? tr("upcoming.editExpense", locale) : tr("upcoming.addExpense", locale)}
       >
         <div className="stack" style={{ marginTop: 12 }}>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button 
-              type="button" 
-              className="ui-btn ui-btn--ghost" 
-              onClick={() => setShowFormHelp(!showFormHelp)}
-              title="Show guide"
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px" }}
-            >
-              <HelpCircle size={16} /> {showFormHelp ? "Hide guide" : "Guide"}
-            </button>
-          </div>
-          {showFormHelp ? (
-            <div className="ui-state" style={{ textAlign: "left", fontSize: "0.9rem" }}>
-              <strong>Upcoming Expense Guide</strong>
-              <ul style={{ paddingLeft: 20, margin: "8px 0 0 0" }}>
-                <li><strong>Name:</strong> A descriptive name for the expense.</li>
-                <li><strong>Due date:</strong> When the expense needs to be paid.</li>
-                <li><strong>Recurring:</strong> Check if this repeats periodically.</li>
-                <li><strong>Use start / end window:</strong> Specify the coverage period for this bill.</li>
-              </ul>
-            </div>
-          ) : null}
-
           {editorError ? <ErrorState title={tr("common.saveFailed", locale)} description={editorError} /> : null}
           {(invalidAmount || invalidWindow) && !saveMutation.isPending ? (
             <div className="ui-state" role="status">
@@ -519,56 +493,72 @@ export function UpcomingExpensesPage(): ReactNode {
               </p>
             </div>
           ) : null}
-          <label className="ui-field" id="bill-form-name">
-            <span className="ui-label">{tr("upcoming.editor.label.name", locale)}</span>
-            <input className="ui-input" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
-          </label>
-          <label className="ui-field" id="bill-form-amount">
-            <span className="ui-label">{tr("upcoming.editor.label.amount", locale)}</span>
-            <input className="ui-input" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} />
-          </label>
-          <label className="ui-field">
-            <span className="ui-label">{tr("upcoming.editor.label.currency", locale)}</span>
-            <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
-              {currencyOptions.map((curr) => (
-                <option key={`bill-curr-${curr}`} value={curr}>
-                  {curr}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="ui-field" id="bill-form-date">
-            <span className="ui-label">{tr("upcoming.editor.label.dueDate", locale)}</span>
-            <input className="ui-input" type="date" value={draft.due_date} onChange={(e) => setDraft((d) => ({ ...d, due_date: e.target.value }))} />
-          </label>
-          <label className="ui-field">
-            <span className="ui-label">Source (optional)</span>
-            <input className="ui-input" value={draft.source} onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))} />
-          </label>
-          <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input
-              type="checkbox"
-              checked={draft.recurring_flag}
-              onChange={(e) => setDraft((d) => ({ ...d, recurring_flag: e.target.checked }))}
-            />
-            <span className="ui-label">Recurring</span>
-          </label>
-          <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input
-              type="checkbox"
-              checked={draft.paid_flag}
-              onChange={(e) => setDraft((d) => ({ ...d, paid_flag: e.target.checked }))}
-            />
-            <span className="ui-label">Marked paid</span>
-          </label>
-          <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input
-              type="checkbox"
-              checked={draft.use_start_end}
-              onChange={(e) => setDraft((d) => ({ ...d, use_start_end: e.target.checked }))}
-            />
-            <span className="ui-label">Use start / end window</span>
-          </label>
+          <HelpModeWrapper id="bill-form-name" title={tr("guide.form.billName.title", locale)} content={tr("guide.form.billName.content", locale)}>
+            <label className="ui-field">
+              <span className="ui-label">{tr("upcoming.editor.label.name", locale)}</span>
+              <input className="ui-input" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
+            </label>
+          </HelpModeWrapper>
+          <HelpModeWrapper id="bill-form-amount" title={tr("guide.form.amount.title", locale)} content={tr("guide.form.amount.content", locale)}>
+            <label className="ui-field">
+              <span className="ui-label">{tr("upcoming.editor.label.amount", locale)}</span>
+              <input className="ui-input" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} />
+            </label>
+          </HelpModeWrapper>
+          <HelpModeWrapper id="bill-form-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
+            <label className="ui-field">
+              <span className="ui-label">{tr("upcoming.editor.label.currency", locale)}</span>
+              <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
+                {currencyOptions.map((curr) => (
+                  <option key={`bill-curr-${curr}`} value={curr}>
+                    {curr}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </HelpModeWrapper>
+          <HelpModeWrapper id="bill-form-date" title={tr("guide.form.dueDate.title", locale)} content={tr("guide.form.dueDate.content", locale)}>
+            <label className="ui-field">
+              <span className="ui-label">{tr("upcoming.editor.label.dueDate", locale)}</span>
+              <input className="ui-input" type="date" value={draft.due_date} onChange={(e) => setDraft((d) => ({ ...d, due_date: e.target.value }))} />
+            </label>
+          </HelpModeWrapper>
+          <HelpModeWrapper id="bill-form-source" title={tr("guide.form.source.title", locale)} content={tr("guide.form.source.content", locale)}>
+            <label className="ui-field">
+              <span className="ui-label">Source (optional)</span>
+              <input className="ui-input" value={draft.source} onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))} />
+            </label>
+          </HelpModeWrapper>
+          <HelpModeWrapper id="bill-form-recurring" title={tr("guide.form.recurring.title", locale)} content={tr("guide.form.recurring.content", locale)}>
+            <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={draft.recurring_flag}
+                onChange={(e) => setDraft((d) => ({ ...d, recurring_flag: e.target.checked }))}
+              />
+              <span className="ui-label">Recurring</span>
+            </label>
+          </HelpModeWrapper>
+          <HelpModeWrapper id="bill-form-paid" title={tr("guide.form.paid.title", locale)} content={tr("guide.form.paid.content", locale)}>
+            <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={draft.paid_flag}
+                onChange={(e) => setDraft((d) => ({ ...d, paid_flag: e.target.checked }))}
+              />
+              <span className="ui-label">Marked paid</span>
+            </label>
+          </HelpModeWrapper>
+          <HelpModeWrapper id="bill-form-window-toggle" title={tr("guide.form.window.title", locale)} content={tr("guide.form.window.content", locale)}>
+            <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={draft.use_start_end}
+                onChange={(e) => setDraft((d) => ({ ...d, use_start_end: e.target.checked }))}
+              />
+              <span className="ui-label">Use start / end window</span>
+            </label>
+          </HelpModeWrapper>
           {draft.use_start_end ? (
             <>
               <label className="ui-field">

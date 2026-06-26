@@ -27,6 +27,7 @@ import { useSession } from "../../state/SessionContext";
 import { clearOutbox } from "../../offline/outbox";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 import { tr, useLocale } from "../../lib/i18n";
+import { HelpModeWrapper } from "../../components/tours/TourProvider";
 import { buildTimezoneOptions } from "../../lib/timezones";
 
 const settingsSchema = z.object({
@@ -292,11 +293,13 @@ export function SettingsProfilePage(): ReactNode {
                 {snapshotQuery.isError ? (
                   <ErrorState title={tr("settings.snapshotUnavailable", locale)} onRetry={() => void snapshotQuery.refetch()} />
                 ) : (
+                  <HelpModeWrapper id="profile-overview-kpis" title={tr("guide.profile.overview.title", locale)} content={tr("guide.profile.overview.content", locale)}>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                     {overviewKpis.map((kpi) => (
                       <KPI key={kpi.label} label={kpi.label} value={kpi.value} />
                     ))}
                   </div>
+                  </HelpModeWrapper>
                 )}
               </TabPanel>
             ),
@@ -312,6 +315,7 @@ export function SettingsProfilePage(): ReactNode {
                     ? <SuccessState message={settingsMessage} />
                     : <ErrorState title={tr("settings.couldNotSave", locale)} description={settingsMessage} />
                   : null}
+                <HelpModeWrapper id="profile-settings-form" title={tr("guide.profile.settings.title", locale)} content={tr("guide.profile.settings.content", locale)}>
                 <Card>
                   <AppForm
                     form={settingsForm}
@@ -382,6 +386,8 @@ export function SettingsProfilePage(): ReactNode {
                     </Button>
                   </AppForm>
                 </Card>
+                </HelpModeWrapper>
+                <HelpModeWrapper id="profile-reset-tours" title={tr("guide.profile.resetTours.title", locale)} content={tr("guide.profile.resetTours.content", locale)}>
                 <Card>
                   <div className="stack" style={{ gap: 8 }}>
                     <h3 style={{ margin: 0 }}>App Experience</h3>
@@ -400,6 +406,7 @@ export function SettingsProfilePage(): ReactNode {
                     </Button>
                   </div>
                 </Card>
+                </HelpModeWrapper>
               </TabPanel>
             ),
           },
@@ -414,6 +421,7 @@ export function SettingsProfilePage(): ReactNode {
                     ? <SuccessState message={securityMessage} />
                     : <ErrorState title={tr("settings.securityFailed", locale)} description={securityMessage} />
                   : null}
+                <HelpModeWrapper id="profile-security-password" title={tr("guide.profile.security.title", locale)} content={tr("guide.profile.security.content", locale)}>
                 <Card>
                   <AppForm
                     form={passwordForm}
@@ -442,6 +450,7 @@ export function SettingsProfilePage(): ReactNode {
                     </Button>
                   </div>
                 </Card>
+                </HelpModeWrapper>
               </TabPanel>
             ),
           },
