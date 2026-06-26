@@ -13,7 +13,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { setLocale, tr, trFmt, useLocale } from "../lib/i18n";
 import { useSession } from "../state/SessionContext";
 import { useState, type ReactNode } from "react";
-import { useHelpMode } from "../components/tours/TourProvider";
+import { HelpModeBanner, useHelpMode } from "../components/tours/TourProvider";
 import { OfflineHistoryBanner } from "../components/OfflineHistoryBanner";
 import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
@@ -129,7 +129,13 @@ export function ProtectedShell(): ReactNode {
           ))}
         </div>
         <div className="protected-bottom-bar">
-          <button type="button" className={`shell-nav-link ${isHelpModeActive ? "shell-nav-link--active" : ""}`} onClick={toggleHelpMode}>
+          <button
+            type="button"
+            className={`shell-nav-link ${isHelpModeActive ? "shell-nav-link--active" : ""}`}
+            onClick={toggleHelpMode}
+            aria-pressed={isHelpModeActive}
+            title={tr("guide.toggleHint", locale)}
+          >
             <BookOpen size={20} className="shell-nav-icon" />
             <span className="shell-nav-label">{tr("shell.nav.guide", locale)}</span>
           </button>
@@ -177,6 +183,7 @@ export function ProtectedShell(): ReactNode {
         </header>
         <OfflineHistoryBanner />
         <main className="protected-main-inner" aria-labelledby="app-page-title">
+          <HelpModeBanner />
           <Outlet />
         </main>
         <nav className="protected-top-strip" aria-label="Main navigation (mobile)">
@@ -194,6 +201,8 @@ export function ProtectedShell(): ReactNode {
             className={`shell-nav-link ${isHelpModeActive ? "shell-nav-link--active" : ""}`}
             onClick={toggleHelpMode}
             aria-label={tr("shell.nav.guide", locale)}
+            aria-pressed={isHelpModeActive}
+            title={tr("guide.toggleHint", locale)}
           >
             <BookOpen size={20} />
             <span className="sr-only">{tr("shell.nav.guide", locale)}</span>

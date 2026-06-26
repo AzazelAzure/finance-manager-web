@@ -1,7 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { HelpCircle } from "lucide-react";
 import axios from "axios";
 import {
   createTransactions,
@@ -201,7 +200,6 @@ export function TransactionsPage(): ReactNode {
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [isLoadingEditor, setIsLoadingEditor] = useState(false);
   const [editorError, setEditorError] = useState("");
-  const [showFormHelp, setShowFormHelp] = useState(false);
 
   const txQuery = useQuery({
     queryKey: ["transactions", signature] as const,
@@ -517,7 +515,7 @@ export function TransactionsPage(): ReactNode {
               Deep dive
             </Link>
           </div>
-          <HelpModeWrapper id="tx-add" title="Add Transactions" content="Use Add transaction or Add transfer for proper payloads.">
+          <HelpModeWrapper id="tx-add" title={tr("tour.tx.addButtons.title", locale)} content={tr("tour.tx.addButtons.content", locale)}>
             <div style={{ display: "flex", gap: "8px" }}>
               <Button onClick={() => openEditorForCreate("single")}>Add transaction</Button>
               <Button variant="secondary" onClick={() => openEditorForCreate("transfer")}>
@@ -552,7 +550,7 @@ export function TransactionsPage(): ReactNode {
         </Card>
       ) : null}
 
-      <HelpModeWrapper id="tx-filters" title="Filters" content="Filter by period, type, or source and apply to reload results.">
+      <HelpModeWrapper id="tx-filters" title={tr("tour.tx.filters.title", locale)} content={tr("tour.tx.filters.content", locale)}>
         <Card>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
           <label id="tx-filter-period" className="ui-field">
@@ -636,7 +634,7 @@ export function TransactionsPage(): ReactNode {
       ) : txQuery.isLoading && !txQuery.data ? (
         <LoadingState label="Loading transactions..." />
       ) : (
-        <HelpModeWrapper id="tx-table" title="Transaction List" content="Edit and delete actions are in-line per row.">
+        <HelpModeWrapper id="tx-table" title={tr("tour.tx.table.title", locale)} content={tr("tour.tx.table.content", locale)}>
           <Card>
             <DataTable columns={columns} data={txQuery.data ?? []} keyField="tx_id" emptyTitle="No transactions in this range" />
           </Card>
@@ -648,60 +646,13 @@ export function TransactionsPage(): ReactNode {
         onClose={() => {
           setEditorOpen(false);
           setEditorError("");
-          setShowFormHelp(false);
           if (location.pathname.endsWith("/new")) {
             navigate("/app/transactions", { replace: true });
           }
         }}
-        title={
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span>{editingTxId ? "Edit transaction" : editorMode === "single" ? "Add transaction" : "Add transfer"}</span>
-            <button
-              type="button"
-              className="ui-btn ui-btn--ghost ui-btn--sm"
-              onClick={() => setShowFormHelp(!showFormHelp)}
-              style={{ fontSize: "0.8rem", padding: "2px 8px" }}
-            >
-              <HelpCircle size={14} /> {showFormHelp ? "Hide guide" : "Guide"}
-            </button>
-          </div>
-        }
+        title={editingTxId ? "Edit transaction" : editorMode === "single" ? "Add transaction" : "Add transfer"}
       >
         <div className="stack" style={{ marginTop: 12 }}>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button 
-              type="button" 
-              className="ui-btn ui-btn--ghost" 
-              onClick={() => setShowFormHelp(!showFormHelp)}
-              title="Show guide"
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px" }}
-            >
-              <HelpCircle size={16} /> {showFormHelp ? "Hide guide" : "Guide"}
-            </button>
-          </div>
-          {showFormHelp && editorMode === "single" ? (
-            <div className="ui-state" style={{ textAlign: "left", fontSize: "0.9rem" }}>
-              <strong>Single Transaction Guide</strong>
-              <ul style={{ paddingLeft: 20, margin: "8px 0 0 0" }}>
-                <li><strong>Amount:</strong> The absolute value of the transaction.</li>
-                <li><strong>Source:</strong> The account involved.</li>
-                <li><strong>Type:</strong> Expense (money out) or Income (money in).</li>
-                <li><strong>Category:</strong> E.g. "Food" or "Salary" to group spending.</li>
-              </ul>
-            </div>
-          ) : null}
-          {showFormHelp && editorMode === "transfer" ? (
-            <div className="ui-state" style={{ textAlign: "left", fontSize: "0.9rem" }}>
-              <strong>Transfer Guide & Leak Tracking</strong>
-              <ul style={{ paddingLeft: 20, margin: "8px 0 0 0" }}>
-                <li><strong>From source:</strong> The account the money left.</li>
-                <li><strong>To source:</strong> The account the money entered.</li>
-                <li><strong>Sent amount:</strong> How much left the <em>From source</em>.</li>
-                <li><strong>Received amount:</strong> How much entered the <em>To source</em>. If this differs from Sent amount, the system will track the difference as a <strong>Leak</strong> automatically (e.g., fees, forex differences).</li>
-              </ul>
-            </div>
-          ) : null}
-
           {editorError ? (
             <ErrorState title="Save failed" description={editorError} />
           ) : null}
@@ -720,140 +671,164 @@ export function TransactionsPage(): ReactNode {
           ) : null}
           {editorMode === "single" || editingTxId ? (
             <>
-              <label className="ui-field" id="tx-form-date">
-                <span className="ui-label">Date</span>
-                <input
-                  className="ui-input"
-                  type="date"
-                  value={singleDraft.date}
-                  onChange={(e) => setSingleDraft((d) => ({ ...d, date: e.target.value }))}
-                />
-              </label>
-              <label className="ui-field" id="tx-form-amount">
-                <span className="ui-label">Amount</span>
-                <input
-                  className="ui-input"
-                  value={singleDraft.amount}
-                  onChange={(e) => setSingleDraft((d) => ({ ...d, amount: e.target.value }))}
-                />
-              </label>
-              <label className="ui-field">
-                <span className="ui-label">Currency</span>
-                <select className="ui-input" value={singleDraft.currency} onChange={(e) => setSingleDraft((d) => ({ ...d, currency: e.target.value }))}>
-                  {currencyOptions.map((curr) => (
-                    <option key={curr} value={curr}>
-                      {curr}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="ui-field" id="tx-form-source">
-                <span className="ui-label">Source</span>
-                <SourceSelect
-                  sources={sourcesQuery.data ?? []}
-                  value={singleDraft.source}
-                  emptyLabel={tr("common.selectSource", locale)}
-                  unknownSourceLabel={tr("common.unknownSourceHint", locale)}
-                  onSourceChange={(source) => {
-                    setSingleDraft((d) => ({
-                      ...d,
-                      source,
-                      currency: source
-                        ? (sourcesQuery.data ?? []).find((s) => s.source === source)?.currency ?? d.currency
-                        : d.currency,
-                    }));
-                  }}
-                />
-              </label>
-              <label className="ui-field">
-                <span className="ui-label">Type</span>
-                <select
-                  className="ui-input"
-                  value={singleDraft.tx_type}
-                  onChange={(e) => setSingleDraft((d) => ({ ...d, tx_type: e.target.value }))}
-                >
-                  <option value="EXPENSE">Expense</option>
-                  <option value="INCOME">Income</option>
-                  <option value="XFER_OUT">Transfer out</option>
-                  <option value="XFER_IN">Transfer in</option>
-                </select>
-              </label>
+              <HelpModeWrapper id="tx-form-date" title={tr("guide.form.date.title", locale)} content={tr("guide.form.date.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Date</span>
+                  <input
+                    className="ui-input"
+                    type="date"
+                    value={singleDraft.date}
+                    onChange={(e) => setSingleDraft((d) => ({ ...d, date: e.target.value }))}
+                  />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="tx-form-amount" title={tr("guide.form.amount.title", locale)} content={tr("guide.form.amount.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Amount</span>
+                  <input
+                    className="ui-input"
+                    value={singleDraft.amount}
+                    onChange={(e) => setSingleDraft((d) => ({ ...d, amount: e.target.value }))}
+                  />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="tx-form-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Currency</span>
+                  <select className="ui-input" value={singleDraft.currency} onChange={(e) => setSingleDraft((d) => ({ ...d, currency: e.target.value }))}>
+                    {currencyOptions.map((curr) => (
+                      <option key={curr} value={curr}>
+                        {curr}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="tx-form-source" title={tr("guide.form.source.title", locale)} content={tr("guide.form.source.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Source</span>
+                  <SourceSelect
+                    sources={sourcesQuery.data ?? []}
+                    value={singleDraft.source}
+                    emptyLabel={tr("common.selectSource", locale)}
+                    unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+                    onSourceChange={(source) => {
+                      setSingleDraft((d) => ({
+                        ...d,
+                        source,
+                        currency: source
+                          ? (sourcesQuery.data ?? []).find((s) => s.source === source)?.currency ?? d.currency
+                          : d.currency,
+                      }));
+                    }}
+                  />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="tx-form-type" title={tr("guide.form.txType.title", locale)} content={tr("guide.form.txType.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Type</span>
+                  <select
+                    className="ui-input"
+                    value={singleDraft.tx_type}
+                    onChange={(e) => setSingleDraft((d) => ({ ...d, tx_type: e.target.value }))}
+                  >
+                    <option value="EXPENSE">Expense</option>
+                    <option value="INCOME">Income</option>
+                    <option value="XFER_OUT">Transfer out</option>
+                    <option value="XFER_IN">Transfer in</option>
+                  </select>
+                </label>
+              </HelpModeWrapper>
             </>
           ) : (
             <>
-              <label className="ui-field" id="tx-xfer-date">
-                <span className="ui-label">Date</span>
-                <input
-                  className="ui-input"
-                  type="date"
-                  value={transferDraft.date}
-                  onChange={(e) => setTransferDraft((d) => ({ ...d, date: e.target.value }))}
-                />
-              </label>
-              <label className="ui-field" id="tx-xfer-from">
-                <span className="ui-label">From source</span>
-                <SourceSelect
-                  sources={sourcesQuery.data ?? []}
-                  value={transferDraft.from_source}
-                  emptyLabel={tr("common.selectSource", locale)}
-                  unknownSourceLabel={tr("common.unknownSourceHint", locale)}
-                  onSourceChange={(source) => setTransferDraft((d) => ({ ...d, from_source: source }))}
-                />
-              </label>
-              <label className="ui-field" id="tx-xfer-to">
-                <span className="ui-label">To source</span>
-                <SourceSelect
-                  sources={sourcesQuery.data ?? []}
-                  value={transferDraft.to_source}
-                  emptyLabel={tr("common.selectSource", locale)}
-                  unknownSourceLabel={tr("common.unknownSourceHint", locale)}
-                  onSourceChange={(source) => setTransferDraft((d) => ({ ...d, to_source: source }))}
-                />
-              </label>
-              <label className="ui-field" id="tx-xfer-sent">
-                <span className="ui-label">Sent amount</span>
-                <input
-                  className="ui-input"
-                  value={transferDraft.sent_amount}
-                  onChange={(e) => setTransferDraft((d) => ({ ...d, sent_amount: e.target.value }))}
-                />
-              </label>
-              <label className="ui-field">
-                <span className="ui-label">Sent currency</span>
-                <select
-                  className="ui-input"
-                  value={transferDraft.sent_currency}
-                  onChange={(e) => setTransferDraft((d) => ({ ...d, sent_currency: e.target.value }))}
-                >
-                  {currencyOptions.map((curr) => (
-                    <option key={`sent-${curr}`} value={curr}>
-                      {curr}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="ui-field" id="tx-xfer-received">
-                <span className="ui-label">Received amount</span>
-                <input
-                  className="ui-input"
-                  value={transferDraft.received_amount}
-                  onChange={(e) => setTransferDraft((d) => ({ ...d, received_amount: e.target.value }))}
-                />
-              </label>
-              <label className="ui-field">
-                <span className="ui-label">Received currency</span>
-                <select
-                  className="ui-input"
-                  value={transferDraft.received_currency}
-                  onChange={(e) => setTransferDraft((d) => ({ ...d, received_currency: e.target.value }))}
-                >
-                  {currencyOptions.map((curr) => (
-                    <option key={`received-${curr}`} value={curr}>
-                      {curr}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <HelpModeWrapper id="tx-xfer-date" title={tr("guide.form.date.title", locale)} content={tr("guide.form.date.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Date</span>
+                  <input
+                    className="ui-input"
+                    type="date"
+                    value={transferDraft.date}
+                    onChange={(e) => setTransferDraft((d) => ({ ...d, date: e.target.value }))}
+                  />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="tx-xfer-from" title={tr("guide.form.xferFrom.title", locale)} content={tr("guide.form.xferFrom.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">From source</span>
+                  <SourceSelect
+                    sources={sourcesQuery.data ?? []}
+                    value={transferDraft.from_source}
+                    emptyLabel={tr("common.selectSource", locale)}
+                    unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+                    onSourceChange={(source) => setTransferDraft((d) => ({ ...d, from_source: source }))}
+                  />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="tx-xfer-to" title={tr("guide.form.xferTo.title", locale)} content={tr("guide.form.xferTo.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">To source</span>
+                  <SourceSelect
+                    sources={sourcesQuery.data ?? []}
+                    value={transferDraft.to_source}
+                    emptyLabel={tr("common.selectSource", locale)}
+                    unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+                    onSourceChange={(source) => setTransferDraft((d) => ({ ...d, to_source: source }))}
+                  />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="tx-xfer-sent" title={tr("guide.form.xferSent.title", locale)} content={tr("guide.form.xferSent.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Sent amount</span>
+                  <input
+                    className="ui-input"
+                    value={transferDraft.sent_amount}
+                    onChange={(e) => setTransferDraft((d) => ({ ...d, sent_amount: e.target.value }))}
+                  />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="tx-xfer-sent-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Sent currency</span>
+                  <select
+                    className="ui-input"
+                    value={transferDraft.sent_currency}
+                    onChange={(e) => setTransferDraft((d) => ({ ...d, sent_currency: e.target.value }))}
+                  >
+                    {currencyOptions.map((curr) => (
+                      <option key={`sent-${curr}`} value={curr}>
+                        {curr}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="tx-xfer-received" title={tr("guide.form.xferReceived.title", locale)} content={tr("guide.form.xferReceived.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Received amount</span>
+                  <input
+                    className="ui-input"
+                    value={transferDraft.received_amount}
+                    onChange={(e) => setTransferDraft((d) => ({ ...d, received_amount: e.target.value }))}
+                  />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="tx-xfer-received-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Received currency</span>
+                  <select
+                    className="ui-input"
+                    value={transferDraft.received_currency}
+                    onChange={(e) => setTransferDraft((d) => ({ ...d, received_currency: e.target.value }))}
+                  >
+                    {currencyOptions.map((curr) => (
+                      <option key={`received-${curr}`} value={curr}>
+                        {curr}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </HelpModeWrapper>
               <p className="muted-text" style={{ margin: 0 }}>
                 {transferDraft.sent_amount && transferDraft.received_amount
                   ? `${formatMoney(
@@ -862,66 +837,26 @@ export function TransactionsPage(): ReactNode {
                     )} will move from ${transferDraft.from_source || "source A"} to ${transferDraft.to_source || "source B"}, receiving ${formatMoney(transferDraft.received_amount, transferDraft.received_currency)}.`
                   : "Enter amounts and sources to preview transfer impact."}
               </p>
-              {showFormHelp && (
-                <Card style={{ background: "var(--bg-depth-2)", border: "1px dashed var(--accent-primary)" }}>
-                  <p style={{ fontSize: "0.9rem", margin: 0 }}>
-                    <strong>Transfer Guide:</strong> Use this to move money between accounts.
-                    <br />
-                    • <strong>Sent amount:</strong> Put the amount sent here. Include any fees in the total.
-                    <br />
-                    • <strong>Received amount:</strong> The final amount that landed in the target account.
-                    <br />
-                    <Button
-                      variant="primary"
-                      style={{ marginTop: 8 }}
-                      onClick={() =>
-                        startTour("tx_transfer_tour", [
-                          {
-                            target: "#tx-xfer-from",
-                            content: "Select where the money is coming from.",
-                            title: "Origin",
-                          },
-                          {
-                            target: "#tx-xfer-to",
-                            content: "Select the destination account.",
-                            title: "Destination",
-                          },
-                          {
-                            target: "#tx-xfer-sent",
-                            content: "Put the amount sent here. Include any fees in the total.",
-                            title: "Sent Amount",
-                          },
-                          {
-                            target: "#tx-xfer-received",
-                            content: "The final amount that landed in the target account. This can be different if currency conversion occurred.",
-                            title: "Received Amount",
-                          },
-                        ] as any, true)
-                      }
-                    >
-                      Start step-by-step guide
-                    </Button>
-                  </p>
-                </Card>
-              )}
             </>
           )}
-          <label className="ui-field" id="tx-form-cat">
-            <span className="ui-label">Category</span>
-            <input
-              className="ui-input"
-              list="tx-category-list"
-              value={editingTxId ? singleDraft.category : editorMode === "single" ? singleDraft.category : transferDraft.category}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (editingTxId || editorMode === "single") {
-                  setSingleDraft((d) => ({ ...d, category: v }));
-                } else {
-                  setTransferDraft((d) => ({ ...d, category: v }));
-                }
-              }}
-            />
-          </label>
+          <HelpModeWrapper id="tx-form-cat" title={tr("guide.form.category.title", locale)} content={tr("guide.form.category.content", locale)}>
+            <label className="ui-field">
+              <span className="ui-label">Category</span>
+              <input
+                className="ui-input"
+                list="tx-category-list"
+                value={editingTxId ? singleDraft.category : editorMode === "single" ? singleDraft.category : transferDraft.category}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (editingTxId || editorMode === "single") {
+                    setSingleDraft((d) => ({ ...d, category: v }));
+                  } else {
+                    setTransferDraft((d) => ({ ...d, category: v }));
+                  }
+                }}
+              />
+            </label>
+          </HelpModeWrapper>
           {!categoryExists ? (
             <div className="ui-state" role="status">
               <p className="muted-text" style={{ marginTop: 0 }}>
@@ -942,45 +877,50 @@ export function TransactionsPage(): ReactNode {
               </Button>
             </div>
           ) : null}
-          <label className="ui-field">
-            <span className="ui-label">Bill (optional)</span>
-            <select
-              className="ui-input"
-              value={editingTxId ? singleDraft.bill : editorMode === "single" ? singleDraft.bill : transferDraft.bill}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (editingTxId || editorMode === "single") {
-                  setSingleDraft((d) => ({ ...d, bill: v }));
-                } else {
-                  setTransferDraft((d) => ({ ...d, bill: v }));
-                }
-              }}
-            >
-              <option value="">None</option>
-              {(unpaidBillsQuery.data ?? []).map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="ui-field" id="tx-form-desc">
-            <span className="ui-label">Description</span>
-            <input
-              className="ui-input"
-              value={editingTxId ? singleDraft.description : editorMode === "single" ? singleDraft.description : transferDraft.description}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (editingTxId || editorMode === "single") {
-                  setSingleDraft((d) => ({ ...d, description: v }));
-                } else {
-                  setTransferDraft((d) => ({ ...d, description: v }));
-                }
-              }}
-            />
-          </label>
-          <div className="ui-field">
-            <span className="ui-label">Tags</span>
+          <HelpModeWrapper id="tx-form-bill" title={tr("guide.form.linkBill.title", locale)} content={tr("guide.form.linkBill.content", locale)}>
+            <label className="ui-field">
+              <span className="ui-label">Bill (optional)</span>
+              <select
+                className="ui-input"
+                value={editingTxId ? singleDraft.bill : editorMode === "single" ? singleDraft.bill : transferDraft.bill}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (editingTxId || editorMode === "single") {
+                    setSingleDraft((d) => ({ ...d, bill: v }));
+                  } else {
+                    setTransferDraft((d) => ({ ...d, bill: v }));
+                  }
+                }}
+              >
+                <option value="">None</option>
+                {(unpaidBillsQuery.data ?? []).map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </HelpModeWrapper>
+          <HelpModeWrapper id="tx-form-desc" title={tr("guide.form.description.title", locale)} content={tr("guide.form.description.content", locale)}>
+            <label className="ui-field">
+              <span className="ui-label">Description</span>
+              <input
+                className="ui-input"
+                value={editingTxId ? singleDraft.description : editorMode === "single" ? singleDraft.description : transferDraft.description}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (editingTxId || editorMode === "single") {
+                    setSingleDraft((d) => ({ ...d, description: v }));
+                  } else {
+                    setTransferDraft((d) => ({ ...d, description: v }));
+                  }
+                }}
+              />
+            </label>
+          </HelpModeWrapper>
+          <HelpModeWrapper id="tx-form-tags" title={tr("guide.form.tags.title", locale)} content={tr("guide.form.tags.content", locale)}>
+            <div className="ui-field">
+              <span className="ui-label">Tags</span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {selectedTags.length === 0 ? <span className="muted-text">No tags</span> : null}
               {selectedTags.map((tag) => (
@@ -1017,7 +957,8 @@ export function TransactionsPage(): ReactNode {
                 Pick tags
               </Button>
             </div>
-          </div>
+            </div>
+          </HelpModeWrapper>
           <datalist id="tx-category-list">
             {(categoriesQuery.data ?? []).map((c) => (
               <option key={c} value={c} />

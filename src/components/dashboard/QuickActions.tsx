@@ -11,9 +11,8 @@ import { ErrorState } from "../ui/ErrorState";
 import { createCategory, listCategories, listTags } from "../../api/lookups";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 import { isOfflineQueued, type SourceRow } from "../../api/types";
-import { HelpCircle } from "lucide-react";
+import { HelpModeWrapper } from "../tours/TourProvider";
 import { SourceSelect } from "../transactions/SourceSelect";
-import { useTour } from "../tours/TourProvider";
 
 type QuickActionType = "INCOME" | "EXPENSE" | "XFER" | "BILL";
 
@@ -35,8 +34,6 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
   const locale = useLocale();
   const queryClient = useQueryClient();
   const [activeType, setActiveType] = useState<QuickActionType | null>(null);
-  const [showFormHelp, setShowFormHelp] = useState(false);
-  const { startTour } = useTour();
   const [error, setError] = useState("");
   const today = new Date().toISOString().slice(0, 10);
   const sourceCurrency = new Map(sources.map((row) => [row.source, row.currency]));
@@ -219,291 +216,214 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
         open={Boolean(activeType)}
         onClose={() => {
           setActiveType(null);
-          setShowFormHelp(false);
         }}
-        title={
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span>{activeType ? labels[activeType] : "Quick add"}</span>
-            <button
-              type="button"
-              className="ui-btn ui-btn--ghost ui-btn--sm"
-              onClick={() => setShowFormHelp(!showFormHelp)}
-              style={{ fontSize: "0.8rem", padding: "2px 8px" }}
-            >
-              <HelpCircle size={14} /> {showFormHelp ? "Hide guide" : "Guide"}
-            </button>
-          </div>
-        }
+        title={activeType ? labels[activeType] : "Quick add"}
       >
         <div className="stack" style={{ marginTop: 12 }}>
           {error ? <ErrorState title="Save failed" description={error} /> : null}
-          <label className="ui-field">
-            <span className="ui-label">Date</span>
-            <input className="ui-input" type="date" value={draft.date} onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))} />
-          </label>
+          <HelpModeWrapper id="quick-form-date" title={tr("guide.form.date.title", locale)} content={tr("guide.form.date.content", locale)}>
+            <label className="ui-field">
+              <span className="ui-label">Date</span>
+              <input className="ui-input" type="date" value={draft.date} onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))} />
+            </label>
+          </HelpModeWrapper>
           {activeType === "XFER" ? (
             <>
-              <label className="ui-field" id="quick-xfer-from">
-                <span className="ui-label">From source</span>
-                <SourceSelect
-                  sources={sources}
-                  value={draft.source}
-                  emptyLabel={tr("common.selectSource", locale)}
-                  unknownSourceLabel={tr("common.unknownSourceHint", locale)}
-                  onSourceChange={(source) =>
-                    setDraft((d) => ({
-                      ...d,
-                      source,
-                      currency: sourceCurrency.get(source) ?? d.currency,
-                    }))
-                  }
-                />
-              </label>
-              <label className="ui-field" id="quick-xfer-to">
-                <span className="ui-label">To source</span>
-                <SourceSelect
-                  sources={sources}
-                  value={draft.toSource}
-                  emptyLabel={tr("common.selectSource", locale)}
-                  unknownSourceLabel={tr("common.unknownSourceHint", locale)}
-                  onSourceChange={(source) =>
-                    setDraft((d) => ({
-                      ...d,
-                      toSource: source,
-                      receivedCurrency: sourceCurrency.get(source) ?? d.receivedCurrency,
-                    }))
-                  }
-                />
-              </label>
-              <label className="ui-field" id="quick-xfer-sent">
-                <span className="ui-label">Sent amount</span>
-                <input className="ui-input" value={draft.sentAmount} onChange={(e) => setDraft((d) => ({ ...d, sentAmount: e.target.value }))} />
-              </label>
-              <label className="ui-field">
-                <span className="ui-label">Sent currency</span>
-                <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
-                  {currencyOptions.map((curr) => (
-                    <option key={`quick-sent-${curr}`} value={curr}>
-                      {curr}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="ui-field" id="quick-xfer-received">
-                <span className="ui-label">Received amount</span>
-                <input className="ui-input" value={draft.receivedAmount} onChange={(e) => setDraft((d) => ({ ...d, receivedAmount: e.target.value }))} />
-              </label>
-              <label className="ui-field">
-                <span className="ui-label">Received currency</span>
-                <select
-                  className="ui-input"
-                  value={draft.receivedCurrency}
-                  onChange={(e) => setDraft((d) => ({ ...d, receivedCurrency: e.target.value }))}
-                >
-                  {currencyOptions.map((curr) => (
-                    <option key={`quick-received-${curr}`} value={curr}>
-                      {curr}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {showFormHelp && (
-                <Card style={{ background: "var(--bg-depth-2)", border: "1px dashed var(--accent-primary)" }}>
-                  <p style={{ fontSize: "0.9rem", margin: 0 }}>
-                    <strong>Transfer Guide:</strong> Use this to move money between accounts.
-                    <br />
-                    • <strong>Sent amount:</strong> Put the amount sent here. Include any fees in the total.
-                    <br />
-                    • <strong>Received amount:</strong> The final amount that landed in the target account.
-                    <br />
-                    <button
-                      className="ui-btn ui-btn--primary"
-                      style={{ marginTop: 8 }}
-                      onClick={() => {
-                        startTour("quick_transfer_tour", [
-                          {
-                            target: "#quick-xfer-from",
-                            content: "Select where the money is coming from.",
-                            title: "Origin",
-                          },
-                          {
-                            target: "#quick-xfer-to",
-                            content: "Select the destination account.",
-                            title: "Destination",
-                          },
-                          {
-                            target: "#quick-xfer-sent",
-                            content: "Put the amount sent here. Include any fees in the total.",
-                            title: "Sent Amount",
-                          },
-                          {
-                            target: "#quick-xfer-received",
-                            content: "The final amount that landed in the target account. This can be different if currency conversion occurred.",
-                            title: "Received Amount",
-                          },
-                          {
-                            target: "#quick-form-desc",
-                            content: "Add a note for this transfer.",
-                            title: "Description",
-                          },
-                        ] as any, true);
-                      }}
-                    >
-                      Start step-by-step guide
-                    </button>
-                  </p>
-                </Card>
-              )}
+              <HelpModeWrapper id="quick-xfer-from" title={tr("guide.form.xferFrom.title", locale)} content={tr("guide.form.xferFrom.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">From source</span>
+                  <SourceSelect
+                    sources={sources}
+                    value={draft.source}
+                    emptyLabel={tr("common.selectSource", locale)}
+                    unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+                    onSourceChange={(source) =>
+                      setDraft((d) => ({
+                        ...d,
+                        source,
+                        currency: sourceCurrency.get(source) ?? d.currency,
+                      }))
+                    }
+                  />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="quick-xfer-to" title={tr("guide.form.xferTo.title", locale)} content={tr("guide.form.xferTo.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">To source</span>
+                  <SourceSelect
+                    sources={sources}
+                    value={draft.toSource}
+                    emptyLabel={tr("common.selectSource", locale)}
+                    unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+                    onSourceChange={(source) =>
+                      setDraft((d) => ({
+                        ...d,
+                        toSource: source,
+                        receivedCurrency: sourceCurrency.get(source) ?? d.receivedCurrency,
+                      }))
+                    }
+                  />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="quick-xfer-sent" title={tr("guide.form.xferSent.title", locale)} content={tr("guide.form.xferSent.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Sent amount</span>
+                  <input className="ui-input" value={draft.sentAmount} onChange={(e) => setDraft((d) => ({ ...d, sentAmount: e.target.value }))} />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="quick-xfer-sent-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Sent currency</span>
+                  <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
+                    {currencyOptions.map((curr) => (
+                      <option key={`quick-sent-${curr}`} value={curr}>
+                        {curr}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="quick-xfer-received" title={tr("guide.form.xferReceived.title", locale)} content={tr("guide.form.xferReceived.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Received amount</span>
+                  <input className="ui-input" value={draft.receivedAmount} onChange={(e) => setDraft((d) => ({ ...d, receivedAmount: e.target.value }))} />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="quick-xfer-received-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Received currency</span>
+                  <select
+                    className="ui-input"
+                    value={draft.receivedCurrency}
+                    onChange={(e) => setDraft((d) => ({ ...d, receivedCurrency: e.target.value }))}
+                  >
+                    {currencyOptions.map((curr) => (
+                      <option key={`quick-received-${curr}`} value={curr}>
+                        {curr}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </HelpModeWrapper>
             </>
           ) : (
             <>
-              <label className="ui-field" id="quick-single-amount">
-                <span className="ui-label">Amount</span>
-                <input className="ui-input" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} />
-              </label>
-              <label className="ui-field" id="quick-single-source">
-                <span className="ui-label">Source</span>
-                <SourceSelect
-                  sources={sources}
-                  value={draft.source}
-                  emptyLabel={tr("common.selectSource", locale)}
-                  unknownSourceLabel={tr("common.unknownSourceHint", locale)}
-                  onSourceChange={(source) =>
-                    setDraft((d) => ({
-                      ...d,
-                      source,
-                      currency: sourceCurrency.get(source) ?? d.currency,
-                    }))
-                  }
-                />
-              </label>
-              <label className="ui-field">
-                <span className="ui-label">Currency</span>
-                <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
-                  {currencyOptions.map((curr) => (
-                    <option key={`quick-curr-${curr}`} value={curr}>
-                      {curr}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {showFormHelp && (
-                <Card style={{ background: "var(--bg-depth-2)", border: "1px dashed var(--accent-primary)" }}>
-                  <p style={{ fontSize: "0.9rem", margin: 0 }}>
-                    <strong>Add {activeType === "INCOME" ? "Income" : activeType === "EXPENSE" ? "Expense" : "Bill"} Guide:</strong>
-                    <br />
-                    • <strong>Amount:</strong> Total value of the {activeType?.toLowerCase()}.
-                    <br />
-                    • <strong>Source:</strong> The account or wallet involved.
-                    <br />
-                    <button
-                      className="ui-btn ui-btn--primary"
-                      style={{ marginTop: 8 }}
-                      onClick={() => {
-                        startTour(`quick_${activeType?.toLowerCase()}_tour`, [
-                          {
-                            target: "#quick-single-amount",
-                            content: `Enter the total amount for this ${activeType?.toLowerCase()}.`,
-                            title: "Amount",
-                          },
-                          {
-                            target: "#quick-single-source",
-                            content: "Select the source account for this transaction.",
-                            title: "Source",
-                          },
-                          {
-                            target: "#quick-form-cat",
-                            content: "Pick a category to organize your spending.",
-                            title: "Category",
-                          },
-                          {
-                            target: "#quick-form-tags",
-                            content: "Add tags like #vacation to group related expenses.",
-                            title: "Tags",
-                          },
-                          {
-                            target: "#quick-form-desc",
-                            content: "Add a note for future reference.",
-                            title: "Description",
-                          },
-                        ] as any, true);
-                      }}
-                    >
-                      Start step-by-step guide
-                    </button>
-                  </p>
-                </Card>
-              )}
+              <HelpModeWrapper id="quick-single-amount" title={tr("guide.form.amount.title", locale)} content={tr("guide.form.amount.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Amount</span>
+                  <input className="ui-input" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="quick-single-source" title={tr("guide.form.source.title", locale)} content={tr("guide.form.source.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Source</span>
+                  <SourceSelect
+                    sources={sources}
+                    value={draft.source}
+                    emptyLabel={tr("common.selectSource", locale)}
+                    unknownSourceLabel={tr("common.unknownSourceHint", locale)}
+                    onSourceChange={(source) =>
+                      setDraft((d) => ({
+                        ...d,
+                        source,
+                        currency: sourceCurrency.get(source) ?? d.currency,
+                      }))
+                    }
+                  />
+                </label>
+              </HelpModeWrapper>
+              <HelpModeWrapper id="quick-single-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">Currency</span>
+                  <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
+                    {currencyOptions.map((curr) => (
+                      <option key={`quick-curr-${curr}`} value={curr}>
+                        {curr}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </HelpModeWrapper>
             </>
           )}
           {activeType === "BILL" ? (
-            <label className="ui-field">
-              <span className="ui-label">Due date</span>
-              <input className="ui-input" type="date" value={draft.dueDate} onChange={(e) => setDraft((d) => ({ ...d, dueDate: e.target.value }))} />
-            </label>
+            <HelpModeWrapper id="quick-form-due" title={tr("guide.form.dueDate.title", locale)} content={tr("guide.form.dueDate.content", locale)}>
+              <label className="ui-field">
+                <span className="ui-label">Due date</span>
+                <input className="ui-input" type="date" value={draft.dueDate} onChange={(e) => setDraft((d) => ({ ...d, dueDate: e.target.value }))} />
+              </label>
+            </HelpModeWrapper>
           ) : (
-            <label className="ui-field" id="quick-form-cat">
-              <span className="ui-label">Category</span>
-              <input className="ui-input" list="quick-category-list" value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))} />
-            </label>
+            <HelpModeWrapper id="quick-form-cat" title={tr("guide.form.category.title", locale)} content={tr("guide.form.category.content", locale)}>
+              <label className="ui-field">
+                <span className="ui-label">Category</span>
+                <input className="ui-input" list="quick-category-list" value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))} />
+              </label>
+            </HelpModeWrapper>
           )}
           {activeType !== "BILL" ? (
             <>
-              <label className="ui-field">
-                <span className="ui-label">{tr("dashboard.quick.linkBill", locale)}</span>
-                <input
-                  className="ui-input"
-                  list="quick-bill-list"
-                  value={draft.bill}
-                  onChange={(e) => setDraft((d) => ({ ...d, bill: e.target.value }))}
-                />
-              </label>
+              <HelpModeWrapper id="quick-form-link-bill" title={tr("guide.form.linkBill.title", locale)} content={tr("guide.form.linkBill.content", locale)}>
+                <label className="ui-field">
+                  <span className="ui-label">{tr("dashboard.quick.linkBill", locale)}</span>
+                  <input
+                    className="ui-input"
+                    list="quick-bill-list"
+                    value={draft.bill}
+                    onChange={(e) => setDraft((d) => ({ ...d, bill: e.target.value }))}
+                  />
+                </label>
+              </HelpModeWrapper>
               <datalist id="quick-bill-list">
                 {(unpaidBillsQuery.data ?? []).map((name) => (
                   <option key={name} value={name} />
                 ))}
               </datalist>
-              <div className="ui-field" id="quick-form-tags">
-                <span className="ui-label">{tr("dashboard.quick.tags", locale)}</span>
-                {selectedTags.length > 0 ? (
-                  <p className="muted" style={{ margin: "0 0 0.35rem", fontSize: "0.85rem" }}>
-                    {selectedTags.join(", ")}
-                  </p>
-                ) : null}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                  <input
-                    className="ui-input"
-                    style={{ flex: "1 1 140px", minWidth: 0 }}
-                    value={pendingTag}
-                    onChange={(e) => setPendingTag(e.target.value)}
-                    placeholder={tr("dashboard.quick.tagPlaceholder", locale)}
-                    list="quick-tags-datalist"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => {
-                      const next = pendingTag.trim();
-                      if (!next || selectedTags.includes(next)) return;
-                      setSelectedTags((prev) => [...prev, next]);
-                      setPendingTag("");
-                    }}
-                  >
-                    {tr("dashboard.quick.addTag", locale)}
-                  </Button>
+              <HelpModeWrapper id="quick-form-tags" title={tr("guide.form.tags.title", locale)} content={tr("guide.form.tags.content", locale)}>
+                <div className="ui-field">
+                  <span className="ui-label">{tr("dashboard.quick.tags", locale)}</span>
+                  {selectedTags.length > 0 ? (
+                    <p className="muted" style={{ margin: "0 0 0.35rem", fontSize: "0.85rem" }}>
+                      {selectedTags.join(", ")}
+                    </p>
+                  ) : null}
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <input
+                      className="ui-input"
+                      style={{ flex: "1 1 140px", minWidth: 0 }}
+                      value={pendingTag}
+                      onChange={(e) => setPendingTag(e.target.value)}
+                      placeholder={tr("dashboard.quick.tagPlaceholder", locale)}
+                      list="quick-tags-datalist"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        const next = pendingTag.trim();
+                        if (!next || selectedTags.includes(next)) return;
+                        setSelectedTags((prev) => [...prev, next]);
+                        setPendingTag("");
+                      }}
+                    >
+                      {tr("dashboard.quick.addTag", locale)}
+                    </Button>
+                  </div>
+                  <datalist id="quick-tags-datalist">
+                    {tagOptions.map((t) => (
+                      <option key={t} value={t} />
+                    ))}
+                  </datalist>
                 </div>
-                <datalist id="quick-tags-datalist">
-                  {tagOptions.map((t) => (
-                    <option key={t} value={t} />
-                  ))}
-                </datalist>
-              </div>
+              </HelpModeWrapper>
             </>
           ) : null}
-          <label className="ui-field" id="quick-form-desc">
-            <span className="ui-label">Description</span>
-            <input className="ui-input" value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} />
-          </label>
+          <HelpModeWrapper id="quick-form-desc" title={tr("guide.form.description.title", locale)} content={tr("guide.form.description.content", locale)}>
+            <label className="ui-field">
+              <span className="ui-label">Description</span>
+              <input className="ui-input" value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} />
+            </label>
+          </HelpModeWrapper>
           <datalist id="quick-category-list">
             {categoryOptions.map((name) => (
               <option key={name} value={name} />

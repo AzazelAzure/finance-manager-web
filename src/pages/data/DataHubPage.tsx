@@ -24,6 +24,7 @@ import {
 } from "../../api/lookups";
 import type { SourceRow, TransactionRecord } from "../../api/types";
 import { tr, useLocale } from "../../lib/i18n";
+import { HelpModeWrapper } from "../../components/tours/TourProvider";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 import { SOURCE_ACCOUNT_TYPES, SOURCE_ACCOUNT_TYPE_OPTIONS } from "../../lib/sourceAccountTypes";
 
@@ -287,6 +288,7 @@ export function DataHubPage(): ReactNode {
         <LoadingState label={tr("dataHub.loading", locale)} />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+          <HelpModeWrapper id="datahub-sources" title={tr("guide.dataHub.sources.title", locale)} content={tr("guide.dataHub.sources.content", locale)}>
           <Card>
             <div className="stack" style={{ gap: 10 }}>
               <div className="row-between">
@@ -329,7 +331,9 @@ export function DataHubPage(): ReactNode {
               )}
             </div>
           </Card>
+          </HelpModeWrapper>
 
+          <HelpModeWrapper id="datahub-categories" title={tr("guide.dataHub.categories.title", locale)} content={tr("guide.dataHub.categories.content", locale)}>
           <Card>
             <div className="stack" style={{ gap: 10 }}>
               <div className="row-between">
@@ -369,7 +373,9 @@ export function DataHubPage(): ReactNode {
               )}
             </div>
           </Card>
+          </HelpModeWrapper>
 
+          <HelpModeWrapper id="datahub-tags" title={tr("guide.dataHub.tags.title", locale)} content={tr("guide.dataHub.tags.content", locale)}>
           <Card>
             <div className="stack" style={{ gap: 10 }}>
               <div className="row-between">
@@ -402,6 +408,7 @@ export function DataHubPage(): ReactNode {
               )}
             </div>
           </Card>
+          </HelpModeWrapper>
         </div>
       )}
 

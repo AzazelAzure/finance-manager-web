@@ -5,6 +5,9 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- **F-007 Guide mode rework:** Global Guide toggle now uses click/focus-activated contextual notes (not hover-only). Form modals (Quick Add, Transactions, Upcoming) use shared `HelpModeWrapper` instead of broken per-modal Guide panels and in-form Joyride. Data Hub and Profile pages gain guide coverage. Page-level “Start guide” buttons removed where they conflicted with Guide mode; explicit **Replay Tour** buttons remain for Joyride onboarding.
+
+### Fixed
 - **Dashboard header actions:** Consolidated duplicate refresh/replay button rows into a single action group (guide, replay tour, refresh).
 - **Production build on `main`:** Branch includes F-012 support-intake commits (`e66c2bb` lineage) so `npm run build` passes (`TourProvider` force-replay API + tour step constants aligned).
 

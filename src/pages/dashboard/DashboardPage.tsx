@@ -34,7 +34,6 @@ import { preferOfflineCaches } from "../../offline/connectivity";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
 import { WelcomeTourModal, buildWelcomeSteps } from "../../components/tours/WelcomeTourModal";
-import { HelpCircle } from "lucide-react";
 
 const DASHBOARD_LINEAR_TOUR_STEPS = [
   {
@@ -289,16 +288,6 @@ export function DashboardPage(): ReactNode {
         </div>
         <div className="dashboard-header__actions" style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           <Button
-            type="button"
-            variant="secondary"
-            aria-label="Start guide"
-            title="Start guide"
-            onClick={() => startTour("dashboard_linear_tour", [...DASHBOARD_LINEAR_TOUR_STEPS] as any, true)}
-          >
-            <HelpCircle size={18} aria-hidden />
-            <span className="sr-only">Start guide</span>
-          </Button>
-          <Button
             id="tour-replay-btn"
             type="button"
             variant="secondary"
@@ -315,13 +304,13 @@ export function DashboardPage(): ReactNode {
       </div>
 
       <div className="dashboard-root__quick">
-        <HelpModeWrapper id="tour-quick-actions" title="Quick Add" content="Quick add supports income, expense, transfer, and bill flows.">
+        <HelpModeWrapper id="tour-quick-actions" title={tr("tour.dashboard.quickActions.title", locale)} content={tr("tour.dashboard.quickActions.content", locale)}>
           <QuickActions baseCurrency={currency} sources={sourceQuery.data ?? []} />
         </HelpModeWrapper>
       </div>
 
       <section className="dashboard-section" aria-label={tr("dashboard.section.kpis", locale)}>
-        <HelpModeWrapper id="tour-kpis" title="KPI Cards" content="Use KPI cards to spot period trends quickly.">
+        <HelpModeWrapper id="tour-kpis" title={tr("tour.dashboard.kpis.title", locale)} content={tr("tour.dashboard.kpis.content", locale)}>
           <KPIRow
             currency={currency}
             summary={summary}
@@ -334,7 +323,7 @@ export function DashboardPage(): ReactNode {
       </section>
 
       <section className="dashboard-section" aria-label={tr("dashboard.section.filters", locale)}>
-        <HelpModeWrapper id="tour-filters" title="Dashboard Filters" content="Apply filters first, then refresh to compare snapshots.">
+        <HelpModeWrapper id="tour-filters" title={tr("tour.dashboard.filters.title", locale)} content={tr("tour.dashboard.filters.content", locale)}>
           <FilterRow
             key={appliedKey}
             initialDraft={initialFilterDraft}
@@ -353,7 +342,7 @@ export function DashboardPage(): ReactNode {
 
       <div className="dashboard-root">
         <div className="dashboard-root__row">
-          <HelpModeWrapper id="tour-charts" className="dashboard-root__main dashboard-col" title="Charts" content="Chart slices drill to detailed transactions.">
+          <HelpModeWrapper id="tour-charts" className="dashboard-root__main dashboard-col" title={tr("tour.dashboard.flowChart.title", locale)} content={tr("tour.dashboard.flowChart.content", locale)}>
             <div id="tour-flow-chart">
               <FlowChart
                 data={data.flow_series}
