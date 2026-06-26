@@ -1,4 +1,5 @@
 import { keepPreviousData, useQuery, useQueryClient, type QueryFunctionContext } from "@tanstack/react-query";
+import { m, useReducedMotion } from "motion/react";
 import { useCallback, useMemo, useEffect, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getAppProfile } from "../../api/profile";
@@ -21,6 +22,7 @@ import { Button } from "../../components/ui/Button";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { LoadingState } from "../../components/ui/LoadingState";
 import { Card } from "../../components/ui/Card";
+import { formatMoney, toNumber } from "../../lib/money";
 import {
   type DashboardFilterDraft,
   appliedSnapshotKey,
@@ -109,6 +111,7 @@ function appendDrill(
 
 export function DashboardPage(): ReactNode {
   const locale = useLocale();
+  const shouldReduceMotion = useReducedMotion();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const nav = useNavigate();
@@ -176,6 +179,8 @@ export function DashboardPage(): ReactNode {
 
   const currency = balanceCurrency(data, profileQuery.data);
   const summary = data?.snapshot ?? null;
+  const safeToSpend = summary != null ? toNumber(summary.safe_to_spend) : null;
+  const remainingExpenses = summary != null ? toNumber(summary.total_remaining_expenses) : null;
   const txRows = useMemo(() => data?.transactions_for_month ?? [], [data]);
   const topTagNames = useMemo(
     () => topTagNamesFromTransactions(data?.transactions_for_month ?? [], 8),
@@ -302,6 +307,32 @@ export function DashboardPage(): ReactNode {
           </Button>
         </div>
       </div>
+
+      <m.section
+        className="dashboard-hero"
+        aria-labelledby="dashboard-safe-to-spend-title"
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+        transition={shouldReduceMotion ? undefined : { duration: 0.3, ease: "easeOut" }}
+      >
+        <div>
+          <p id="dashboard-safe-to-spend-title" className="dashboard-hero__eyebrow">
+            {tr("dashboard.hero.safeToSpend", locale)}
+          </p>
+          <p className="dashboard-hero__value money-value">
+            {safeToSpend == null ? tr("dashboard.na", locale) : formatMoney(safeToSpend, currency)}
+          </p>
+          <p className="dashboard-hero__description">
+            {tr("dashboard.hero.safeToSpendDescription", locale)}
+          </p>
+        </div>
+        <div>
+          <p className="dashboard-hero__support-label">{tr("dashboard.hero.remainingExpenses", locale)}</p>
+          <p className="dashboard-hero__support-value money-value">
+            {remainingExpenses == null ? tr("dashboard.na", locale) : formatMoney(remainingExpenses, currency)}
+          </p>
+        </div>
+      </m.section>
 
       <div className="dashboard-root__quick">
         <HelpModeWrapper id="tour-quick-actions" title={tr("tour.dashboard.quickActions.title", locale)} content={tr("tour.dashboard.quickActions.content", locale)}>

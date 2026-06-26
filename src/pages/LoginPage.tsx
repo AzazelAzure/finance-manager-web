@@ -1,7 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
+import { Fingerprint, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { Helmet } from "react-helmet-async";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { login } from "../api/auth";
@@ -14,7 +16,6 @@ import { setSession } from "../state/auth";
 import { consumeForceOnboardingNextLogin } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
 import type { ReactNode } from "react";
-import { Helmet } from "react-helmet-async";
 
 const schema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -83,11 +84,25 @@ export function LoginPage(): ReactNode {
         />
         <link rel="canonical" href="https://thehivemanager.com/login" />
       </Helmet>
-      <h1 className="auth-shell__title">{tr("login.title", locale)}</h1>
-      <p className="muted-text auth-shell__subtitle">
-        {tr("login.helper", locale)}
-      </p>
+      <div className="auth-shell__intro">
+        <div className="auth-shell__brand" aria-hidden>
+          <img src="/favicon.png" alt="" className="auth-shell__mark" />
+          <span>Hive</span>
+        </div>
+        <h1 className="auth-shell__title">{tr("login.title", locale)}</h1>
+        <p className="auth-shell__trust">
+          <ShieldCheck size={16} aria-hidden />
+          {tr("login.trust", locale)}
+        </p>
+        <p className="muted-text auth-shell__subtitle">
+          {tr("login.helper", locale)}
+        </p>
+      </div>
       <Card className="auth-card">
+        <button type="button" className="auth-biometric" disabled aria-disabled="true">
+          <Fingerprint size={18} aria-hidden />
+          <span>{tr("login.biometricPlaceholder", locale)}</span>
+        </button>
         <AppForm form={form} onSubmit={onValid} className="stack" id="login-form" autoComplete="off">
           <TextField name="username" label="Username" autoComplete="off" unlockOnFocus />
           <TextField name="password" label="Password" type="password" autoComplete="off" unlockOnFocus />

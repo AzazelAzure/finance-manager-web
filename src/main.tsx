@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
+import { LazyMotion, domAnimation } from "motion/react";
 import "./index.css";
 import App from "./App";
 import { queryClient } from "./lib/queryClient";
@@ -21,9 +22,11 @@ createRoot(document.getElementById("root")!).render(
       <SessionProvider>
         <HelmetProvider>
           <BrowserRouter>
-            <SwUpdateBanner />
-            <OfflineRoot />
-            <App />
+            <LazyMotion features={domAnimation} strict>
+              <SwUpdateBanner />
+              <OfflineRoot />
+              <App />
+            </LazyMotion>
           </BrowserRouter>
         </HelmetProvider>
       </SessionProvider>

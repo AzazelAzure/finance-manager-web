@@ -1,6 +1,6 @@
 .ui-card {
   background: var(--gradient-surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-surface-border);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   box-shadow: var(--shadow-sm), var(--shadow-inset);
@@ -16,7 +16,7 @@
 }
 
 .ui-card:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  border-color: color-mix(in srgb, var(--color-brand-primary) 60%, var(--color-surface-border));
   box-shadow: 0 0 0 3px var(--focus-ring-soft), var(--shadow-md);
 }
 
@@ -27,7 +27,7 @@
   gap: var(--space-2);
   min-height: 2.4rem;
   border-radius: var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 55%, transparent);
   padding: 0 var(--space-4);
   font-weight: 600;
   font: inherit;
@@ -36,7 +36,7 @@
   text-decoration: none;
   color: var(--accent-fg);
   background: var(--gradient-accent);
-  box-shadow: 0 10px 20px color-mix(in srgb, var(--accent) 26%, transparent);
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--color-brand-primary) 26%, transparent);
   transition:
     transform var(--dur-fast) var(--ease-emphasis),
     box-shadow var(--dur-fast) var(--ease-standard),
@@ -58,13 +58,13 @@
 
 .ui-btn:not(:disabled):active {
   transform: translateY(0);
-  box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 26%, transparent);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--color-brand-primary) 26%, transparent);
 }
 
 .ui-btn--secondary {
   color: var(--fg);
-  background: color-mix(in srgb, var(--surface-2) 84%, var(--surface));
-  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--color-surface-card) 84%, var(--surface-2));
+  border: 1px solid var(--color-surface-border);
   box-shadow: var(--shadow-sm);
 }
 
@@ -77,8 +77,8 @@ html[data-theme="dark"] .ui-btn--secondary {
 
 .ui-btn--ghost {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface-card));
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
   box-shadow: none;
 }
 
@@ -105,6 +105,12 @@ html[data-theme="dark"] .ui-btn--secondary {
 .ui-kpi h3,
 .ui-kpi p {
   margin: 0;
+}
+
+/* KPI values are monetary/numeric — align digits with tabular figures. */
+.ui-kpi h3 {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
 }
 
 .ui-kpi p.ui-kpi__label {
@@ -244,9 +250,9 @@ html[data-theme="dark"] .ui-modal-backdrop {
 .ui-select {
   min-height: 2.4rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-surface-border);
   padding: 0 var(--space-3);
-  background: color-mix(in srgb, var(--surface) 92%, var(--surface-2));
+  background: color-mix(in srgb, var(--color-surface-card) 92%, var(--surface-2));
   color: var(--fg);
   font: inherit;
   font-size: var(--font-md);
@@ -259,15 +265,15 @@ html[data-theme="dark"] .ui-modal-backdrop {
 .ui-input:hover,
 .ui-textarea:hover,
 .ui-select:hover {
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-color: color-mix(in srgb, var(--color-brand-primary) 40%, var(--color-surface-border));
 }
 
 .ui-input:focus,
 .ui-textarea:focus,
 .ui-select:focus {
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  border-color: color-mix(in srgb, var(--color-brand-primary) 72%, var(--color-surface-border));
   box-shadow: 0 0 0 3px var(--focus-ring-soft);
-  background: var(--surface);
+  background: var(--color-surface-card);
   outline: none;
 }
 

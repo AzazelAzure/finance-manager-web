@@ -7,6 +7,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="application-name" content="Hive Financial Manager" />
+
+    <!-- Resolve theme before first paint to avoid a light→dark flash on
+         reload (mirrors src/lib/theme.ts). Keep in sync with that module. -->
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem("fm_theme");
+          var resolved =
+            pref === "dark" || pref === "light"
+              ? pref
+              : window.matchMedia &&
+                  window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          document.documentElement.setAttribute("data-theme", resolved);
+        } catch (e) {
+          /* localStorage unavailable — fall back to the static light default */
+        }
+      })();
+    </script>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' http://localhost:5173 http://127.0.0.1:5173 http://localhost:4173 http://127.0.0.1:4173 https://api.thehivemanager.com https://api-jsdevtesting.thehivemanager.com https://financemanager.local:8443 https://api.financemanager.local:8443; frame-ancestors 'none'; object-src 'none';" />
 
     <title>Hive Financial Manager — Free Personal Budget Tracker for Filipinos</title>
