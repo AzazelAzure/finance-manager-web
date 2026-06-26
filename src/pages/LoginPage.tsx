@@ -77,8 +77,11 @@ export function LoginPage(): ReactNode {
   return (
     <section className="stack auth-shell auth-shell--login">
       <Helmet>
-        <title>{tr("login.seo.title", locale)}</title>
-        <meta name="description" content={tr("login.seo.desc", locale)} />
+        <title>{tr("login.seo.title", locale) || "Sign In | Hive Financial Manager"}</title>
+        <meta
+          name="description"
+          content={tr("login.seo.desc", locale) || "Log in to your Hive Financial Manager account."}
+        />
         <link rel="canonical" href="https://thehivemanager.com/login" />
       </Helmet>
       <div className="auth-shell__intro">

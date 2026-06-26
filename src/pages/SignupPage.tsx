@@ -106,8 +106,11 @@ export function SignupPage(): ReactNode {
   return (
     <section className="stack auth-shell auth-shell--signup">
       <Helmet>
-        <title>{tr("signup.seo.title", locale)}</title>
-        <meta name="description" content={tr("signup.seo.desc", locale)} />
+        <title>{tr("signup.seo.title", locale) || "Create Account | Hive Financial Manager"}</title>
+        <meta
+          name="description"
+          content={tr("signup.seo.desc", locale) || "Create your free Hive Financial Manager account."}
+        />
         <link rel="canonical" href="https://thehivemanager.com/signup" />
       </Helmet>
       <div className="auth-shell__intro">

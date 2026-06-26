@@ -10,9 +10,10 @@ All notable changes to this project are documented in this file.
   - **Primitive wiring (T02):** new `components/ui/Input.tsx`; `Card`/`Button`/`Input` styles re-pointed at the token layer.
   - **Dashboard (T03):** "Safe to spend" hero card with remaining-planned-expenses support line; chart palette + Flow/Spend chart colors moved to semantic tokens.
   - **Responsive nav shell (T04):** mobile bottom tab bar (Dashboard / Transactions / Upcoming / Calendar) plus a "More" bottom-sheet drawer (Data / Profile / Support / Guide toggle / Logout). Drawer closes on backdrop tap, Escape, and item select; slide-up animation gated by `prefers-reduced-motion`; safe-area insets preserved. z-index contract: top bar 10 → tab bar 20 → drawer 100 → modals 200 → tour overlays 10000.
-  - **Auth polish + SEO (T05):** Login/Signup brand mark, trust microcopy, biometric-unlock placeholder, and `react-helmet-async` title/description tags.
+  - **Auth polish + SEO (T05):** Login/Signup brand mark, trust microcopy, biometric-unlock placeholder, and `react-helmet-async` title/description/canonical tags (merged with the SEO P1 work below).
   - **Motion layer (T06):** `motion` via `LazyMotion`/`domAnimation`; reduced-motion-gated fade-in on the dashboard hero.
   - i18n: new `dashboard.hero.*`, `login.*`/`signup.*` trust+SEO, and `shell.nav.more` / `shell.drawer.*` keys in `en-US` and `tl-PH`.
+- **SEO P1 auth pages (T16.SL1–SL2):** Localized `login.seo.*` / `signup.seo.*` i18n keys (en-US + tl-PH) and per-route `react-helmet-async` title, description, and canonical tags on `/login` and `/signup`.
 
 ### Fixed
 - **F-007 Guide mode rework:** Global Guide toggle now uses click/focus-activated contextual notes (not hover-only). Form modals (Quick Add, Transactions, Upcoming) use shared `HelpModeWrapper` instead of broken per-modal Guide panels and in-form Joyride. Data Hub and Profile pages gain guide coverage. Page-level “Start guide” buttons removed where they conflicted with Guide mode; explicit **Replay Tour** buttons remain for Joyride onboarding.
