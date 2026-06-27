@@ -36,6 +36,9 @@ export function setThemePreference(pref: ThemePreference): void {
   localStorage.setItem(THEME_KEY, pref);
   writeThemeCookie(pref);
   root()?.setAttribute("data-theme", pref === "system" ? systemTheme() : pref);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("fm-theme-changed"));
+  }
 }
 
 /** Backward-compatible setter used by old callers. */
