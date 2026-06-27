@@ -25,7 +25,7 @@ const schema = z
   .object({
     username: z.string().min(1, "Username is required").max(150, "Username is too long"),
     user_email: z.string().email("Valid email is required"),
-    password: z.string().min(8, "At least 8 characters"),
+    password: z.string().min(12, "At least 12 characters"),
     password_confirm: z.string().min(1, "Confirm your password"),
     tos_accepted: z.boolean().refine((v) => v, { message: "You must accept the Terms of Service" }),
   })
