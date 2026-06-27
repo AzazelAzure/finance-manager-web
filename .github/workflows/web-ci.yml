@@ -1,0 +1,32 @@
+name: Web CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # tsconfig.json is a solution-style config (files: []), so `tsc --noEmit`
+      # would check nothing. `tsc -b` builds the referenced projects and type
+      # checks them (noEmit is set in tsconfig.app.json). Mirrors `npm run build`.
+      - name: TypeScript type check
+        run: npx tsc -b
+
+      - name: Run tests
+        run: npm test
