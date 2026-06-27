@@ -5,7 +5,8 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
-- **Signup clickwrap (PLAN_CROSS_SIGNUP_CLICKWRAP):** Required ToS/Privacy checkbox on signup sends `tos_version` + `tos_accepted_at` to API; login page shows informational legal footnote with links.**
+- **Signup clickwrap (PLAN_CROSS_SIGNUP_CLICKWRAP):** Required ToS/Privacy checkbox on signup sends `tos_version` + `tos_accepted_at` to API; login page shows informational legal footnote with links.
+- **Design system foundation (PLAN_CROSS_UI_UX_DESIGN_SYSTEM, T01–T06):**
   - **Design tokens (T01):** additive CSS-variable token layer in `styles/tokens.css` — brand/surface aliases, OKLCH semantic colors (`--color-positive/warning/negative/pending/neutral`), 4px spacing scale (`--spacing-*`), type scale (`--text-*`), and monospace numeric tokens. Dark mode resolves before first paint (inline script in `index.html`) to remove the light→dark flash. Monetary/numeric values use tabular figures (`.money` / KPI / hero) for column alignment.
   - **Primitive wiring (T02):** new `components/ui/Input.tsx`; `Card`/`Button`/`Input` styles re-pointed at the token layer.
   - **Dashboard (T03):** "Safe to spend" hero card with remaining-planned-expenses support line; chart palette + Flow/Spend chart colors moved to semantic tokens.
