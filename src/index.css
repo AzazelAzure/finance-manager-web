@@ -169,6 +169,25 @@ a:hover {
   margin-top: 0.5rem;
 }
 
+.signup-tos-row {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.signup-tos-row__label {
+  margin: 0;
+  font-size: var(--font-sm, 0.875rem);
+  line-height: 1.45;
+}
+
+.login-legal-footnote {
+  margin: 0.75rem 0 0;
+  font-size: var(--font-sm, 0.8125rem);
+  line-height: 1.45;
+  color: var(--muted, #64748b);
+}
+
 .app-surface {
   padding: var(--space-4);
   border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--border));

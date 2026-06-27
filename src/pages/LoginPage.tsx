@@ -115,6 +115,10 @@ export function LoginPage(): ReactNode {
             {form.formState.isSubmitting ? tr("login.submitting", locale) : tr("login.submit", locale)}
           </Button>
         </AppForm>
+        <p className="login-legal-footnote muted-text">
+          By logging in, you agree to our <Link to="/terms">Terms of Service</Link> and acknowledge our{" "}
+          <Link to="/privacy">Privacy Policy</Link>.
+        </p>
         <p className="muted auth-shell__links">
           <Link to="/">Home</Link>
           {" · "}

@@ -25,8 +25,9 @@ const schema = z
   .object({
     username: z.string().min(1, "Username is required").max(150, "Username is too long"),
     user_email: z.string().email("Valid email is required"),
-    password: z.string().min(8, "At least 8 characters"),
+    password: z.string().min(12, "At least 12 characters"),
     password_confirm: z.string().min(1, "Confirm your password"),
+    tos_accepted: z.boolean().refine((v) => v, { message: "You must accept the Terms of Service" }),
   })
   .refine((d) => d.password === d.password_confirm, {
     path: ["password_confirm"],
@@ -46,8 +47,10 @@ export function SignupPage(): ReactNode {
       user_email: "",
       password: "",
       password_confirm: "",
+      tos_accepted: false,
     },
   });
+  const tosAccepted = form.watch("tos_accepted");
 
   if (isAuthenticated) {
     // Session updates synchronously via useSyncExternalStore; force flag is set before
@@ -63,6 +66,8 @@ export function SignupPage(): ReactNode {
         username: values.username.trim(),
         user_email: values.user_email.trim(),
         password: values.password,
+        tos_version: "1.0",
+        tos_accepted_at: new Date().toISOString(),
       });
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 400) {
@@ -144,12 +149,30 @@ export function SignupPage(): ReactNode {
             autoComplete="off"
             unlockOnFocus
           />
+          <div className="ui-field ui-field--row signup-tos-row">
+            <input
+              className="ui-check"
+              type="checkbox"
+              id="tos_accepted"
+              aria-invalid={form.formState.errors.tos_accepted ? "true" : "false"}
+              {...form.register("tos_accepted")}
+            />
+            <label className="ui-label signup-tos-row__label" htmlFor="tos_accepted">
+              I agree to the <Link to="/terms">Terms of Service</Link> and{" "}
+              <Link to="/privacy">Privacy Policy</Link>
+            </label>
+          </div>
+          {form.formState.errors.tos_accepted ? (
+            <p className="error-text" role="alert">
+              {String(form.formState.errors.tos_accepted.message)}
+            </p>
+          ) : null}
           {formError ? (
             <p className="error-text" role="alert">
               {formError}
             </p>
           ) : null}
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button type="submit" disabled={form.formState.isSubmitting || !tosAccepted}>
             {form.formState.isSubmitting ? tr("signup.submitting", locale) : tr("signup.submit", locale)}
           </Button>
         </AppForm>

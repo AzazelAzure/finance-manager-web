@@ -13,6 +13,8 @@ export type CreateUserBody = {
   username: string;
   user_email: string;
   password: string;
+  tos_version: string;
+  tos_accepted_at: string;
 };
 
 export async function createUser(body: CreateUserBody): Promise<void> {
