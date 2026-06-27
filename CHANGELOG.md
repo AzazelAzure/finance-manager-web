@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- Transaction outbox overlay tests: vitest coverage for transactionRecordMatchesParams and transactionMatchesTxListQuery (current_month/last_month filtering, pending tx passthrough, dimension attribute filtering).
 - **CI pipeline (PLAN_CROSS_CI_CD):** `.github/workflows/web-ci.yml` runs `npm ci`, a `tsc -b` type check, and `vitest run` on every push and PR to `main` (Node 22). Type check uses `tsc -b` because `tsconfig.json` is solution-style (`files: []`), so `tsc --noEmit` would check nothing. Added `.github/dependabot.yml` for weekly `npm` + `github-actions` update PRs.
 - **Public light/dark theme toggle:** New `ThemeToggle` component (`components/ThemeToggle.tsx`) in the public header (`PublicShell`) so logged-out visitors can switch light/dark mode from the splash/landing, login, signup, and legal pages. Previously the only theme control lived behind authentication on Settings. Persists via `setThemePreference` and stays in sync across surfaces and OS changes via a new `fm-theme-changed` event. i18n: `theme.toggle.aria` / `theme.toLight` / `theme.toDark` (en-US + tl-PH).
 - **Signup clickwrap (PLAN_CROSS_SIGNUP_CLICKWRAP):** Required ToS/Privacy checkbox on signup sends `tos_version` + `tos_accepted_at` to API; login page shows informational legal footnote with links.
