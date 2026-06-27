@@ -1,4 +1,5 @@
 import { useCallback, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "./ui/Button";
 
 /** Host-scoped stored consent; avoids `Domain=.thehivemanager.com` cookies affecting all subdomains. */
@@ -61,8 +62,9 @@ export function CookieBanner({ onAccept }: Props): ReactNode {
   return (
     <div className="cookie-banner" role="region" aria-label="Cookie notice" aria-live="polite">
       <p style={{ margin: 0, flex: "1 1 12rem" }}>
-        We use cookies to remember this notice and to support your session. By continuing, you accept our use of
-        essential cookies.
+        We use strictly necessary cookies and local storage to keep you signed in and remember your preferences.
+        No advertising or tracking cookies are used. See our{" "}
+        <Link to="/cookies">Cookie Policy</Link> and <Link to="/privacy">Privacy Policy</Link> for details.
       </p>
       <Button type="button" onClick={accept}>
         Accept

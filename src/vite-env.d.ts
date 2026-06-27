@@ -2,3 +2,8 @@
 /// <reference types="vite-plugin-pwa/client" />
 
 declare const __FM_CLIENT_BUILD__: string
+
+declare module "*.md?raw" {
+  const content: string;
+  export default content;
+}
