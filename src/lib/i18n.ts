@@ -64,6 +64,9 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "form.save": "Save",
     "header.login": "Log in",
     "header.getStarted": "Get started",
+    "theme.toggle.aria": "Toggle light or dark mode",
+    "theme.toLight": "Switch to light mode",
+    "theme.toDark": "Switch to dark mode",
     "locale.aria": "Interface language",
     "login.title": "Log in",
     "login.helper":
@@ -595,6 +598,9 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "form.save": "I-save",
     "header.login": "Mag-sign in",
     "header.getStarted": "Magsimula",
+    "theme.toggle.aria": "I-toggle ang light o dark mode",
+    "theme.toLight": "Lumipat sa light mode",
+    "theme.toDark": "Lumipat sa dark mode",
     "locale.aria": "Wika ng interface",
     "login.title": "Mag-sign in",
     "login.helper":
