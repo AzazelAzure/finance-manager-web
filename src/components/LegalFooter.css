@@ -1,0 +1,30 @@
+.legal-footer {
+  margin-top: 3rem;
+  padding: 2rem 1rem 2.5rem;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  text-align: center;
+}
+
+.legal-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.legal-footer__links a {
+  color: var(--color-text-muted, #64748b);
+  text-decoration: none;
+}
+
+.legal-footer__links a:hover {
+  color: var(--color-primary, #2563eb);
+}
+
+.legal-footer__copy {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted, #94a3b8);
+}

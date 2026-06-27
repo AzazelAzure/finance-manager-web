@@ -6,6 +6,7 @@ import { LivePreview } from "../components/landing/LivePreview";
 import { Roadmap } from "../components/landing/Roadmap";
 import { ValueProps } from "../components/landing/ValueProps";
 import { VersionHistory } from "../components/landing/VersionHistory";
+import { LegalFooter } from "../components/LegalFooter";
 import type { ReactNode } from "react";
 import { tr, useLocale } from "../lib/i18n";
 import { Helmet } from "react-helmet-async";
@@ -26,6 +27,7 @@ export function LandingPage(): ReactNode {
       <Roadmap />
       <VersionHistory />
       <CTASection />
+      <LegalFooter />
     </main>
   );
 }

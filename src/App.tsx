@@ -20,6 +20,9 @@ import { DataHubPage } from "./pages/data/DataHubPage";
 import { SettingsProfilePage } from "./pages/settings/SettingsProfilePage";
 import { OnboardingPage } from "./pages/onboarding/OnboardingPage";
 import { SupportPage } from "./pages/support/SupportPage";
+import { PrivacyPage } from "./pages/legal/PrivacyPage";
+import { TermsPage } from "./pages/legal/TermsPage";
+import { CookiesPage } from "./pages/legal/CookiesPage";
 import { RequireAuth } from "./routes/RequireAuth";
 import { useSession } from "./state/SessionContext";
 import { TourProvider } from "./components/tours/TourProvider";
@@ -81,6 +84,9 @@ export default function App(): ReactNode {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/cookies" element={<CookiesPage />} />
         </Route>
         <Route element={<RequireAuth />}>
           <Route path="/app" element={<TourProvider><ProtectedShell /></TourProvider>}>
