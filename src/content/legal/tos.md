@@ -119,11 +119,11 @@ The app uses Dexie.js (browser IndexedDB) to maintain a local copy of your finan
 
 **Local copy is your device:** The local copy on your device is not accessible to us after it is written. You are responsible for the security of your device.
 
-**Local copy persistence:** The local Dexie copy persists for up to 3 months of inactivity after which it is automatically purged. Clearing your browser storage will delete the local copy. Your server-side data will not be affected by clearing browser storage.
+**Local copy persistence:** The local Dexie copy persists on your device until you clear browser storage or delete your account; there is no automatic time-based purge. Clearing your browser storage will delete the local copy. Your server-side data will not be affected by clearing browser storage.
 
 **Data loss risk (offline-only transactions):** If you enter transactions while offline, those entries are queued locally and synced to our server when connectivity is restored. If you clear your browser storage or uninstall the PWA before an offline-entered transaction has been synced to our server, that transaction will be lost and cannot be recovered.
 
-`[PENDING T06: the local Dexie copy will be encrypted at rest once T06 is deployed. Until then, the local copy is not encrypted at rest on your device.]`
+ the local Dexie copy will be encrypted at rest once T06 is deployed. Until then, the local copy is not encrypted at rest on your device.
 
 ---
 
@@ -132,7 +132,7 @@ The app uses Dexie.js (browser IndexedDB) to maintain a local copy of your finan
 **You may delete your account at any time** from within the app. Account deletion triggers immediate deletion of all server-side personal data associated with your account, including your username, email address, hashed password, and all financial transaction data.
 
 **What is NOT deleted on account deletion:**
-- The local Dexie copy on your device (this is beyond our control once written; it will auto-purge after 3 months of inactivity or when you clear your browser storage)
+- The local Dexie copy on your device (this is beyond our control once written; it persists until you clear your browser storage or delete your account)
 - UUID-keyed diagnostic log entries that contain no personal data linking them to your identity
 
 **Server-side log retention:** Pseudonymous aggregate analytics and UUID-keyed diagnostic logs are retained on a rolling basis (90 days for security identifiers; 14 days for diagnostic logs). These do not contain personal data linked to your account after deletion.
@@ -217,7 +217,7 @@ Continued use of the service after the effective date of updated Terms constitut
 
 The following sections are maintained as placeholders for features not yet implemented. Do not remove these sections — they will be populated when the corresponding features are built.
 
-### 18.1 `[PLACEHOLDER: Third-Party Integrations — GCash / Maya / Bank Data]`
+### 18.1 Third-Party Integrations — GCash / Maya / Bank Data (Coming Soon)
 
 This section will be completed when GCash, Maya, or bank transaction integrations are implemented. It will include:
 - Data-sharing disclosure with the integration partner
@@ -225,14 +225,14 @@ This section will be completed when GCash, Maya, or bank transaction integration
 - Liability allocation between Hive and the integration partner
 - KYC/AML obligations applicable to the integration
 
-### 18.2 `[PLACEHOLDER: OAuth Third-Party Login]`
+### 18.2 OAuth Third-Party Login (Coming Soon)
 
 This section will be completed when third-party OAuth login (e.g., Google) is implemented. It will include:
 - Disclosure that authentication may be handled by a third-party provider
 - Provider's own terms apply to the authentication flow
 - What data we receive from the OAuth provider
 
-### 18.3 `[PLACEHOLDER: Payment Processing and Subscription Billing]`
+### 18.3 Payment Processing and Subscription Billing (Coming Soon)
 
 This section will be completed when subscription billing or payment processing is activated. It will include:
 - Billing cycle, auto-renewal terms, and price-change notice
@@ -240,8 +240,3 @@ This section will be completed when subscription billing or payment processing i
 - Payment processor name and what data is shared
 - PCI-DSS scope statement
 - EU 14-day withdrawal right for digital services (CYA baseline)
-
----
-
-*The Hive Financial Manager — Terms of Service v1.0 — DRAFT — 2026-06-27*  
-*For attorney review before publication.*

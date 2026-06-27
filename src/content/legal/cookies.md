@@ -47,7 +47,7 @@ After T05 is deployed, authentication will work as follows:
 
 ### 3.2 CSRF Protection Token
 
-`[PENDING T05]` — CSRF tokens on state-changing routes will be implemented as part of the T05 security hardening sprint, which introduces cookie-based refresh token authentication. CSRF tokens protect against cross-site request forgery attacks.
+CSRF tokens on state-changing routes will be implemented as part of the T05 security hardening sprint, which introduces cookie-based refresh token authentication. CSRF tokens protect against cross-site request forgery attacks.
 
 | Item | Type | Purpose | Duration | Party |
 |---|---|---|---|---|
@@ -82,7 +82,7 @@ The app uses Dexie.js, a wrapper around the browser's built-in IndexedDB databas
 - **No automatic purge:** The local copy is not automatically deleted on a time schedule. It persists on your device until you clear browser storage or delete your account. When you reconnect to the server, the local copy is updated with the latest server data.
 - **Browser storage clearing:** If you clear your browser storage, the Dexie copy is deleted. Your server-side data is not affected.
 
-`[PENDING T06]` Once T06 is deployed, the Dexie local copy will be encrypted at rest using XSalsa20-Poly1305. The encryption key will be derived from the API session and held in memory only — it will never be written to localStorage or cookies. Until T06 is deployed, the local copy is not encrypted at rest.
+Once deployed, the Dexie local copy will be encrypted at rest using XSalsa20-Poly1305. The encryption key will be derived from the API session and held in memory only — it will never be written to localStorage or cookies. Until that update is deployed, the local copy is not encrypted at rest.
 
 ### 4.2 Service Worker Cache
 
@@ -112,7 +112,7 @@ To be explicit about our current storage footprint:
 
 We do not set third-party cookies. However, Cloudflare, which handles traffic routing and DDoS protection, may set its own identifiers as part of its service. These are operational in nature (security, bot detection) and are governed by Cloudflare's privacy policy.
 
-`[PLACEHOLDER: When OAuth login is implemented (e.g., Google), the OAuth provider may set its own cookies during the authentication flow. These will be disclosed here at that time.]`
+(Details will be published when this feature launches.)
 
 ---
 
@@ -135,7 +135,7 @@ You may withdraw your consent for functional Dexie local storage at any time by:
 
 To clear browser storage: in most browsers, go to Settings → Privacy → Clear browsing data → Cached data and local storage.
 
-`[PENDING design: a Dexie opt-out mechanism accessible from within the app settings will be implemented before policy publication — open item N4.]`
+A Dexie opt-out mechanism in app settings is planned for a future release.
 
 ### 7.3 Browser Controls
 
@@ -177,15 +177,10 @@ privacy@thehivemanager.com
 
 | Item | Type | Category | Purpose | Duration | Party | Consent |
 |---|---|---|---|---|---|---|
-| Refresh token cookie `[PENDING T05]` | HttpOnly cookie | Strictly necessary | Authentication session | Rotation policy | First | Exempt |
+| Refresh token cookie `pending security update` | HttpOnly cookie | Strictly necessary | Authentication session | Rotation policy | First | Exempt |
 | Auth token in localStorage `[Until T05]` | localStorage | Strictly necessary | Authentication (interim) | Session/persistent | First | Exempt |
-| CSRF token `[PENDING T05]` | Session cookie | Strictly necessary | Request forgery protection | Session | First | Exempt |
+| CSRF token `pending security update` | Session cookie | Strictly necessary | Request forgery protection | Session | First | Exempt |
 | Consent preference record | localStorage | Strictly necessary | Store consent choices | 1 year | First | Exempt |
 | Dexie IndexedDB (`outbox`, `caches`, `meta`) | IndexedDB | Functional | Local financial data for offline access | No auto-purge; until browser storage cleared | First | Functional disclosure |
 | Service Worker cache | Cache API | Functional | Static asset caching for PWA | SW lifecycle | First | Functional disclosure |
-| `[PLACEHOLDER: OAuth provider cookie]` | Cookie (third-party) | Strictly necessary | OAuth authentication flow | Provider-defined | Third | TBD at implementation |
-
----
-
-*The Hive Financial Manager — Cookie and Storage Policy v1.0 — DRAFT — 2026-06-27*  
-*For attorney review before publication.*
+| (Details will be published when this feature launches.) | Cookie (third-party) | Strictly necessary | OAuth authentication flow | Provider-defined | Third | TBD at implementation |

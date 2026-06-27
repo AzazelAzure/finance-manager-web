@@ -19,8 +19,11 @@
   text-decoration: none;
 }
 
-.legal-footer__links a:hover {
+.legal-footer__links a:hover,
+.legal-footer__links a:focus-visible {
   color: var(--color-primary, #2563eb);
+  outline: 2px solid var(--color-primary, #2563eb);
+  outline-offset: 2px;
 }
 
 .legal-footer__copy {

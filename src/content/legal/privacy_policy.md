@@ -73,13 +73,13 @@ When you enter financial data into Hive while connected to the internet, that da
 
 This means **we do receive and store your financial transaction data on our servers.** The local Dexie copy is a mirror for your offline use only. If you clear your browser storage, the local copy is deleted, but your server-side data remains intact until you delete your account.
 
-The local Dexie copy persists in your browser until you clear your browser storage or delete your account. There is no automatic time-based purge of the local copy — it is overwritten by newer data from the server on reconnection. `[PENDING T06: once Dexie encryption is deployed, the local copy will be encrypted at rest using XSalsa20-Poly1305; until T06 is deployed, the local copy is not encrypted at rest.]`
+The local Dexie copy persists in your browser until you clear your browser storage or delete your account. There is no automatic time-based purge of the local copy — it is overwritten by newer data from the server on reconnection.  once Dexie encryption is deployed, the local copy will be encrypted at rest using XSalsa20-Poly1305; until T06 is deployed, the local copy is not encrypted at rest.
 
 ### 3.3 Data Generated Automatically
 
 | Data | Description | Stored server-side? |
 |---|---|---|
-| Pseudonymous security identifier | A salted, one-way SHA-256 hash of your IP address (16 hexadecimal characters). Not linked to your identity. Used only for security event correlation (rate limiting, abuse detection). | Yes — 90-day rolling retention `[PENDING: Redis deploy]` |
+| Pseudonymous security identifier | A salted, one-way SHA-256 hash of your IP address (16 hexadecimal characters). Not linked to your identity. Used only for security event correlation (rate limiting, abuse detection). | Yes — 90-day rolling retention `pending infrastructure deploy` |
 | User UUID | A pseudonymous reference used in operational logs and aggregate analytics. Not linked to your name or email in any log. | Yes |
 | User agent class | Classified as one of: user, bot, crawler, unknown. The raw user agent string is not stored. | Yes — aggregate counts only |
 | API endpoint and response data | Normalized request paths (with any UUIDs or IDs stripped) and HTTP response codes. Used for service performance monitoring. | Yes — aggregate only |
@@ -133,9 +133,9 @@ We use the following third-party processors, who process your data only to the e
 
 No other third-party processors are used. We do not use third-party analytics services, advertising networks, or external error logging services.
 
-> **`[PLACEHOLDER: Google OAuth]`** When Google OAuth login is implemented, Google will be added to this table as a processor. Their privacy policy will apply to the authentication flow.
+> **Coming soon (Google OAuth):** When Google OAuth login is implemented, Google will be added to this table as a processor. Their privacy policy will apply to the authentication flow.
 
-> **`[PLACEHOLDER: GCash / Maya / payment processor]`** When payment processing is implemented, the relevant processor(s) will be added here.
+> **Coming soon (GCash / Maya / payment processor):** When payment processing is implemented, the relevant processor(s) will be added here.
 
 ---
 
@@ -158,7 +158,7 @@ Your data also passes through Cloudflare's global network, which may involve rou
 | Account data (username, email, hashed password) | Until account deletion | Deleted immediately upon account deletion request |
 | Financial transaction data (server-side) | Until account deletion | All financial data is deleted upon account deletion via our account deletion mechanism |
 | Local Dexie copy (device-side) | No automatic purge — persists until browser storage is cleared or account deleted | Device-side only; not controlled by the operator after write; overwritten by server sync on reconnection |
-| Pseudonymous security identifier (hashed IP) | 90-day rolling `[PENDING: Redis + flat-file analytics deploy]` | Non-recoverable hash; used for security event correlation only |
+| Pseudonymous security identifier (hashed IP) | 90-day rolling `pending infrastructure deploy` | Non-recoverable hash; used for security event correlation only |
 | Diagnostic / error logs (F-013) | 14 days, 10MB rotation | UUID-keyed; no PII; operator access only |
 | Aggregate analytics (DAU/MAU, invite chain, endpoint stats) | Indefinite | No individual-level data; purely aggregate/pseudonymous |
 
@@ -196,8 +196,8 @@ We implement the following technical and organizational security measures:
 
 - **TLS/HTTPS:** All traffic between your browser and our servers is encrypted in transit. Cloudflare enforces HTTPS for all connections.
 - **Password hashing:** Your password is stored as a one-way Argon2id hash. Your raw password is never stored.
-- **Authentication tokens:** `[PENDING T05: access tokens will be stored in memory only (not localStorage); refresh tokens will be stored in an HttpOnly, Secure, SameSite=Strict cookie. Until T05 is deployed, tokens are stored in localStorage, which carries elevated XSS risk. No PII is included in any JWT payload.]`
-- **Local storage encryption:** `[PENDING T06: the local Dexie.js copy of your financial data will be encrypted at rest using XSalsa20-Poly1305 with an in-memory, API-derived key. Until T06 is deployed, the local copy is not encrypted at rest.]`
+- **Authentication tokens:**  access tokens will be stored in memory only (not localStorage); refresh tokens will be stored in an HttpOnly, Secure, SameSite=Strict cookie. Until T05 is deployed, tokens are stored in localStorage, which carries elevated XSS risk. No PII is included in any JWT payload.
+- **Local storage encryption:**  the local Dexie.js copy of your financial data will be encrypted at rest using XSalsa20-Poly1305 with an in-memory, API-derived key. Until T06 is deployed, the local copy is not encrypted at rest.
 - **IP pseudonymization:** Raw IP addresses are immediately converted to a non-recoverable salted SHA-256 hash. The raw IP is not logged or stored.
 - **Cloudflare DDoS and WAF protection:** Network-level security filtering is applied to all inbound traffic.
 - **Access controls:** Diagnostic logs and operational data are accessible to the operator only.
@@ -267,8 +267,3 @@ privacy@thehivemanager.com
 
 **National Privacy Commission (Philippines):**  
 www.privacy.gov.ph
-
----
-
-*The Hive Financial Manager — Privacy Policy v1.0 — DRAFT — 2026-06-27*  
-*For attorney review before publication.*

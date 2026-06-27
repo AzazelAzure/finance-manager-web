@@ -64,8 +64,7 @@ export function CookieBanner({ onAccept }: Props): ReactNode {
       <p style={{ margin: 0, flex: "1 1 12rem" }}>
         We use strictly necessary cookies and local storage to keep you signed in and remember your preferences.
         No advertising or tracking cookies are used. See our{" "}
-        <Link to="/cookies">Cookie Policy</Link> for details. By continuing, you agree to our{" "}
-        <Link to="/terms">Terms of Service</Link> and acknowledge our <Link to="/privacy">Privacy Policy</Link>.
+        <Link to="/cookies">Cookie Policy</Link> and <Link to="/privacy">Privacy Policy</Link> for details.
       </p>
       <Button type="button" onClick={accept}>
         Accept

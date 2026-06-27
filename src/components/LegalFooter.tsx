@@ -12,7 +12,7 @@ export function LegalFooter(): ReactNode {
         <span aria-hidden>·</span>
         <Link to="/cookies">Cookie Policy</Link>
       </nav>
-      <p className="legal-footer__copy">© 2026 The Hive Financial Manager</p>
+      <p className="legal-footer__copy">© {new Date().getFullYear()} The Hive Financial Manager</p>
     </footer>
   );
 }

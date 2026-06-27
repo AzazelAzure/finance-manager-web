@@ -42,7 +42,9 @@
 }
 
 .legal-page__content table {
+  display: block;
   width: 100%;
+  overflow-x: auto;
   border-collapse: collapse;
   margin: 1rem 0 1.5rem;
   font-size: 0.9375rem;
