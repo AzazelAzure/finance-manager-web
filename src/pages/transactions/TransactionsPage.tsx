@@ -497,8 +497,14 @@ export function TransactionsPage(): ReactNode {
   };
 
   useEffect(() => {
-    startTour(TRANSACTIONS_TOUR_ID, buildTransactionsSteps(locale));
-  }, [startTour, locale]);
+    if (!txQuery.isSuccess) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      startTour(TRANSACTIONS_TOUR_ID, buildTransactionsSteps(locale));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [txQuery.isSuccess, startTour, locale]);
 
   return (
     <div className="stack">
