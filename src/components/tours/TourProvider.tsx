@@ -84,6 +84,11 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 
   const STEP_DEFAULTS: Partial<Step> = useMemo(
     () => ({
+      // Skip the click-to-open beacon: continuous tours should show the
+      // tooltip immediately and auto-advance via Next. Without this, react-
+      // joyride v3 renders an off-screen beacon and no tooltip, so the tour
+      // silently appears broken (the production symptom).
+      skipBeacon: true,
       buttons: ['skip', 'back', 'close', 'primary'],
       closeButtonAction: 'skip' as const,
       locale: { skip: tr('tour.exitTour', locale), last: tr('tour.done', locale) },
@@ -93,11 +98,32 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 
   const startTour = useCallback(
     (tourId: string, tourSteps: Step[], force = false) => {
-      if (force || !isTourCompleted(tourId)) {
-        setActiveTourId(tourId);
-        setSteps(tourSteps.map((s) => ({ ...STEP_DEFAULTS, ...s })));
-        setRun(true);
+      if (!force && isTourCompleted(tourId)) {
+        return;
       }
+      // Defer one frame so freshly-rendered pages have their tour targets in
+      // the DOM, then keep only steps whose target actually exists. A missing
+      // early target otherwise aborts the whole tour ("breaks immediately"),
+      // so filtering makes tours resilient across the site.
+      requestAnimationFrame(() => {
+        const usable = tourSteps.filter((s) => {
+          const target = s.target;
+          if (typeof target !== 'string') {
+            return true;
+          }
+          try {
+            return document.querySelector(target) != null;
+          } catch {
+            return false;
+          }
+        });
+        if (usable.length === 0) {
+          return;
+        }
+        setActiveTourId(tourId);
+        setSteps(usable.map((s) => ({ ...STEP_DEFAULTS, ...s })));
+        setRun(true);
+      });
     },
     [isTourCompleted, STEP_DEFAULTS],
   );

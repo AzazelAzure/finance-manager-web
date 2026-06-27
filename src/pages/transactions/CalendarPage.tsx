@@ -96,10 +96,6 @@ export function CalendarPage(): ReactNode {
   const [selectedDay, setSelectedDay] = useState<string>("");
   const { startTour } = useTour();
 
-  useEffect(() => {
-    startTour(CALENDAR_TOUR_ID, buildCalendarSteps(locale));
-  }, [startTour, locale]);
-
   const query = useQuery({
     queryKey: ["transactions-calendar", startDate, endDate, displayCurrencyMode, heatMetricMode] as const,
     queryFn: (ctx) =>
@@ -113,6 +109,16 @@ export function CalendarPage(): ReactNode {
         readOptsFromQuery(ctx),
       ),
   });
+
+  useEffect(() => {
+    if (!query.isSuccess) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      startTour(CALENDAR_TOUR_ID, buildCalendarSteps(locale));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [query.isSuccess, startTour, locale]);
 
   const dayDrillRows = useMemo(() => {
     const rows = query.data?.day_drill ?? [];
