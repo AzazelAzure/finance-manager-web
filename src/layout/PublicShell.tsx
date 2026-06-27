@@ -1,5 +1,6 @@
 import { Link, Outlet } from "react-router-dom";
 import { LocalePicker } from "../components/landing/LocalePicker";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { tr, useLocale } from "../lib/i18n";
 import type { ReactNode } from "react";
 
@@ -22,6 +23,7 @@ export function PublicShell(): ReactNode {
           <Link to="/signup" className="public-link-pill public-link-pill--primary">
             {tr("header.getStarted", locale)}
           </Link>
+          <ThemeToggle />
           <LocalePicker />
         </nav>
       </header>
