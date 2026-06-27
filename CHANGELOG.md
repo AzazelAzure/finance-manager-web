@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Public light/dark theme toggle:** New `ThemeToggle` component (`components/ThemeToggle.tsx`) in the public header (`PublicShell`) so logged-out visitors can switch light/dark mode from the splash/landing, login, signup, and legal pages. Previously the only theme control lived behind authentication on Settings. Persists via `setThemePreference` and stays in sync across surfaces and OS changes via a new `fm-theme-changed` event. i18n: `theme.toggle.aria` / `theme.toLight` / `theme.toDark` (en-US + tl-PH).
 - **Signup clickwrap (PLAN_CROSS_SIGNUP_CLICKWRAP):** Required ToS/Privacy checkbox on signup sends `tos_version` + `tos_accepted_at` to API; login page shows informational legal footnote with links.
 - **Public legal pages (PLAN_CROSS_LEGAL_PAGES):** `/privacy`, `/terms`, and `/cookies` routes render publication-ready markdown via `react-markdown` + `remark-gfm`. Landing page `LegalFooter` and updated `CookieBanner` link to all three policies. Legal pages use `noindex` meta.
 - **Design system foundation (PLAN_CROSS_UI_UX_DESIGN_SYSTEM, T01–T06):**
@@ -19,6 +20,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 - **Legal pages dark mode readability:** `layout/legal.css` referenced undefined CSS variables (`--color-text`, `--color-text-muted`, `--color-primary`, `--color-border`, `--color-surface-muted`) that always fell back to hardcoded light values, rendering near-black body text on the dark surface (invisible in dark mode on `/privacy`, `/terms`, `/cookies`). Re-pointed all colors at the real theme-adaptive tokens (`--fg`, `--muted`, `--accent`, `--border`, `--surface-2`).
+- **Guided tours broken after react-joyride v3 upgrade:** The v3 upgrade regressed the onboarding/page tours — they rendered an off-screen click-to-open beacon and never showed a tooltip, so tours appeared to "break immediately" and across the site. Fixes in `TourProvider`: (1) `skipBeacon` is now a step default so continuous tours show the tooltip immediately and auto-advance; (2) `startTour` defers one frame and filters out steps whose target is missing from the DOM, so a single absent target no longer aborts the whole tour. Removed the duplicate, conflicting auto-started `dashboard_linear_tour` (which also pointed at non-existent `#tour-category-chart` / `#tour-tag-chart` ids) in favor of the single modal-gated welcome tour; added the missing `#tour-refresh-btn` id. Transactions and Calendar page tours now auto-start only after their data query succeeds (targets present) instead of firing on mount before render.
 - **F-007 Guide mode rework:** Global Guide toggle now uses click/focus-activated contextual notes (not hover-only). Form modals (Quick Add, Transactions, Upcoming) use shared `HelpModeWrapper` instead of broken per-modal Guide panels and in-form Joyride. Data Hub and Profile pages gain guide coverage. Page-level “Start guide” buttons removed where they conflicted with Guide mode; explicit **Replay Tour** buttons remain for Joyride onboarding.
 
 ### Fixed
