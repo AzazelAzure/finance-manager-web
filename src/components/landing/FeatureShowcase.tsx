@@ -7,6 +7,7 @@ const TABS: Tab[] = [
   { id: "dash", labelKey: "showcase.tabs.dashboard", blurbKey: "showcase.dashboard.blurb" },
   { id: "tx", labelKey: "showcase.tabs.transactions", blurbKey: "showcase.transactions.blurb" },
   { id: "bills", labelKey: "showcase.tabs.bills", blurbKey: "showcase.bills.blurb" },
+  { id: "goals", labelKey: "showcase.tabs.goals", blurbKey: "showcase.goals.blurb" },
   { id: "data", labelKey: "showcase.tabs.dataHub", blurbKey: "showcase.dataHub.blurb" },
 ];
 
@@ -75,11 +76,25 @@ export function FeatureShowcase(): ReactNode {
         <div className="showcase-preview">
           <ul className="showcase-preview__rows" aria-hidden>
             <li><b>Rent</b><em>Due in 3 days</em></li>
+            <li><b>Electric</b><em>Partial: 60% planned</em></li>
             <li><b>Internet</b><em>Auto-paid monthly</em></li>
-            <li><b>Credit Card</b><em>Due next week</em></li>
           </ul>
           <div className="showcase-preview__progress" aria-hidden>
             <span style={{ width: "70%" }} />
+          </div>
+        </div>
+      );
+    }
+    if (tab.id === "goals") {
+      return (
+        <div className="showcase-preview">
+          <ul className="showcase-preview__rows" aria-hidden>
+            <li><b>Emergency fund</b><em>62% · ₱310/wk</em></li>
+            <li><b>Christmas fund</b><em>38% · ₱150/wk</em></li>
+            <li><b>School supplies</b><em>85% · on track</em></li>
+          </ul>
+          <div className="showcase-preview__progress" aria-hidden>
+            <span style={{ width: "62%" }} />
           </div>
         </div>
       );

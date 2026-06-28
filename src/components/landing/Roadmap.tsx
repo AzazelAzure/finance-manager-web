@@ -3,10 +3,11 @@ import { tr, useLocale } from "../../lib/i18n";
 import type { ReactNode } from "react";
 
 const ROAD: Array<{ titleKey: string; bodyKey: string; status: "done" | "now" | "next" | "later" }> = [
-  { titleKey: "roadmap.insights.title", bodyKey: "roadmap.insights.body", status: "done" },
-  { titleKey: "roadmap.imports.title", bodyKey: "roadmap.imports.body", status: "now" },
-  { titleKey: "roadmap.shared.title", bodyKey: "roadmap.shared.body", status: "next" },
-  { titleKey: "roadmap.api.title", bodyKey: "roadmap.api.body", status: "later" },
+  { titleKey: "roadmap.paycycles.title", bodyKey: "roadmap.paycycles.body", status: "done" },
+  { titleKey: "roadmap.recurring.title", bodyKey: "roadmap.recurring.body", status: "now" },
+  { titleKey: "roadmap.widgets.title", bodyKey: "roadmap.widgets.body", status: "next" },
+  { titleKey: "roadmap.predictive.title", bodyKey: "roadmap.predictive.body", status: "later" },
+  { titleKey: "roadmap.family.title", bodyKey: "roadmap.family.body", status: "later" },
 ];
 
 export function Roadmap(): ReactNode {
