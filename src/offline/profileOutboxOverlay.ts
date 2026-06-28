@@ -37,6 +37,9 @@ export function mergeProfileOutboxFifo(base: AppProfileResponse, rows: OutboxRow
       ...(p.timezone !== undefined ? { timezone: String(p.timezone) } : {}),
       ...(p.start_week !== undefined ? { start_of_week: Number(p.start_week) } : {}),
       ...(p.completed_tours !== undefined ? { completed_tours: [...p.completed_tours] } : {}),
+      ...(p.sts_window_mode !== undefined ? { sts_window_mode: p.sts_window_mode } : {}),
+      ...(p.pay_cycle_frequency !== undefined ? { pay_cycle_frequency: p.pay_cycle_frequency } : {}),
+      ...(p.pay_cycle_anchor_date !== undefined ? { pay_cycle_anchor_date: p.pay_cycle_anchor_date } : {}),
     };
   }
   return next;
