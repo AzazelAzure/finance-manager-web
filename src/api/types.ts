@@ -53,6 +53,9 @@ export type AppProfileResponse = {
   start_of_week: number;
   completed_tours?: string[];
   feature_requests_enabled?: boolean;
+  sts_window_mode?: "calendar_month" | "pay_cycle";
+  pay_cycle_frequency?: "weekly" | "biweekly" | "semimonthly" | "monthly" | null;
+  pay_cycle_anchor_date?: string | null;
 };
 
 export type AppProfileUpdateRequest = {
@@ -61,6 +64,9 @@ export type AppProfileUpdateRequest = {
   timezone?: string;
   start_week?: number;
   completed_tours?: string[];
+  sts_window_mode?: "calendar_month" | "pay_cycle";
+  pay_cycle_frequency?: "weekly" | "biweekly" | "semimonthly" | "monthly" | null;
+  pay_cycle_anchor_date?: string | null;
 };
 
 export type AppProfileUpdateResponse = {

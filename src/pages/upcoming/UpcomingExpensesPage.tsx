@@ -18,7 +18,7 @@ import {
 } from "../../api/upcomingExpenses";
 import { listSourceNames } from "../../api/lookups";
 import { getAppProfile } from "../../api/profile";
-import { isOfflineQueued, type UpcomingExpenseMutationPayload, type UpcomingExpenseRecord } from "../../api/types";
+import { isOfflineQueued, type AppProfileResponse, type UpcomingExpenseMutationPayload, type UpcomingExpenseRecord } from "../../api/types";
 import { formatMoney } from "../../lib/money";
 import { useBreakpoint } from "../../lib/breakpoints";
 import { tr, trFmt, useLocale } from "../../lib/i18n";
@@ -170,6 +170,72 @@ function monthRange(offsetMonths: number): { start: string; end: string } {
   };
 }
 
+function currentPayCycleRange(profile: AppProfileResponse): { start: string; end: string } | null {
+  if (profile.sts_window_mode !== "pay_cycle" || !profile.pay_cycle_anchor_date || !profile.pay_cycle_frequency) {
+    return null;
+  }
+  const today = todayInTimezone(profile.timezone);
+  let start = parseDateLocal(profile.pay_cycle_anchor_date);
+  let end = addPayCycleStep(start, profile.pay_cycle_frequency);
+  while (today < start) {
+    end = start;
+    start = subtractPayCycleStep(start, profile.pay_cycle_frequency);
+  }
+  while (today >= end) {
+    start = end;
+    end = addPayCycleStep(end, profile.pay_cycle_frequency);
+  }
+  return { start: formatDateLocal(start), end: formatDateLocal(new Date(end.getTime() - 86400000)) };
+}
+
+function parseDateLocal(value: string): Date {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, (month || 1) - 1, day || 1);
+}
+
+function formatDateLocal(value: Date): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function todayInTimezone(timezone: string): Date {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone || "UTC",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value);
+  return new Date(get("year"), get("month") - 1, get("day"));
+}
+
+function addPayCycleStep(value: Date, frequency: NonNullable<AppProfileResponse["pay_cycle_frequency"]>): Date {
+  const next = new Date(value);
+  if (frequency === "weekly") next.setDate(next.getDate() + 7);
+  if (frequency === "biweekly") next.setDate(next.getDate() + 14);
+  if (frequency === "semimonthly") next.setDate(next.getDate() + 15);
+  if (frequency === "monthly") return addMonthsClamped(value, 1);
+  return next;
+}
+
+function subtractPayCycleStep(value: Date, frequency: NonNullable<AppProfileResponse["pay_cycle_frequency"]>): Date {
+  const next = new Date(value);
+  if (frequency === "weekly") next.setDate(next.getDate() - 7);
+  if (frequency === "biweekly") next.setDate(next.getDate() - 14);
+  if (frequency === "semimonthly") next.setDate(next.getDate() - 15);
+  if (frequency === "monthly") return addMonthsClamped(value, -1);
+  return next;
+}
+
+function addMonthsClamped(value: Date, delta: number): Date {
+  const targetYear = value.getFullYear();
+  const targetMonth = value.getMonth() + delta;
+  const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+  return new Date(targetYear, targetMonth, Math.min(value.getDate(), lastDay));
+}
+
 export function UpcomingExpensesPage(): ReactNode {
   const locale = useLocale();
   const { atOrAboveMd } = useBreakpoint();
@@ -211,6 +277,8 @@ export function UpcomingExpensesPage(): ReactNode {
     return [...set].sort();
   }, [baseCurrency, sourcesQuery.data]);
   const currencyOptions = sourceCurrencyOptions.length > 0 ? sourceCurrencyOptions : [baseCurrency];
+  const payCycleRange = profileQuery.data ? currentPayCycleRange(profileQuery.data) : null;
+  const primaryDateFilterLabel = payCycleRange ? tr("upcoming.thisPayPeriod", locale) : tr("upcoming.thisMonth", locale);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -299,13 +367,14 @@ export function UpcomingExpensesPage(): ReactNode {
     const today = new Date().toISOString().slice(0, 10);
     const thisMonth = monthRange(0);
     const nextMonth = monthRange(1);
+    const currentRange = payCycleRange ?? thisMonth;
     return (upcomingQuery.data ?? []).filter((row) => {
       if (recurring === "yes" && !row.recurring_flag) return false;
       if (recurring === "no" && row.recurring_flag) return false;
       if (paid === "yes" && !row.paid_flag) return false;
       if (paid === "no" && row.paid_flag) return false;
       if (dateQuick === "this_month") {
-        return row.due_date >= thisMonth.start && row.due_date <= thisMonth.end;
+        return row.due_date >= currentRange.start && row.due_date <= currentRange.end;
       }
       if (dateQuick === "next_month") {
         return row.due_date >= nextMonth.start && row.due_date <= nextMonth.end;
@@ -315,7 +384,7 @@ export function UpcomingExpensesPage(): ReactNode {
       }
       return true;
     });
-  }, [dateQuick, paid, recurring, upcomingQuery.data]);
+  }, [dateQuick, paid, payCycleRange, recurring, upcomingQuery.data]);
 
   const columns = useMemo<Array<ColumnDef<UpcomingExpenseRecord>>>(
     () => [
@@ -482,7 +551,7 @@ export function UpcomingExpensesPage(): ReactNode {
             <span className="ui-label">{tr("upcoming.dateQuick", locale)}</span>
             <select className="ui-input" value={dateQuick} onChange={(e) => setDateQuick(e.target.value as DateQuickFilter)}>
               <option value="all">{tr("common.all", locale)}</option>
-              <option value="this_month">{tr("upcoming.thisMonth", locale)}</option>
+              <option value="this_month">{primaryDateFilterLabel}</option>
               <option value="next_month">{tr("upcoming.nextMonth", locale)}</option>
               <option value="overdue">{tr("upcoming.overdue", locale)}</option>
             </select>
