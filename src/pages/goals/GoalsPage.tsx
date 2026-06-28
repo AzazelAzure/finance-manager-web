@@ -19,7 +19,7 @@ import type { AppProfileResponse } from "../../api/types";
 import { formatMoney, toNumber } from "../../lib/money";
 import { tr, trFmt, useLocale } from "../../lib/i18n";
 import { preferOfflineCaches } from "../../offline/connectivity";
-import { readOptsFromQuery } from "../../offline/pwaReadBypass";
+import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 
 type GoalDraft = SavingsGoalWritePayload;
 
@@ -82,12 +82,14 @@ function GoalFormFields({
   savingsSources,
   disabled,
   locale,
+  currencyReadOnly = false,
 }: {
   draft: GoalDraft;
   onChange: (next: GoalDraft) => void;
   savingsSources: string[];
   disabled: boolean;
   locale: ReturnType<typeof useLocale>;
+  currencyReadOnly?: boolean;
 }): ReactNode {
   return (
     <div className="stack" style={{ gap: "var(--spacing-3)" }}>
@@ -113,13 +115,17 @@ function GoalFormFields({
         </label>
         <label className="ui-field" style={{ flex: "0 1 100px" }}>
           <span className="ui-label">{tr("goals.currency", locale)}</span>
-          <input
-            className="ui-input"
-            maxLength={3}
-            value={draft.currency}
-            disabled={disabled}
-            onChange={(e) => onChange({ ...draft, currency: e.target.value.toUpperCase() })}
-          />
+          {currencyReadOnly ? (
+            <input className="ui-input" value={draft.currency} disabled readOnly />
+          ) : (
+            <input
+              className="ui-input"
+              maxLength={3}
+              value={draft.currency}
+              disabled={disabled}
+              onChange={(e) => onChange({ ...draft, currency: e.target.value.toUpperCase() })}
+            />
+          )}
         </label>
       </div>
       <label className="ui-field">
@@ -203,7 +209,8 @@ export function GoalsPage(): ReactNode {
   const createMutation = useMutation({
     mutationFn: (payload: GoalDraft) => createGoal(payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["goals"] });
+      requestPwaReadBypassAfterMutation();
+      void queryClient.invalidateQueries({ queryKey: ["goals"], refetchType: "all" });
       setShowAddForm(false);
       setAddDraft(emptyDraft(baseCurrency));
       setFormError(null);
@@ -214,7 +221,8 @@ export function GoalsPage(): ReactNode {
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: Partial<GoalDraft> }) => updateGoal(id, payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["goals"] });
+      requestPwaReadBypassAfterMutation();
+      void queryClient.invalidateQueries({ queryKey: ["goals"], refetchType: "all" });
       setEditingId(null);
       setFormError(null);
     },
@@ -236,7 +244,8 @@ export function GoalsPage(): ReactNode {
       setFormError(parseError(_err));
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ["goals"] });
+      requestPwaReadBypassAfterMutation();
+      void queryClient.invalidateQueries({ queryKey: ["goals"], refetchType: "all" });
       setDeleteConfirmId(null);
     },
   });
@@ -281,16 +290,27 @@ export function GoalsPage(): ReactNode {
             draft={editDraft}
             onChange={setEditDraft}
             savingsSources={savingsSources}
-            disabled={updateMutation.isPending}
+            disabled={updateMutation.isPending || mutationsBlocked}
+            currencyReadOnly
             locale={locale}
           />
           <div style={{ display: "flex", gap: "var(--spacing-2)", marginTop: "var(--spacing-3)", flexWrap: "wrap" }}>
             <Button
               type="button"
-              disabled={updateMutation.isPending}
+              disabled={updateMutation.isPending || mutationsBlocked}
+              title={mutationsBlocked ? tr("goals.offlineDisabled", locale) : undefined}
               onClick={() =>
                 guardMutation(() => {
-                  updateMutation.mutate({ id: goal.id, payload: editDraft });
+                  updateMutation.mutate({
+                    id: goal.id,
+                    payload: {
+                      name: editDraft.name,
+                      target_amount: editDraft.target_amount,
+                      target_date: editDraft.target_date,
+                      current_amount: editDraft.current_amount,
+                      source: editDraft.source,
+                    },
+                  });
                 })
               }
             >
@@ -340,24 +360,24 @@ export function GoalsPage(): ReactNode {
             <Button
               type="button"
               variant="secondary"
+              disabled={mutationsBlocked}
               title={mutationsBlocked ? tr("goals.offlineDisabled", locale) : undefined}
-              onClick={() => guardMutation(() => startEdit(goal))}
+              onClick={() => startEdit(goal)}
             >
               {tr("goals.edit", locale)}
             </Button>
             <Button
               type="button"
               variant="ghost"
+              disabled={mutationsBlocked}
               title={mutationsBlocked ? tr("goals.offlineDisabled", locale) : undefined}
-              onClick={() =>
-                guardMutation(() => {
-                  if (deleteConfirmId === goal.id) {
-                    deleteMutation.mutate(goal.id);
-                  } else {
-                    setDeleteConfirmId(goal.id);
-                  }
-                })
-              }
+              onClick={() => {
+                if (deleteConfirmId === goal.id) {
+                  guardMutation(() => deleteMutation.mutate(goal.id));
+                } else {
+                  setDeleteConfirmId(goal.id);
+                }
+              }}
             >
               {deleteConfirmId === goal.id ? tr("goals.deleteConfirm", locale) : tr("goals.delete", locale)}
             </Button>
@@ -389,14 +409,20 @@ export function GoalsPage(): ReactNode {
         <Button
           type="button"
           title={mutationsBlocked ? tr("goals.offlineDisabled", locale) : undefined}
-          onClick={() => guardMutation(openAddForm)}
-          disabled={showAddForm}
+          onClick={() => {
+            if (mutationsBlocked) {
+              setOfflineNotice(true);
+              return;
+            }
+            openAddForm();
+          }}
+          disabled={showAddForm || mutationsBlocked}
         >
           {tr("goals.addGoal", locale)}
         </Button>
       </div>
 
-      {offlineNotice || mutationsBlocked ? (
+      {offlineNotice ? (
         <p className="muted-text" style={{ margin: 0 }}>
           {tr("goals.offlineDisabled", locale)}
         </p>
@@ -414,18 +440,15 @@ export function GoalsPage(): ReactNode {
             draft={addDraft}
             onChange={setAddDraft}
             savingsSources={savingsSources}
-            disabled={createMutation.isPending}
+            disabled={createMutation.isPending || mutationsBlocked}
             locale={locale}
           />
           <div style={{ display: "flex", gap: "var(--spacing-2)", marginTop: "var(--spacing-3)", flexWrap: "wrap" }}>
             <Button
               type="button"
-              disabled={createMutation.isPending}
-              onClick={() =>
-                guardMutation(() => {
-                  createMutation.mutate(addDraft);
-                })
-              }
+              disabled={createMutation.isPending || mutationsBlocked}
+              title={mutationsBlocked ? tr("goals.offlineDisabled", locale) : undefined}
+              onClick={() => guardMutation(() => createMutation.mutate(addDraft))}
             >
               {tr("goals.save", locale)}
             </Button>

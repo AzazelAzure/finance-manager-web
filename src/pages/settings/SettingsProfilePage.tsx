@@ -209,6 +209,7 @@ export function SettingsProfilePage(): ReactNode {
       void queryClient.invalidateQueries({ queryKey: ["profile"], refetchType: "all" });
       void queryClient.invalidateQueries({ queryKey: ["app-profile"], refetchType: "all" });
       void queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["goals"], refetchType: "all" });
     },
     onError: (error) => setSettingsMessage(parseApiError(error)),
   });
