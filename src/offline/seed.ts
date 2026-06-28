@@ -10,12 +10,13 @@ import {
 } from "../api/transactions";
 import { listUpcomingExpenses } from "../api/upcomingExpenses";
 import { fetchBalanceHistory } from "../api/balanceHistory";
+import { listGoals } from "../api/goals";
 import { preferOfflineCaches } from "./connectivity";
 import { offlineDb } from "./db";
 import { syncMinimalExchangeRates } from "./exchangeRates";
 
-/** v3: broad prefetch — snapshots, tx slices, totals, upcoming, calendar/viz windows, FX. */
-const SEED_META_KEY = "offline_seed_v3";
+/** v4: v3 + savings goals list for offline goals page/widget. */
+const SEED_META_KEY = "offline_seed_v4";
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -84,6 +85,7 @@ export async function seedOfflineWindow(): Promise<void> {
     await listTransactionsForTotals();
     await listUpcomingExpenses();
     await listUnpaidExpenseNames();
+    await listGoals();
 
     for (const heat_metric_mode of heatModes) {
       await getTransactionsCalendar({

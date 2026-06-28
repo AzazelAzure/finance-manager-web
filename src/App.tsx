@@ -15,6 +15,7 @@ import { TransactionsPage } from "./pages/transactions/TransactionsPage";
 import { CalendarPage } from "./pages/transactions/CalendarPage";
 import { DeepDivePage } from "./pages/transactions/DeepDivePage";
 import { UpcomingExpensesPage } from "./pages/upcoming/UpcomingExpensesPage";
+import { GoalsPage } from "./pages/goals/GoalsPage";
 import { UpcomingDeepDivePage } from "./pages/upcoming/UpcomingDeepDivePage";
 import { DataHubPage } from "./pages/data/DataHubPage";
 import { SettingsProfilePage } from "./pages/settings/SettingsProfilePage";
@@ -107,6 +108,7 @@ export default function App(): ReactNode {
               element={<UpcomingDeepDivePage />}
             />
             <Route path="data" element={<DataHubPage />} />
+            <Route path="goals" element={<GoalsPage />} />
             <Route path="settings/profile" element={<SettingsProfilePage />} />
             <Route path="support" element={<SupportPage />} />
             <Route

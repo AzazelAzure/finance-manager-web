@@ -52,6 +52,7 @@ api.defaults.adapter = async (config) => {
       void queryClient.invalidateQueries({ queryKey: ["profile"], refetchType: "all" });
       void queryClient.invalidateQueries({ queryKey: ["app-profile"], refetchType: "all" });
       void queryClient.invalidateQueries({ queryKey: ["balance-history"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["goals"], refetchType: "all" });
     }
     const headers = new AxiosHeaders();
     return {
