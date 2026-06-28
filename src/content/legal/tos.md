@@ -35,7 +35,7 @@ The Hive Financial Manager is a personal budgeting and financial management tool
 
 **The service is not a financial advisor.** Hive is not a licensed financial advisor, investment advisor, broker-dealer, or fiduciary under any applicable law, including the Philippine Securities Regulation Code, the US Investment Advisers Act, or any equivalent statute. Nothing in the app — including spending projections, burn-rate estimates, savings goal outputs, or balance history — constitutes financial, investment, tax, or legal advice.
 
-**This disclaimer is not a formality.** Hive's features, including F-003 Predictive Budgeting, produce statistical projections based on data you enter. These outputs are informational tools to assist your own decision-making. The accuracy of any projection depends entirely on the accuracy and completeness of the data you provide. Past patterns reflected in projections are not a guarantee of future outcomes.
+**This disclaimer is not a formality.** Hive's features, including predictive budgeting, produce statistical projections based on data you enter. These outputs are informational tools to assist your own decision-making. The accuracy of any projection depends entirely on the accuracy and completeness of the data you provide. Past patterns reflected in projections are not a guarantee of future outcomes.
 
 ---
 
@@ -123,7 +123,7 @@ The app uses Dexie.js (browser IndexedDB) to maintain a local copy of your finan
 
 **Data loss risk (offline-only transactions):** If you enter transactions while offline, those entries are queued locally and synced to our server when connectivity is restored. If you clear your browser storage or uninstall the PWA before an offline-entered transaction has been synced to our server, that transaction will be lost and cannot be recovered.
 
- the local Dexie copy will be encrypted at rest once T06 is deployed. Until then, the local copy is not encrypted at rest on your device.
+The local Dexie copy will be encrypted at rest once local storage encryption is deployed. Until then, the local copy is not encrypted at rest on your device.
 
 ---
 

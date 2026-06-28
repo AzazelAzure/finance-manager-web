@@ -13,7 +13,7 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { tr, useLocale } from "../lib/i18n";
 import { setSession } from "../state/auth";
-import { consumeForceOnboardingNextLogin } from "../state/onboarding";
+import { earliestIncompleteOnboardingPath } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
 import type { ReactNode } from "react";
 
@@ -37,17 +37,20 @@ export function LoginPage(): ReactNode {
     defaultValues: { username: "", password: "" },
   });
 
+  // Authenticated users (fresh login or already signed in) go straight to the app —
+  // onboarding path only when an onboarding run is active, otherwise the dashboard.
   if (isAuthenticated) {
-    return <Navigate to={postLoginPath ?? safeFromPath} replace />;
+    return <Navigate to={postLoginPath ?? earliestIncompleteOnboardingPath()} replace />;
   }
 
   async function onValid(values: FormValues): Promise<void> {
     setFormError("");
     try {
       const data = await login(values.username, values.password);
-      consumeForceOnboardingNextLogin();
-      const nextPath = safeFromPath;
-      setPostLoginPath(nextPath);
+      // earliestIncompleteOnboardingPath() returns the dashboard unless an onboarding
+      // run is active, so existing users land on the dashboard (or their deep link).
+      const onboardingPath = earliestIncompleteOnboardingPath();
+      setPostLoginPath(onboardingPath === "/app/dashboard" ? safeFromPath : onboardingPath);
       setSession({ access: data.access, refresh: data.refresh });
     } catch (err) {
       if (import.meta.env.DEV && axios.isAxiosError(err)) {
@@ -104,8 +107,8 @@ export function LoginPage(): ReactNode {
           <span>{tr("login.biometricPlaceholder", locale)}</span>
         </button>
         <AppForm form={form} onSubmit={onValid} className="stack" id="login-form" autoComplete="off">
-          <TextField name="username" label="Username" autoComplete="off" unlockOnFocus />
-          <TextField name="password" label="Password" type="password" autoComplete="off" unlockOnFocus />
+          <TextField name="username" label={tr("form.label.username", locale)} autoComplete="off" unlockOnFocus />
+          <TextField name="password" label={tr("form.label.password", locale)} type="password" autoComplete="off" unlockOnFocus />
           {formError ? (
             <p className="error-text" role="alert">
               {formError}

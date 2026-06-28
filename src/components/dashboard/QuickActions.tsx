@@ -223,7 +223,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
           {error ? <ErrorState title="Save failed" description={error} /> : null}
           <HelpModeWrapper id="quick-form-date" title={tr("guide.form.date.title", locale)} content={tr("guide.form.date.content", locale)}>
             <label className="ui-field">
-              <span className="ui-label">Date</span>
+              <span className="ui-label">{tr("common.date", locale)}</span>
               <input className="ui-input" type="date" value={draft.date} onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))} />
             </label>
           </HelpModeWrapper>
@@ -231,7 +231,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
             <>
               <HelpModeWrapper id="quick-xfer-from" title={tr("guide.form.xferFrom.title", locale)} content={tr("guide.form.xferFrom.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">From source</span>
+                  <span className="ui-label">{tr("form.label.fromSource", locale)}</span>
                   <SourceSelect
                     sources={sources}
                     value={draft.source}
@@ -249,7 +249,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="quick-xfer-to" title={tr("guide.form.xferTo.title", locale)} content={tr("guide.form.xferTo.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">To source</span>
+                  <span className="ui-label">{tr("form.label.toSource", locale)}</span>
                   <SourceSelect
                     sources={sources}
                     value={draft.toSource}
@@ -267,13 +267,13 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="quick-xfer-sent" title={tr("guide.form.xferSent.title", locale)} content={tr("guide.form.xferSent.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Sent amount</span>
+                  <span className="ui-label">{tr("form.label.sentAmount", locale)}</span>
                   <input className="ui-input" value={draft.sentAmount} onChange={(e) => setDraft((d) => ({ ...d, sentAmount: e.target.value }))} />
                 </label>
               </HelpModeWrapper>
               <HelpModeWrapper id="quick-xfer-sent-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Sent currency</span>
+                  <span className="ui-label">{tr("form.label.sentCurrency", locale)}</span>
                   <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
                     {currencyOptions.map((curr) => (
                       <option key={`quick-sent-${curr}`} value={curr}>
@@ -285,13 +285,13 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="quick-xfer-received" title={tr("guide.form.xferReceived.title", locale)} content={tr("guide.form.xferReceived.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Received amount</span>
+                  <span className="ui-label">{tr("form.label.receivedAmount", locale)}</span>
                   <input className="ui-input" value={draft.receivedAmount} onChange={(e) => setDraft((d) => ({ ...d, receivedAmount: e.target.value }))} />
                 </label>
               </HelpModeWrapper>
               <HelpModeWrapper id="quick-xfer-received-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Received currency</span>
+                  <span className="ui-label">{tr("form.label.receivedCurrency", locale)}</span>
                   <select
                     className="ui-input"
                     value={draft.receivedCurrency}
@@ -310,13 +310,13 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
             <>
               <HelpModeWrapper id="quick-single-amount" title={tr("guide.form.amount.title", locale)} content={tr("guide.form.amount.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Amount</span>
+                  <span className="ui-label">{tr("common.amount", locale)}</span>
                   <input className="ui-input" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} />
                 </label>
               </HelpModeWrapper>
               <HelpModeWrapper id="quick-single-source" title={tr("guide.form.source.title", locale)} content={tr("guide.form.source.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Source</span>
+                  <span className="ui-label">{tr("common.source", locale)}</span>
                   <SourceSelect
                     sources={sources}
                     value={draft.source}
@@ -334,7 +334,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="quick-single-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Currency</span>
+                  <span className="ui-label">{tr("common.currency", locale)}</span>
                   <select className="ui-input" value={draft.currency} onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}>
                     {currencyOptions.map((curr) => (
                       <option key={`quick-curr-${curr}`} value={curr}>
@@ -349,14 +349,14 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
           {activeType === "BILL" ? (
             <HelpModeWrapper id="quick-form-due" title={tr("guide.form.dueDate.title", locale)} content={tr("guide.form.dueDate.content", locale)}>
               <label className="ui-field">
-                <span className="ui-label">Due date</span>
+                <span className="ui-label">{tr("form.label.dueDate", locale)}</span>
                 <input className="ui-input" type="date" value={draft.dueDate} onChange={(e) => setDraft((d) => ({ ...d, dueDate: e.target.value }))} />
               </label>
             </HelpModeWrapper>
           ) : (
             <HelpModeWrapper id="quick-form-cat" title={tr("guide.form.category.title", locale)} content={tr("guide.form.category.content", locale)}>
               <label className="ui-field">
-                <span className="ui-label">Category</span>
+                <span className="ui-label">{tr("common.category", locale)}</span>
                 <input className="ui-input" list="quick-category-list" value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))} />
               </label>
             </HelpModeWrapper>
@@ -420,7 +420,7 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
           ) : null}
           <HelpModeWrapper id="quick-form-desc" title={tr("guide.form.description.title", locale)} content={tr("guide.form.description.content", locale)}>
             <label className="ui-field">
-              <span className="ui-label">Description</span>
+              <span className="ui-label">{tr("common.description", locale)}</span>
               <input className="ui-input" value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} />
             </label>
           </HelpModeWrapper>

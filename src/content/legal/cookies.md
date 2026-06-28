@@ -34,7 +34,7 @@ Strictly necessary items are essential to the secure operation of the service. Y
 
 ### 3.1 Authentication Token
 
-After T05 is deployed, authentication will work as follows:
+After cookie-based refresh token authentication is deployed, authentication will work as follows:
 
 - **Access token:** Stored in memory only (a JavaScript variable). It is not written to localStorage, cookies, or any persistent storage. It is lost when you close the browser tab and is recovered silently on your next visit.
 - **Refresh token:** Stored in an `HttpOnly; Secure; SameSite=Strict` cookie scoped to the `/auth/refresh` endpoint. Because it is `HttpOnly`, it is inaccessible to JavaScript — this protects it from cross-site scripting (XSS) attacks.
@@ -43,11 +43,11 @@ After T05 is deployed, authentication will work as follows:
 |---|---|---|---|---|
 | Refresh token cookie | `HttpOnly` cookie | Maintains your authenticated session | Per refresh rotation policy | First-party |
 
-**Until T05 is deployed:** Authentication tokens are currently stored in `localStorage`. No personally identifiable information is included in the token payload. This is disclosed accurately here pending the security hardening sprint.
+**Until cookie-based refresh token authentication is deployed:** Authentication tokens are currently stored in `localStorage`. No personally identifiable information is included in the token payload. This is disclosed accurately here pending the security hardening sprint.
 
 ### 3.2 CSRF Protection Token
 
-CSRF tokens on state-changing routes will be implemented as part of the T05 security hardening sprint, which introduces cookie-based refresh token authentication. CSRF tokens protect against cross-site request forgery attacks.
+CSRF tokens on state-changing routes will be implemented as part of the security hardening sprint, which introduces cookie-based refresh token authentication. CSRF tokens protect against cross-site request forgery attacks.
 
 | Item | Type | Purpose | Duration | Party |
 |---|---|---|---|---|
@@ -178,7 +178,7 @@ privacy@thehivemanager.com
 | Item | Type | Category | Purpose | Duration | Party | Consent |
 |---|---|---|---|---|---|---|
 | Refresh token cookie `pending security update` | HttpOnly cookie | Strictly necessary | Authentication session | Rotation policy | First | Exempt |
-| Auth token in localStorage `[Until T05]` | localStorage | Strictly necessary | Authentication (interim) | Session/persistent | First | Exempt |
+| Auth token in localStorage `[interim]` | localStorage | Strictly necessary | Authentication (interim) | Session/persistent | First | Exempt |
 | CSRF token `pending security update` | Session cookie | Strictly necessary | Request forgery protection | Session | First | Exempt |
 | Consent preference record | localStorage | Strictly necessary | Store consent choices | 1 year | First | Exempt |
 | Dexie IndexedDB (`outbox`, `caches`, `meta`) | IndexedDB | Functional | Local financial data for offline access | No auto-purge; until browser storage cleared | First | Functional disclosure |

@@ -6,7 +6,11 @@ export type OnboardingProgress = {
 };
 
 const ONBOARDING_KEY = "fm_onboarding_progress_v1";
-const FORCE_ONBOARDING_KEY = "fm_force_onboarding_next_login_v1";
+// Onboarding is only ever shown while this marker is set. It is set on account
+// creation (signup) or an explicit "run setup again" from Profile, and cleared
+// when the wizard is finished or skipped. Existing users logging in never have
+// it, so they go straight to the dashboard.
+const ONBOARDING_ACTIVE_KEY = "fm_onboarding_active_v1";
 
 const DEFAULT_PROGRESS: OnboardingProgress = {
   profile_preferences_saved: false,
@@ -55,43 +59,60 @@ export function clearOnboardingProgress(): void {
   localStorage.removeItem(ONBOARDING_KEY);
 }
 
+/** True only while a new-account (or manually restarted) onboarding run is in progress. */
+export function isOnboardingActive(): boolean {
+  if (typeof localStorage === "undefined") {
+    return false;
+  }
+  return localStorage.getItem(ONBOARDING_ACTIVE_KEY) === "1";
+}
+
+/** Begin an onboarding run (called on signup or manual restart). */
+export function activateOnboarding(): void {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+  localStorage.setItem(ONBOARDING_ACTIVE_KEY, "1");
+}
+
+/** End the onboarding run without touching step progress. */
+export function deactivateOnboarding(): void {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+  localStorage.removeItem(ONBOARDING_ACTIVE_KEY);
+}
+
+/** Mark the wizard finished/skipped: complete all steps and end the run. */
+export function completeOnboarding(): void {
+  setOnboardingProgress({
+    profile_preferences_saved: true,
+    source_added: true,
+    category_added: true,
+    onboarding_completed: true,
+  });
+  deactivateOnboarding();
+}
+
+/**
+ * Where the user should land for onboarding. Returns the dashboard whenever no
+ * onboarding run is active, so existing users are never redirected into the wizard.
+ */
 export function earliestIncompleteOnboardingPath(progress = getOnboardingProgress()): string {
+  if (!isOnboardingActive()) return "/app/dashboard";
   if (progress.onboarding_completed) return "/app/dashboard";
   if (!progress.profile_preferences_saved) return "/app/onboarding";
   if (!progress.source_added) return "/app/onboarding/sources";
-  if (!progress.category_added) return "/app/onboarding/categories";
-  return "/app/onboarding/review";
+  return "/app/dashboard";
 }
 
-/** True when signup (or similar) asked for onboarding on the next authenticated render. */
-export function isForceOnboardingNextLoginSet(): boolean {
-  if (typeof localStorage === "undefined") {
-    return false;
-  }
-  return localStorage.getItem(FORCE_ONBOARDING_KEY) === "1";
-}
-
-export function markForceOnboardingNextLogin(): void {
-  if (typeof localStorage === "undefined") {
-    return;
-  }
-  localStorage.setItem(FORCE_ONBOARDING_KEY, "1");
-}
-
-export function consumeForceOnboardingNextLogin(): boolean {
-  if (typeof localStorage === "undefined") {
-    return false;
-  }
-  const shouldForce = localStorage.getItem(FORCE_ONBOARDING_KEY) === "1";
-  if (shouldForce) {
-    localStorage.removeItem(FORCE_ONBOARDING_KEY);
-  }
-  return shouldForce;
-}
-
-export function clearForceOnboardingNextLogin(): void {
-  if (typeof localStorage === "undefined") {
-    return;
-  }
-  localStorage.removeItem(FORCE_ONBOARDING_KEY);
+/** Re-open the short setup wizard (currency + first source). */
+export function restartOnboardingWizard(): void {
+  setOnboardingProgress({
+    profile_preferences_saved: false,
+    source_added: false,
+    category_added: false,
+    onboarding_completed: false,
+  });
+  activateOnboarding();
 }

@@ -181,6 +181,16 @@
   border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
   background: color-mix(in srgb, var(--surface) 82%, transparent);
   justify-content: center;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.protected-brand:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow: var(--shadow-sm);
 }
 .protected-brand__mark {
   width: 1.45rem;

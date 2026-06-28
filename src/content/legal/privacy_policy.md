@@ -73,7 +73,7 @@ When you enter financial data into Hive while connected to the internet, that da
 
 This means **we do receive and store your financial transaction data on our servers.** The local Dexie copy is a mirror for your offline use only. If you clear your browser storage, the local copy is deleted, but your server-side data remains intact until you delete your account.
 
-The local Dexie copy persists in your browser until you clear your browser storage or delete your account. There is no automatic time-based purge of the local copy — it is overwritten by newer data from the server on reconnection.  once Dexie encryption is deployed, the local copy will be encrypted at rest using XSalsa20-Poly1305; until T06 is deployed, the local copy is not encrypted at rest.
+The local Dexie copy persists in your browser until you clear your browser storage or delete your account. There is no automatic time-based purge of the local copy — it is overwritten by newer data from the server on reconnection. Once local storage encryption is deployed, the local copy will be encrypted at rest using XSalsa20-Poly1305; until then, the local copy is not encrypted at rest.
 
 ### 3.3 Data Generated Automatically
 
@@ -85,9 +85,9 @@ The local Dexie copy persists in your browser until you clear your browser stora
 | API endpoint and response data | Normalized request paths (with any UUIDs or IDs stripped) and HTTP response codes. Used for service performance monitoring. | Yes — aggregate only |
 | Daily and monthly active user counts | Aggregate counts only. No individual-level tracking. | Yes |
 | Invite chain events | Pairs of UUIDs (inviter and invitee) used to understand how the app spreads. No names or email addresses are stored in these records. | Yes |
-| Diagnostic / error logs | Per-UUID log files generated when the app reports a diagnostic event (F-013). These logs do not contain your name, email, or financial data. They are keyed by a random UUID and are accessible only to the operator. | Yes — 14-day retention, 10MB rotation |
+| Diagnostic / error logs | Per-UUID log files generated when the app reports a diagnostic event. These logs do not contain your name, email, or financial data. They are keyed by a random UUID and are accessible only to the operator. | Yes — 14-day retention, 10MB rotation |
 
-> **Note on PII in general logs:** Certain internal operational log entries (not the F-013 diagnostic logs) may currently include your username in plain text. This is a known gap being resolved as part of the next security hardening sprint. Until resolved, access to these logs is restricted to the operator only.
+> **Note on PII in general logs:** Certain internal operational log entries (not the diagnostic error logs described above) may currently include your username in plain text. This is a known gap being resolved as part of the next security hardening sprint. Until resolved, access to these logs is restricted to the operator only.
 
 ### 3.4 Data We Do Not Collect
 
@@ -110,13 +110,13 @@ The local Dexie copy persists in your browser until you clear your browser stora
 | Service reliability and performance monitoring | UUID, endpoint data, aggregate counts, diagnostic logs | Legitimate interest — service reliability | Legitimate purpose |
 | Abuse and fraud prevention | Pseudonymous security identifier (hashed IP), user agent class | Legitimate interest — security of the service | Legitimate purpose |
 | Communicating service changes or security notices | Email | Legitimate interest — necessary communication | Legitimate purpose |
-| Spending projection and budgeting analysis (F-003) | Your financial transaction data (historical patterns only) | Contract — this is a core feature of the service | Legitimate purpose |
+| Spending projection and budgeting analysis | Your financial transaction data (historical patterns only) | Contract — this is a core feature of the service | Legitimate purpose |
 
 We do not use your data for advertising, profiling for commercial targeting, or any purpose not listed here.
 
-### 4.1 Note on F-003 Predictive Budgeting
+### 4.1 Note on Predictive Budgeting
 
-The app includes a feature (F-003) that analyzes your historical transaction data to produce spending projections and burn-rate estimates. These projections are **informational only** and are produced using statistical analysis of data you have entered. They do not constitute financial advice, and no automated decision with legal or similarly significant effect is made about you. See the Terms of Service for the full financial disclaimer.
+The app includes a predictive budgeting feature that analyzes your historical transaction data to produce spending projections and burn-rate estimates. These projections are **informational only** and are produced using statistical analysis of data you have entered. They do not constitute financial advice, and no automated decision with legal or similarly significant effect is made about you. See the Terms of Service for the full financial disclaimer.
 
 ---
 
@@ -159,7 +159,7 @@ Your data also passes through Cloudflare's global network, which may involve rou
 | Financial transaction data (server-side) | Until account deletion | All financial data is deleted upon account deletion via our account deletion mechanism |
 | Local Dexie copy (device-side) | No automatic purge — persists until browser storage is cleared or account deleted | Device-side only; not controlled by the operator after write; overwritten by server sync on reconnection |
 | Pseudonymous security identifier (hashed IP) | 90-day rolling `pending infrastructure deploy` | Non-recoverable hash; used for security event correlation only |
-| Diagnostic / error logs (F-013) | 14 days, 10MB rotation | UUID-keyed; no PII; operator access only |
+| Diagnostic / error logs | 14 days, 10MB rotation | UUID-keyed; no PII; operator access only |
 | Aggregate analytics (DAU/MAU, invite chain, endpoint stats) | Indefinite | No individual-level data; purely aggregate/pseudonymous |
 
 When you delete your account, all of the above server-side personal data — including your username, email, hashed password, and all financial transaction data — is deleted immediately via our account deletion mechanism. UUID-keyed diagnostic logs are not deleted on account deletion because they contain no personal data that can be linked to your identity.
@@ -196,8 +196,8 @@ We implement the following technical and organizational security measures:
 
 - **TLS/HTTPS:** All traffic between your browser and our servers is encrypted in transit. Cloudflare enforces HTTPS for all connections.
 - **Password hashing:** Your password is stored as a one-way Argon2id hash. Your raw password is never stored.
-- **Authentication tokens:**  access tokens will be stored in memory only (not localStorage); refresh tokens will be stored in an HttpOnly, Secure, SameSite=Strict cookie. Until T05 is deployed, tokens are stored in localStorage, which carries elevated XSS risk. No PII is included in any JWT payload.
-- **Local storage encryption:**  the local Dexie.js copy of your financial data will be encrypted at rest using XSalsa20-Poly1305 with an in-memory, API-derived key. Until T06 is deployed, the local copy is not encrypted at rest.
+- **Authentication tokens:** Access tokens will be stored in memory only (not localStorage); refresh tokens will be stored in an HttpOnly, Secure, SameSite=Strict cookie. Until cookie-based refresh token authentication is deployed, tokens are stored in localStorage, which carries elevated XSS risk. No PII is included in any JWT payload.
+- **Local storage encryption:** The local Dexie.js copy of your financial data will be encrypted at rest using XSalsa20-Poly1305 with an in-memory, API-derived key. Until local storage encryption is deployed, the local copy is not encrypted at rest.
 - **IP pseudonymization:** Raw IP addresses are immediately converted to a non-recoverable salted SHA-256 hash. The raw IP is not logged or stored.
 - **Cloudflare DDoS and WAF protection:** Network-level security filtering is applied to all inbound traffic.
 - **Access controls:** Diagnostic logs and operational data are accessible to the operator only.

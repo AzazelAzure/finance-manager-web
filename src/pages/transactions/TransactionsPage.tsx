@@ -560,7 +560,7 @@ export function TransactionsPage(): ReactNode {
         <Card>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
           <label id="tx-filter-period" className="ui-field">
-            <span className="ui-label">Period</span>
+            <span className="ui-label">{tr("form.label.period", locale)}</span>
             <select
               className="ui-input"
               value={localDraft.period}
@@ -573,7 +573,7 @@ export function TransactionsPage(): ReactNode {
             </select>
           </label>
           <label id="tx-filter-type" className="ui-field">
-            <span className="ui-label">Type</span>
+            <span className="ui-label">{tr("common.type", locale)}</span>
             <select className="ui-input" value={localDraft.txType} onChange={(e) => setLocalDraft((d) => ({ ...d, txType: e.target.value }))}>
               <option value="">All</option>
               <option value="EXPENSE">Expense</option>
@@ -583,11 +583,11 @@ export function TransactionsPage(): ReactNode {
             </select>
           </label>
           <label className="ui-field">
-            <span className="ui-label">Tag</span>
+            <span className="ui-label">{tr("form.label.tag", locale)}</span>
             <input className="ui-input" value={localDraft.tagName} onChange={(e) => setLocalDraft((d) => ({ ...d, tagName: e.target.value }))} list="tx-tags" />
           </label>
           <label className="ui-field">
-            <span className="ui-label">Category</span>
+            <span className="ui-label">{tr("common.category", locale)}</span>
             <select className="ui-input" value={localDraft.category} onChange={(e) => setLocalDraft((d) => ({ ...d, category: e.target.value }))}>
               <option value="">Any</option>
               {(categoriesQuery.data ?? []).map((c) => (
@@ -598,7 +598,7 @@ export function TransactionsPage(): ReactNode {
             </select>
           </label>
           <label className="ui-field">
-            <span className="ui-label">Source</span>
+            <span className="ui-label">{tr("common.source", locale)}</span>
             <select className="ui-input" value={localDraft.source} onChange={(e) => setLocalDraft((d) => ({ ...d, source: e.target.value }))}>
               <option value="">Any</option>
               {(sourcesQuery.data ?? []).map((s) => (
@@ -609,7 +609,7 @@ export function TransactionsPage(): ReactNode {
             </select>
           </label>
           <label className="ui-field">
-            <span className="ui-label">Currency</span>
+            <span className="ui-label">{tr("common.currency", locale)}</span>
             <input className="ui-input" value={localDraft.currency} onChange={(e) => setLocalDraft((d) => ({ ...d, currency: e.target.value }))} />
           </label>
         </div>
@@ -638,7 +638,7 @@ export function TransactionsPage(): ReactNode {
       {txQuery.isError ? (
         <ErrorState title="Transactions failed to load" onRetry={() => void txQuery.refetch()} />
       ) : txQuery.isLoading && !txQuery.data ? (
-        <LoadingState label="Loading transactions..." />
+        <LoadingState label={tr("form.loading.transactions", locale)} />
       ) : (
         <HelpModeWrapper id="tx-table" title={tr("tour.tx.table.title", locale)} content={tr("tour.tx.table.content", locale)}>
           <Card>
@@ -664,7 +664,7 @@ export function TransactionsPage(): ReactNode {
           ) : null}
           {!editingTxId ? (
             <label className="ui-field">
-              <span className="ui-label">Mode</span>
+              <span className="ui-label">{tr("form.label.mode", locale)}</span>
               <select
                 className="ui-input"
                 value={editorMode}
@@ -679,7 +679,7 @@ export function TransactionsPage(): ReactNode {
             <>
               <HelpModeWrapper id="tx-form-date" title={tr("guide.form.date.title", locale)} content={tr("guide.form.date.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Date</span>
+                  <span className="ui-label">{tr("common.date", locale)}</span>
                   <input
                     className="ui-input"
                     type="date"
@@ -690,7 +690,7 @@ export function TransactionsPage(): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="tx-form-amount" title={tr("guide.form.amount.title", locale)} content={tr("guide.form.amount.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Amount</span>
+                  <span className="ui-label">{tr("common.amount", locale)}</span>
                   <input
                     className="ui-input"
                     value={singleDraft.amount}
@@ -700,7 +700,7 @@ export function TransactionsPage(): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="tx-form-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Currency</span>
+                  <span className="ui-label">{tr("common.currency", locale)}</span>
                   <select className="ui-input" value={singleDraft.currency} onChange={(e) => setSingleDraft((d) => ({ ...d, currency: e.target.value }))}>
                     {currencyOptions.map((curr) => (
                       <option key={curr} value={curr}>
@@ -712,7 +712,7 @@ export function TransactionsPage(): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="tx-form-source" title={tr("guide.form.source.title", locale)} content={tr("guide.form.source.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Source</span>
+                  <span className="ui-label">{tr("common.source", locale)}</span>
                   <SourceSelect
                     sources={sourcesQuery.data ?? []}
                     value={singleDraft.source}
@@ -732,7 +732,7 @@ export function TransactionsPage(): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="tx-form-type" title={tr("guide.form.txType.title", locale)} content={tr("guide.form.txType.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Type</span>
+                  <span className="ui-label">{tr("common.type", locale)}</span>
                   <select
                     className="ui-input"
                     value={singleDraft.tx_type}
@@ -750,7 +750,7 @@ export function TransactionsPage(): ReactNode {
             <>
               <HelpModeWrapper id="tx-xfer-date" title={tr("guide.form.date.title", locale)} content={tr("guide.form.date.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Date</span>
+                  <span className="ui-label">{tr("common.date", locale)}</span>
                   <input
                     className="ui-input"
                     type="date"
@@ -761,7 +761,7 @@ export function TransactionsPage(): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="tx-xfer-from" title={tr("guide.form.xferFrom.title", locale)} content={tr("guide.form.xferFrom.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">From source</span>
+                  <span className="ui-label">{tr("form.label.fromSource", locale)}</span>
                   <SourceSelect
                     sources={sourcesQuery.data ?? []}
                     value={transferDraft.from_source}
@@ -773,7 +773,7 @@ export function TransactionsPage(): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="tx-xfer-to" title={tr("guide.form.xferTo.title", locale)} content={tr("guide.form.xferTo.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">To source</span>
+                  <span className="ui-label">{tr("form.label.toSource", locale)}</span>
                   <SourceSelect
                     sources={sourcesQuery.data ?? []}
                     value={transferDraft.to_source}
@@ -785,7 +785,7 @@ export function TransactionsPage(): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="tx-xfer-sent" title={tr("guide.form.xferSent.title", locale)} content={tr("guide.form.xferSent.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Sent amount</span>
+                  <span className="ui-label">{tr("form.label.sentAmount", locale)}</span>
                   <input
                     className="ui-input"
                     value={transferDraft.sent_amount}
@@ -795,7 +795,7 @@ export function TransactionsPage(): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="tx-xfer-sent-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Sent currency</span>
+                  <span className="ui-label">{tr("form.label.sentCurrency", locale)}</span>
                   <select
                     className="ui-input"
                     value={transferDraft.sent_currency}
@@ -811,7 +811,7 @@ export function TransactionsPage(): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="tx-xfer-received" title={tr("guide.form.xferReceived.title", locale)} content={tr("guide.form.xferReceived.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Received amount</span>
+                  <span className="ui-label">{tr("form.label.receivedAmount", locale)}</span>
                   <input
                     className="ui-input"
                     value={transferDraft.received_amount}
@@ -821,7 +821,7 @@ export function TransactionsPage(): ReactNode {
               </HelpModeWrapper>
               <HelpModeWrapper id="tx-xfer-received-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
                 <label className="ui-field">
-                  <span className="ui-label">Received currency</span>
+                  <span className="ui-label">{tr("form.label.receivedCurrency", locale)}</span>
                   <select
                     className="ui-input"
                     value={transferDraft.received_currency}
@@ -847,7 +847,7 @@ export function TransactionsPage(): ReactNode {
           )}
           <HelpModeWrapper id="tx-form-cat" title={tr("guide.form.category.title", locale)} content={tr("guide.form.category.content", locale)}>
             <label className="ui-field">
-              <span className="ui-label">Category</span>
+              <span className="ui-label">{tr("common.category", locale)}</span>
               <input
                 className="ui-input"
                 list="tx-category-list"
@@ -885,7 +885,7 @@ export function TransactionsPage(): ReactNode {
           ) : null}
           <HelpModeWrapper id="tx-form-bill" title={tr("guide.form.linkBill.title", locale)} content={tr("guide.form.linkBill.content", locale)}>
             <label className="ui-field">
-              <span className="ui-label">Bill (optional)</span>
+              <span className="ui-label">{tr("form.label.billOptional", locale)}</span>
               <select
                 className="ui-input"
                 value={editingTxId ? singleDraft.bill : editorMode === "single" ? singleDraft.bill : transferDraft.bill}
@@ -909,7 +909,7 @@ export function TransactionsPage(): ReactNode {
           </HelpModeWrapper>
           <HelpModeWrapper id="tx-form-desc" title={tr("guide.form.description.title", locale)} content={tr("guide.form.description.content", locale)}>
             <label className="ui-field">
-              <span className="ui-label">Description</span>
+              <span className="ui-label">{tr("common.description", locale)}</span>
               <input
                 className="ui-input"
                 value={editingTxId ? singleDraft.description : editorMode === "single" ? singleDraft.description : transferDraft.description}
@@ -926,7 +926,7 @@ export function TransactionsPage(): ReactNode {
           </HelpModeWrapper>
           <HelpModeWrapper id="tx-form-tags" title={tr("guide.form.tags.title", locale)} content={tr("guide.form.tags.content", locale)}>
             <div className="ui-field">
-              <span className="ui-label">Tags</span>
+              <span className="ui-label">{tr("common.tags", locale)}</span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {selectedTags.length === 0 ? <span className="muted-text">No tags</span> : null}
               {selectedTags.map((tag) => (
@@ -945,7 +945,7 @@ export function TransactionsPage(): ReactNode {
                 className="ui-input"
                 value={pendingTagInput}
                 onChange={(e) => setPendingTagInput(e.target.value)}
-                placeholder="Add tag"
+                placeholder={tr("form.placeholder.addTag", locale)}
                 list="tx-tags"
               />
               <Button

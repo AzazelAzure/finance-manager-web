@@ -27,6 +27,7 @@ import { useSession } from "../../state/SessionContext";
 import { clearOutbox } from "../../offline/outbox";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 import { tr, useLocale } from "../../lib/i18n";
+import { restartOnboardingWizard } from "../../state/onboarding";
 import { HelpModeWrapper } from "../../components/tours/TourProvider";
 import { buildTimezoneOptions } from "../../lib/timezones";
 
@@ -327,7 +328,7 @@ export function SettingsProfilePage(): ReactNode {
                   >
                     <input type="hidden" {...settingsForm.register("spend_accounts_csv")} />
                     <div className="ui-field">
-                      <span className="ui-label">Spend accounts</span>
+                      <span className="ui-label">{tr("form.label.spendAccounts", locale)}</span>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                         {selectedSpendAccounts.length === 0 ? <span className="muted-text">No spend accounts selected</span> : null}
                         {selectedSpendAccounts.map((account) => (
@@ -347,7 +348,7 @@ export function SettingsProfilePage(): ReactNode {
                           list="settings-source-list"
                           value={spendAccountsInput}
                           onChange={(e) => setSpendAccountsInput(e.target.value)}
-                          placeholder="Add source to spend accounts"
+                          placeholder={tr("form.label.addSpendAccountPlaceholder", locale)}
                         />
                         <Button type="button" variant="secondary" onClick={() => addSpendAccount(spendAccountsInput)}>
                           Add
@@ -362,19 +363,19 @@ export function SettingsProfilePage(): ReactNode {
                         ))}
                       </datalist>
                     </div>
-                    <TextField name="base_currency" label="Base currency (3-letter code)" />
+                    <TextField name="base_currency" label={tr("form.label.baseCurrencyCode", locale)} />
                     <SelectField
                       name="start_week"
-                      label="Start of week"
+                      label={tr("form.label.startOfWeek", locale)}
                       options={[
                         { value: "0", label: "Sunday" },
                         { value: "1", label: "Monday" },
                       ]}
                     />
-                    <SelectField name="timezone" label="Timezone" options={timezoneSelect} />
+                    <SelectField name="timezone" label={tr("form.label.timezone", locale)} options={timezoneSelect} />
                     <SelectField
                       name="theme"
-                      label="Theme"
+                      label={tr("form.label.theme", locale)}
                       options={[
                         { value: "system", label: "System" },
                         { value: "light", label: "Light" },
@@ -407,6 +408,23 @@ export function SettingsProfilePage(): ReactNode {
                   </div>
                 </Card>
                 </HelpModeWrapper>
+                <Card>
+                  <div className="stack" style={{ gap: 8 }}>
+                    <h3 style={{ margin: 0 }}>{tr("onboarding.restartTitle", locale)}</h3>
+                    <p className="muted-text" style={{ margin: 0 }}>
+                      {tr("onboarding.restartHint", locale)}
+                    </p>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        restartOnboardingWizard();
+                        navigate("/app/onboarding");
+                      }}
+                    >
+                      {tr("onboarding.restart", locale)}
+                    </Button>
+                  </div>
+                </Card>
               </TabPanel>
             ),
           },
@@ -431,9 +449,9 @@ export function SettingsProfilePage(): ReactNode {
                     }}
                     className="stack"
                   >
-                    <TextField name="old_password" label="Current password" type="password" />
-                    <TextField name="new_password" label="New password" type="password" />
-                    <TextField name="new_password_confirm" label="Confirm new password" type="password" />
+                    <TextField name="old_password" label={tr("form.label.currentPassword", locale)} type="password" />
+                    <TextField name="new_password" label={tr("form.label.newPassword", locale)} type="password" />
+                    <TextField name="new_password_confirm" label={tr("form.label.confirmNewPassword", locale)} type="password" />
                     <Button type="submit" disabled={passwordMutation.isPending}>
                       {passwordMutation.isPending ? "Updating..." : "Change password"}
                     </Button>

@@ -11,7 +11,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { setLocale, tr, trFmt, useLocale } from "../lib/i18n";
 import { useSession } from "../state/SessionContext";
 import { useEffect, useState, type ReactNode } from "react";
@@ -167,10 +167,15 @@ export function ProtectedShell(): ReactNode {
   return (
     <div className="protected-root">
       <aside className="protected-sidebar" aria-label="Main navigation (desktop)">
-        <div className="protected-brand" aria-hidden>
+        <Link
+          to="/"
+          className="protected-brand"
+          aria-label={tr("shell.brand.home", locale)}
+          title={tr("shell.brand.home", locale)}
+        >
           <img src="/favicon.png" alt="" className="protected-brand__mark" />
           <span className="protected-brand__text">Hive</span>
-        </div>
+        </Link>
         <div className="protected-side-nav">
           {PRIMARY_NAV.map((n) => (
             <NavItem key={n.to} to={n.to} label={tr(`shell.nav.${n.label.toLowerCase()}`, locale)} end={n.end} icon={n.icon} />

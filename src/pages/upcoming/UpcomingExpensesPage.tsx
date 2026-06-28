@@ -11,6 +11,7 @@ import { LoadingState } from "../../components/ui/LoadingState";
 import { Modal } from "../../components/ui/Modal";
 import {
   createUpcomingExpense,
+  catchUpUpcomingExpense,
   deleteUpcomingExpense,
   listUpcomingExpenses,
   updateUpcomingExpense,
@@ -20,7 +21,8 @@ import { getAppProfile } from "../../api/profile";
 import { isOfflineQueued, type UpcomingExpenseMutationPayload, type UpcomingExpenseRecord } from "../../api/types";
 import { formatMoney } from "../../lib/money";
 import { useBreakpoint } from "../../lib/breakpoints";
-import { tr, useLocale } from "../../lib/i18n";
+import { tr, trFmt, useLocale } from "../../lib/i18n";
+import { estimateMissedPeriods, isOverdueUnpaid } from "../../lib/billRecurrence";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 
 const UPCOMING_EXPENSES_TOUR_STEPS = [
@@ -206,6 +208,45 @@ export function UpcomingExpensesPage(): ReactNode {
     },
   });
 
+  const catchUpMutation = useMutation({
+    mutationFn: async ({ name, periods }: { name: string; periods?: number }) => catchUpUpcomingExpense(name, periods),
+    onSuccess: () => {
+      requestPwaReadBypassAfterMutation();
+      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["upcoming-expenses", "unpaid-names"], refetchType: "all" });
+    },
+  });
+
+  function renderOverdueActions(row: UpcomingExpenseRecord): ReactNode {
+    if (!isOverdueUnpaid(row)) {
+      return null;
+    }
+    const missed = estimateMissedPeriods(row);
+    return (
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={catchUpMutation.isPending}
+          onClick={() => catchUpMutation.mutate({ name: row.name, periods: 1 })}
+        >
+          {tr("upcoming.markPaidAdvance", locale)}
+        </Button>
+        {missed > 1 ? (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={catchUpMutation.isPending}
+            onClick={() => catchUpMutation.mutate({ name: row.name })}
+          >
+            {trFmt("upcoming.catchUpPeriods", locale, { count: missed })}
+          </Button>
+        ) : null}
+      </div>
+    );
+  }
+
   const filteredRows = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const thisMonth = monthRange(0);
@@ -290,6 +331,7 @@ export function UpcomingExpensesPage(): ReactNode {
               >
                 {isConfirm ? "Confirm delete?" : "Delete"}
               </button>
+              {renderOverdueActions(r)}
             </div>
           );
         },
@@ -423,6 +465,12 @@ export function UpcomingExpensesPage(): ReactNode {
                         <span className="tx-badge">{row.recurring_flag ? tr("upcoming.recurring", locale) : tr("upcoming.oneTime", locale)}</span>
                         <span className="muted-text">{row.source || tr("upcoming.noSource", locale)}</span>
                       </div>
+                      {isOverdueUnpaid(row) ? (
+                        <p className="muted-text" style={{ margin: 0 }}>
+                          {tr("upcoming.overdueLabel", locale)}
+                        </p>
+                      ) : null}
+                      {renderOverdueActions(row)}
                       <div style={{ display: "flex", gap: 8 }}>
                         <button
                           type="button"
@@ -525,7 +573,7 @@ export function UpcomingExpensesPage(): ReactNode {
           </HelpModeWrapper>
           <HelpModeWrapper id="bill-form-source" title={tr("guide.form.source.title", locale)} content={tr("guide.form.source.content", locale)}>
             <label className="ui-field">
-              <span className="ui-label">Source (optional)</span>
+              <span className="ui-label">{tr("form.label.sourceOptional", locale)}</span>
               <input className="ui-input" value={draft.source} onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))} />
             </label>
           </HelpModeWrapper>
@@ -536,7 +584,7 @@ export function UpcomingExpensesPage(): ReactNode {
                 checked={draft.recurring_flag}
                 onChange={(e) => setDraft((d) => ({ ...d, recurring_flag: e.target.checked }))}
               />
-              <span className="ui-label">Recurring</span>
+              <span className="ui-label">{tr("upcoming.recurring", locale)}</span>
             </label>
           </HelpModeWrapper>
           <HelpModeWrapper id="bill-form-paid" title={tr("guide.form.paid.title", locale)} content={tr("guide.form.paid.content", locale)}>
@@ -546,7 +594,7 @@ export function UpcomingExpensesPage(): ReactNode {
                 checked={draft.paid_flag}
                 onChange={(e) => setDraft((d) => ({ ...d, paid_flag: e.target.checked }))}
               />
-              <span className="ui-label">Marked paid</span>
+              <span className="ui-label">{tr("form.label.markedPaid", locale)}</span>
             </label>
           </HelpModeWrapper>
           <HelpModeWrapper id="bill-form-window-toggle" title={tr("guide.form.window.title", locale)} content={tr("guide.form.window.content", locale)}>
@@ -556,13 +604,13 @@ export function UpcomingExpensesPage(): ReactNode {
                 checked={draft.use_start_end}
                 onChange={(e) => setDraft((d) => ({ ...d, use_start_end: e.target.checked }))}
               />
-              <span className="ui-label">Use start / end window</span>
+              <span className="ui-label">{tr("form.label.useDateWindow", locale)}</span>
             </label>
           </HelpModeWrapper>
           {draft.use_start_end ? (
             <>
               <label className="ui-field">
-                <span className="ui-label">Start date</span>
+                <span className="ui-label">{tr("form.label.startDate", locale)}</span>
                 <input
                   type="date"
                   className="ui-input"
@@ -571,7 +619,7 @@ export function UpcomingExpensesPage(): ReactNode {
                 />
               </label>
               <label className="ui-field">
-                <span className="ui-label">End date</span>
+                <span className="ui-label">{tr("form.label.endDate", locale)}</span>
                 <input
                   type="date"
                   className="ui-input"
