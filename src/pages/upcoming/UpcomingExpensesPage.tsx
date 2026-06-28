@@ -51,6 +51,11 @@ type UpcomingDraft = {
   source: string;
   paid_flag: boolean;
   recurring_flag: boolean;
+  bill_class: "rigid" | "volatile";
+  use_partial_payment: boolean;
+  planned_partial_amount: string;
+  cycle_residual_amount: string;
+  remainder_due_date: string;
   use_start_end: boolean;
   start_date: string;
   end_date: string;
@@ -67,6 +72,11 @@ function emptyUpcomingDraft(baseCurrency: string): UpcomingDraft {
     source: "",
     paid_flag: false,
     recurring_flag: false,
+    bill_class: "rigid",
+    use_partial_payment: false,
+    planned_partial_amount: "",
+    cycle_residual_amount: "",
+    remainder_due_date: "",
     use_start_end: false,
     start_date: "",
     end_date: "",
@@ -99,7 +109,17 @@ function toPayload(draft: UpcomingDraft): UpcomingExpenseMutationPayload {
     due_date: draft.due_date,
     paid_flag: draft.paid_flag,
     is_recurring: draft.recurring_flag,
+    bill_class: draft.bill_class,
   };
+  if (draft.use_partial_payment) {
+    payload.planned_partial_amount = draft.planned_partial_amount || null;
+    payload.cycle_residual_amount = draft.cycle_residual_amount || null;
+    payload.remainder_due_date = draft.remainder_due_date || null;
+  } else {
+    payload.planned_partial_amount = null;
+    payload.cycle_residual_amount = null;
+    payload.remainder_due_date = null;
+  }
   if (draft.source.trim()) {
     payload.source = draft.source.trim();
   }
@@ -108,6 +128,34 @@ function toPayload(draft: UpcomingDraft): UpcomingExpenseMutationPayload {
     if (draft.end_date) payload.end_date = draft.end_date;
   }
   return payload;
+}
+
+function draftFromRow(row: UpcomingExpenseRecord, baseCurrency: string): UpcomingDraft {
+  const cur = String(row.currency ?? "")
+    .trim()
+    .toUpperCase();
+  const hasPartialPlan = Boolean(row.planned_partial_amount || row.cycle_residual_amount || row.remainder_due_date);
+  return {
+    name: row.name,
+    amount: String(row.amount),
+    currency: cur.length === 3 ? cur : baseCurrency,
+    due_date: row.due_date,
+    source: row.source || "",
+    paid_flag: row.paid_flag,
+    recurring_flag: row.recurring_flag,
+    bill_class: row.bill_class === "volatile" ? "volatile" : "rigid",
+    use_partial_payment: hasPartialPlan,
+    planned_partial_amount: row.planned_partial_amount ? String(row.planned_partial_amount) : "",
+    cycle_residual_amount: row.cycle_residual_amount ? String(row.cycle_residual_amount) : "",
+    remainder_due_date: row.remainder_due_date || "",
+    use_start_end: Boolean(row.start_date || row.end_date),
+    start_date: row.start_date || "",
+    end_date: row.end_date || "",
+  };
+}
+
+function hasPartialPlan(row: UpcomingExpenseRecord): boolean {
+  return Boolean(row.planned_partial_amount || row.cycle_residual_amount || row.remainder_due_date);
 }
 
 function monthRange(offsetMonths: number): { start: string; end: string } {
@@ -284,6 +332,21 @@ export function UpcomingExpensesPage(): ReactNode {
         header: "Recurring",
         cell: (r) => <span className="tx-badge">{r.recurring_flag ? "Recurring" : "One-time"}</span>,
       },
+      {
+        id: "bill-plan",
+        header: "Plan",
+        cell: (r) =>
+          r.bill_class === "volatile" || hasPartialPlan(r) ? (
+            <span className="tx-badge">
+              {r.bill_class === "volatile" ? tr("upcoming.billClass.volatile", locale) : tr("upcoming.billClass.rigid", locale)}
+              {hasPartialPlan(r) && r.planned_partial_amount
+                ? ` · ${tr("upcoming.partialPlan.short", locale)} ${formatMoney(r.planned_partial_amount, r.currency)}`
+                : ""}
+            </span>
+          ) : (
+            <span className="muted-text">—</span>
+          ),
+      },
       { id: "source", header: "Source", cell: (r) => r.source || "—" },
       {
         id: "actions",
@@ -297,21 +360,7 @@ export function UpcomingExpensesPage(): ReactNode {
                 className="ui-btn ui-btn--secondary"
                 onClick={() => {
                   setEditingName(r.name);
-                  const cur = String(r.currency ?? "")
-                    .trim()
-                    .toUpperCase();
-                  setDraft({
-                    name: r.name,
-                    amount: String(r.amount),
-                    currency: cur.length === 3 ? cur : baseCurrency,
-                    due_date: r.due_date,
-                    source: r.source || "",
-                    paid_flag: r.paid_flag,
-                    recurring_flag: r.recurring_flag,
-                    use_start_end: Boolean(r.start_date || r.end_date),
-                    start_date: r.start_date || "",
-                    end_date: r.end_date || "",
-                  });
+                  setDraft(draftFromRow(r, baseCurrency));
                   setEditorError("");
                   setEditorOpen(true);
                 }}
@@ -337,13 +386,25 @@ export function UpcomingExpensesPage(): ReactNode {
         },
       },
     ],
-    [baseCurrency, deleteMutation, pendingDelete],
+    [baseCurrency, deleteMutation, locale, pendingDelete],
   );
 
   const invalidWindow = Boolean(
     draft.use_start_end && draft.start_date && draft.end_date && draft.end_date < draft.start_date,
   );
   const invalidAmount = !draft.amount || Number.isNaN(Number(draft.amount)) || Number(draft.amount) <= 0;
+  const hasAnyPartialField = Boolean(
+    draft.planned_partial_amount || draft.cycle_residual_amount || draft.remainder_due_date,
+  );
+  const plannedPartialValue = Number(draft.planned_partial_amount);
+  const invalidPartialAmount = Boolean(
+    draft.use_partial_payment &&
+      (!hasAnyPartialField ||
+        (draft.planned_partial_amount &&
+          (Number.isNaN(plannedPartialValue) ||
+            plannedPartialValue <= 0 ||
+            plannedPartialValue > Number(draft.amount || 0)))),
+  );
   const isSaveDisabled =
     saveMutation.isPending ||
     !draft.name.trim() ||
@@ -351,6 +412,7 @@ export function UpcomingExpensesPage(): ReactNode {
     !draft.currency.trim() ||
     draft.currency.trim().length !== 3 ||
     invalidAmount ||
+    invalidPartialAmount ||
     invalidWindow;
 
   useEffect(() => {
@@ -465,6 +527,14 @@ export function UpcomingExpensesPage(): ReactNode {
                         <span className="tx-badge">{row.recurring_flag ? tr("upcoming.recurring", locale) : tr("upcoming.oneTime", locale)}</span>
                         <span className="muted-text">{row.source || tr("upcoming.noSource", locale)}</span>
                       </div>
+                      {row.bill_class === "volatile" || hasPartialPlan(row) ? (
+                        <p className="muted-text" style={{ margin: 0 }}>
+                          {row.bill_class === "volatile" ? tr("upcoming.billClass.volatile", locale) : tr("upcoming.billClass.rigid", locale)}
+                          {hasPartialPlan(row) && row.planned_partial_amount
+                            ? ` · ${tr("upcoming.partialPlan.short", locale)} ${formatMoney(row.planned_partial_amount, row.currency)}`
+                            : ""}
+                        </p>
+                      ) : null}
                       {isOverdueUnpaid(row) ? (
                         <p className="muted-text" style={{ margin: 0 }}>
                           {tr("upcoming.overdueLabel", locale)}
@@ -477,21 +547,7 @@ export function UpcomingExpensesPage(): ReactNode {
                           className="ui-btn ui-btn--secondary"
                           onClick={() => {
                             setEditingName(row.name);
-                            const cur = String(row.currency ?? "")
-                              .trim()
-                              .toUpperCase();
-                            setDraft({
-                              name: row.name,
-                              amount: String(row.amount),
-                              currency: cur.length === 3 ? cur : baseCurrency,
-                              due_date: row.due_date,
-                              source: row.source || "",
-                              paid_flag: row.paid_flag,
-                              recurring_flag: row.recurring_flag,
-                              use_start_end: Boolean(row.start_date || row.end_date),
-                              start_date: row.start_date || "",
-                              end_date: row.end_date || "",
-                            });
+                            setDraft(draftFromRow(row, baseCurrency));
                             setEditorError("");
                             setEditorOpen(true);
                           }}
@@ -532,12 +588,14 @@ export function UpcomingExpensesPage(): ReactNode {
       >
         <div className="stack" style={{ marginTop: 12 }}>
           {editorError ? <ErrorState title={tr("common.saveFailed", locale)} description={editorError} /> : null}
-          {(invalidAmount || invalidWindow) && !saveMutation.isPending ? (
+          {(invalidAmount || invalidWindow || invalidPartialAmount) && !saveMutation.isPending ? (
             <div className="ui-state" role="status">
               <p className="muted-text" style={{ margin: 0 }}>
                 {invalidWindow
                   ? tr("upcoming.invalidWindow", locale)
-                  : tr("upcoming.invalidAmount", locale)}
+                  : invalidPartialAmount
+                    ? tr("upcoming.invalidPartialAmount", locale)
+                    : tr("upcoming.invalidAmount", locale)}
               </p>
             </div>
           ) : null}
@@ -553,6 +611,67 @@ export function UpcomingExpensesPage(): ReactNode {
               <input className="ui-input" value={draft.amount} onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))} />
             </label>
           </HelpModeWrapper>
+          <label className="ui-field">
+            <span className="ui-label">{tr("upcoming.editor.label.billClass", locale)}</span>
+            <select
+              className="ui-input"
+              value={draft.bill_class}
+              onChange={(e) => setDraft((d) => ({ ...d, bill_class: e.target.value as "rigid" | "volatile" }))}
+            >
+              <option value="rigid">{tr("upcoming.billClass.rigid", locale)}</option>
+              <option value="volatile">{tr("upcoming.billClass.volatile", locale)}</option>
+            </select>
+            <span className="muted-text" style={{ fontSize: "var(--font-xs)" }}>
+              {draft.bill_class === "volatile"
+                ? tr("upcoming.billClass.volatileHint", locale)
+                : tr("upcoming.billClass.rigidHint", locale)}
+            </span>
+          </label>
+          <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={draft.use_partial_payment}
+              onChange={(e) =>
+                setDraft((d) => ({
+                  ...d,
+                  use_partial_payment: e.target.checked,
+                  planned_partial_amount: e.target.checked ? d.planned_partial_amount : "",
+                  cycle_residual_amount: e.target.checked ? d.cycle_residual_amount : "",
+                  remainder_due_date: e.target.checked ? d.remainder_due_date : "",
+                }))
+              }
+            />
+            <span className="ui-label">{tr("upcoming.partialPlan.toggle", locale)}</span>
+          </label>
+          {draft.use_partial_payment ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+              <label className="ui-field">
+                <span className="ui-label">{tr("upcoming.partialPlan.plannedAmount", locale)}</span>
+                <input
+                  className="ui-input"
+                  value={draft.planned_partial_amount}
+                  onChange={(e) => setDraft((d) => ({ ...d, planned_partial_amount: e.target.value }))}
+                />
+              </label>
+              <label className="ui-field">
+                <span className="ui-label">{tr("upcoming.partialPlan.residualAmount", locale)}</span>
+                <input
+                  className="ui-input"
+                  value={draft.cycle_residual_amount}
+                  onChange={(e) => setDraft((d) => ({ ...d, cycle_residual_amount: e.target.value }))}
+                />
+              </label>
+              <label className="ui-field">
+                <span className="ui-label">{tr("upcoming.partialPlan.remainderDue", locale)}</span>
+                <input
+                  className="ui-input"
+                  type="date"
+                  value={draft.remainder_due_date}
+                  onChange={(e) => setDraft((d) => ({ ...d, remainder_due_date: e.target.value }))}
+                />
+              </label>
+            </div>
+          ) : null}
           <HelpModeWrapper id="bill-form-currency" title={tr("guide.form.currency.title", locale)} content={tr("guide.form.currency.content", locale)}>
             <label className="ui-field">
               <span className="ui-label">{tr("upcoming.editor.label.currency", locale)}</span>

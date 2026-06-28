@@ -21,6 +21,7 @@ function parseUeDetail(url: string): string | undefined {
 
 function normalizeRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpenseRecord {
   const isRecur = (row as { is_recurring?: boolean }).is_recurring;
+  const billClass = row.bill_class === "volatile" ? "volatile" : "rigid";
   return {
     name: String(row.name ?? "").trim(),
     amount: String(row.amount ?? "0"),
@@ -28,6 +29,10 @@ function normalizeRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpenseRecor
     due_date: String(row.due_date ?? ""),
     paid_flag: Boolean(row.paid_flag),
     recurring_flag: Boolean(row.recurring_flag ?? isRecur),
+    bill_class: billClass,
+    planned_partial_amount: row.planned_partial_amount == null ? null : String(row.planned_partial_amount),
+    cycle_residual_amount: row.cycle_residual_amount == null ? null : String(row.cycle_residual_amount),
+    remainder_due_date: row.remainder_due_date ? String(row.remainder_due_date) : null,
     source: row.source ? String(row.source) : "",
     start_date: row.start_date ? String(row.start_date) : "",
     end_date: row.end_date ? String(row.end_date) : "",
@@ -39,6 +44,12 @@ function parsePostBody(body: unknown): UpcomingExpenseMutationPayload | undefine
     return undefined;
   }
   return body as UpcomingExpenseMutationPayload;
+}
+
+function nullableString(value: string | number | null | undefined): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  return String(value);
 }
 
 function mergeUeRow(base: UpcomingExpenseRecord, patch: Partial<UpcomingExpenseMutationPayload>): UpcomingExpenseRecord {
@@ -56,6 +67,12 @@ function mergeUeRow(base: UpcomingExpenseRecord, patch: Partial<UpcomingExpenseM
         : patch.is_recurring != null
           ? Boolean(patch.is_recurring)
           : base.recurring_flag,
+    bill_class: patch.bill_class != null ? patch.bill_class : base.bill_class,
+    planned_partial_amount:
+      patch.planned_partial_amount !== undefined ? nullableString(patch.planned_partial_amount) : base.planned_partial_amount,
+    cycle_residual_amount:
+      patch.cycle_residual_amount !== undefined ? nullableString(patch.cycle_residual_amount) : base.cycle_residual_amount,
+    remainder_due_date: patch.remainder_due_date !== undefined ? patch.remainder_due_date : base.remainder_due_date,
     source: patch.source != null ? String(patch.source) : base.source,
     start_date: patch.start_date != null ? String(patch.start_date) : base.start_date,
     end_date: patch.end_date != null ? String(patch.end_date) : base.end_date,
@@ -92,6 +109,10 @@ export function mergeUpcomingOutboxFifo(list: UpcomingExpenseRecord[], rows: Out
         due_date: String(payload.due_date ?? ""),
         paid_flag: Boolean(payload.paid_flag),
         recurring_flag: Boolean(payload.recurring_flag ?? payload.is_recurring),
+        bill_class: payload.bill_class,
+        planned_partial_amount: payload.planned_partial_amount == null ? null : String(payload.planned_partial_amount),
+        cycle_residual_amount: payload.cycle_residual_amount == null ? null : String(payload.cycle_residual_amount),
+        remainder_due_date: payload.remainder_due_date || null,
         source: payload.source ? String(payload.source) : "",
         start_date: payload.start_date ? String(payload.start_date) : "",
         end_date: payload.end_date ? String(payload.end_date) : "",

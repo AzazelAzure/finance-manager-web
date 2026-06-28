@@ -41,4 +41,42 @@ describe("upcomingOutboxOverlay FIFO", () => {
     const out = mergeUpcomingOutboxFifo([], rows);
     expect(out).toEqual([]);
   });
+
+  it("preserves bill realism fields through POST and PATCH overlays", () => {
+    const rows: OutboxRow[] = [
+      row({
+        method: "POST",
+        url: "/finance/upcoming_expenses/",
+        body: {
+          name: "Electric",
+          amount: "2000",
+          currency: "PHP",
+          due_date: "2026-07-15",
+          bill_class: "volatile",
+          planned_partial_amount: "1200",
+          cycle_residual_amount: "800",
+          remainder_due_date: "2026-08-01",
+        },
+        idempotencyKey: "1",
+        id: 1,
+      }),
+      row({
+        method: "PATCH",
+        url: "/finance/upcoming_expenses/Electric/",
+        body: { planned_partial_amount: "1000" },
+        idempotencyKey: "2",
+        id: 2,
+      }),
+    ];
+    const out = mergeUpcomingOutboxFifo([], rows);
+    expect(out).toEqual([
+      expect.objectContaining({
+        name: "Electric",
+        bill_class: "volatile",
+        planned_partial_amount: "1000",
+        cycle_residual_amount: "800",
+        remainder_due_date: "2026-08-01",
+      }),
+    ]);
+  });
 });
