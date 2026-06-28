@@ -61,6 +61,7 @@ const TITLE: Record<string, string> = {
   "/app/upcoming-expenses": "shell.title.upcoming",
   "/app/upcoming-expenses/deep-dive": "shell.title.billsInsights",
   "/app/data": "shell.title.dataHub",
+  "/app/goals": "shell.title.goals",
   "/app/settings/profile": "shell.title.settings",
   "/app/support": "shell.title.support",
   "/app/onboarding": "shell.title.onboarding",
