@@ -15,9 +15,9 @@ import { Card } from "../components/ui/Card";
 import { tr, useLocale } from "../lib/i18n";
 import { setSession } from "../state/auth";
 import {
+  activateOnboarding,
   clearOnboardingProgress,
   earliestIncompleteOnboardingPath,
-  markForceOnboardingNextLogin,
 } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
 import type { ReactNode } from "react";
@@ -99,7 +99,7 @@ export function SignupPage(): ReactNode {
       // Progress is keyed only in localStorage today; clear so a new account never inherits
       // another session's onboarding_completed from the same browser profile.
       clearOnboardingProgress();
-      markForceOnboardingNextLogin();
+      activateOnboarding();
       setSession({ access: data.access, refresh: data.refresh });
     } catch {
       setFormError("Account was created but sign-in failed. Try logging in manually.");

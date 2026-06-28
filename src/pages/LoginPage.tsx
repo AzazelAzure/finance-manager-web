@@ -4,7 +4,7 @@ import { Fingerprint, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Helmet } from "react-helmet-async";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { login } from "../api/auth";
 import { AppForm } from "../components/Form/FormProvider";
@@ -13,7 +13,7 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { tr, useLocale } from "../lib/i18n";
 import { setSession } from "../state/auth";
-import { consumeForceOnboardingNextLogin, earliestIncompleteOnboardingPath, getOnboardingProgress, isForceOnboardingNextLoginSet } from "../state/onboarding";
+import { earliestIncompleteOnboardingPath } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
 import type { ReactNode } from "react";
 
@@ -26,7 +26,6 @@ type FormValues = z.infer<typeof schema>;
 
 export function LoginPage(): ReactNode {
   const locale = useLocale();
-  const navigate = useNavigate();
   const { isAuthenticated } = useSession();
   const location = useLocation();
   const rawFrom = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
@@ -38,36 +37,20 @@ export function LoginPage(): ReactNode {
     defaultValues: { username: "", password: "" },
   });
 
+  // Authenticated users (fresh login or already signed in) go straight to the app —
+  // onboarding path only when an onboarding run is active, otherwise the dashboard.
   if (isAuthenticated) {
-    const dashboardPath = postLoginPath ?? safeFromPath;
-    return (
-      <section className="stack auth-shell auth-shell--login">
-        <Helmet>
-          <title>{tr("login.seo.title", locale) || "Sign In | Hive Financial Manager"}</title>
-        </Helmet>
-        <Card className="auth-card auth-card--centered">
-          <div className="auth-shell__brand" aria-hidden>
-            <img src="/favicon.png" alt="" className="auth-shell__mark" />
-            <span>Hive</span>
-          </div>
-          <p className="auth-shell__title">{tr("login.alreadySignedIn", locale)}</p>
-          <Button type="button" onClick={() => navigate(dashboardPath)}>
-            {tr("login.return_to_dashboard", locale)}
-          </Button>
-        </Card>
-      </section>
-    );
+    return <Navigate to={postLoginPath ?? earliestIncompleteOnboardingPath()} replace />;
   }
 
   async function onValid(values: FormValues): Promise<void> {
     setFormError("");
     try {
       const data = await login(values.username, values.password);
-      const needsOnboarding =
-        isForceOnboardingNextLoginSet() || !getOnboardingProgress().onboarding_completed;
-      consumeForceOnboardingNextLogin();
-      const nextPath = needsOnboarding ? earliestIncompleteOnboardingPath() : safeFromPath;
-      setPostLoginPath(nextPath);
+      // earliestIncompleteOnboardingPath() returns the dashboard unless an onboarding
+      // run is active, so existing users land on the dashboard (or their deep link).
+      const onboardingPath = earliestIncompleteOnboardingPath();
+      setPostLoginPath(onboardingPath === "/app/dashboard" ? safeFromPath : onboardingPath);
       setSession({ access: data.access, refresh: data.refresh });
     } catch (err) {
       if (import.meta.env.DEV && axios.isAxiosError(err)) {

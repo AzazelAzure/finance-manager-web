@@ -14,7 +14,7 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { ErrorState } from "../../components/ui/ErrorState";
 import {
-  clearForceOnboardingNextLogin,
+  completeOnboarding,
   earliestIncompleteOnboardingPath,
   getOnboardingProgress,
   setOnboardingProgress,
@@ -100,12 +100,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
         currency: values.currency.toUpperCase(),
       }),
     onSuccess: () => {
-      clearForceOnboardingNextLogin();
-      setOnboardingProgress({
-        profile_preferences_saved: true,
-        source_added: true,
-        onboarding_completed: true,
-      });
+      completeOnboarding();
       void queryClient.invalidateQueries({ queryKey: ["lookups"] });
       navigate("/app/dashboard");
     },
@@ -185,18 +180,7 @@ export function OnboardingPage({ step }: { step: Step }): ReactNode {
       {/* TODO: wizard-expansion — category + first-transaction steps (formerly steps 3–4) */}
 
       <p className="muted-text" style={{ margin: 0 }}>
-        <Link
-          to="/app/dashboard"
-          onClick={() => {
-            clearForceOnboardingNextLogin();
-            setOnboardingProgress({
-              profile_preferences_saved: true,
-              source_added: true,
-              category_added: true,
-              onboarding_completed: true,
-            });
-          }}
-        >
+        <Link to="/app/dashboard" onClick={() => completeOnboarding()}>
           {tr("onboarding.skip", locale)}
         </Link>
       </p>
