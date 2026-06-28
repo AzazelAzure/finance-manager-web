@@ -1,11 +1,13 @@
 import { keepPreviousData, useQuery, useQueryClient, type QueryFunctionContext } from "@tanstack/react-query";
 import { m, useReducedMotion } from "motion/react";
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { fetchBalanceHistory } from "../../api/balanceHistory";
 import { getAppProfile } from "../../api/profile";
 import { fetchAppSnapshot } from "../../api/snapshot";
 import { listCategories, listSourceNames, listTags } from "../../api/lookups";
-import type { SnapshotResponse } from "../../api/types";
+import type { BalanceHistoryRange, SnapshotResponse } from "../../api/types";
+import { BalanceHistoryChart } from "../../components/dashboard/BalanceHistoryChart";
 import { CategoryPie } from "../../components/dashboard/CategoryPie";
 import { FilterRow } from "../../components/dashboard/FilterRow";
 import { FlowChart } from "../../components/dashboard/FlowChart";
@@ -129,6 +131,12 @@ export function DashboardPage(): ReactNode {
   const sourceQuery = useQuery({
     queryKey: ["sources", "all"] as const,
     queryFn: (ctx) => listSourceNames(readOptsFromQuery(ctx)),
+  });
+
+  const [balanceRange, setBalanceRange] = useState<BalanceHistoryRange>("30d");
+  const balanceHistoryQuery = useQuery({
+    queryKey: ["balance-history", balanceRange] as const,
+    queryFn: (ctx) => fetchBalanceHistory({ range: balanceRange }, readOptsFromQuery(ctx)),
   });
 
   const currency = balanceCurrency(data, profileQuery.data);
@@ -363,6 +371,17 @@ export function DashboardPage(): ReactNode {
           <aside className="dashboard-root__side dashboard-col">
             <div id="tour-source-balances">
               <SourceBalances rows={data.source_balances} />
+            </div>
+            <div id="tour-balance-history">
+              <BalanceHistoryChart
+                series={balanceHistoryQuery.data?.series ?? []}
+                baseCurrency={balanceHistoryQuery.data?.base_currency ?? currency}
+                range={balanceRange}
+                onRangeChange={setBalanceRange}
+                isLoading={balanceHistoryQuery.isLoading}
+                isError={balanceHistoryQuery.isError}
+                onRetry={() => void balanceHistoryQuery.refetch()}
+              />
             </div>
             <div id="tour-profile-overview">
               <ProfileOverview profile={profileQuery.data} isError={profileQuery.isError} />

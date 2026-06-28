@@ -46,6 +46,20 @@ export type SnapshotResponse = {
   snapshot: FinancialSnapshotFields | null;
 };
 
+export type BalanceHistoryRange = "7d" | "30d" | "90d" | "all";
+
+export type BalanceHistoryPoint = {
+  date: string;
+  source: string;
+  amount: string;
+  currency: string;
+};
+
+export type BalanceHistoryResponse = {
+  series: BalanceHistoryPoint[];
+  base_currency: string;
+};
+
 export type AppProfileResponse = {
   spend_accounts: string[];
   base_currency: string;
