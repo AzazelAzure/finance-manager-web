@@ -59,8 +59,18 @@ export function earliestIncompleteOnboardingPath(progress = getOnboardingProgres
   if (progress.onboarding_completed) return "/app/dashboard";
   if (!progress.profile_preferences_saved) return "/app/onboarding";
   if (!progress.source_added) return "/app/onboarding/sources";
-  if (!progress.category_added) return "/app/onboarding/categories";
-  return "/app/onboarding/review";
+  return "/app/dashboard";
+}
+
+/** Re-open the short setup wizard (currency + first source). */
+export function restartOnboardingWizard(): void {
+  setOnboardingProgress({
+    profile_preferences_saved: false,
+    source_added: false,
+    category_added: false,
+    onboarding_completed: false,
+  });
+  clearForceOnboardingNextLogin();
 }
 
 /** True when signup (or similar) asked for onboarding on the next authenticated render. */

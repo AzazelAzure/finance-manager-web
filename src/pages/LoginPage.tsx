@@ -4,7 +4,7 @@ import { Fingerprint, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Helmet } from "react-helmet-async";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { login } from "../api/auth";
 import { AppForm } from "../components/Form/FormProvider";
@@ -13,7 +13,7 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { tr, useLocale } from "../lib/i18n";
 import { setSession } from "../state/auth";
-import { consumeForceOnboardingNextLogin } from "../state/onboarding";
+import { consumeForceOnboardingNextLogin, earliestIncompleteOnboardingPath, getOnboardingProgress, isForceOnboardingNextLoginSet } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
 import type { ReactNode } from "react";
 
@@ -26,6 +26,7 @@ type FormValues = z.infer<typeof schema>;
 
 export function LoginPage(): ReactNode {
   const locale = useLocale();
+  const navigate = useNavigate();
   const { isAuthenticated } = useSession();
   const location = useLocation();
   const rawFrom = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
@@ -38,15 +39,34 @@ export function LoginPage(): ReactNode {
   });
 
   if (isAuthenticated) {
-    return <Navigate to={postLoginPath ?? safeFromPath} replace />;
+    const dashboardPath = postLoginPath ?? safeFromPath;
+    return (
+      <section className="stack auth-shell auth-shell--login">
+        <Helmet>
+          <title>{tr("login.seo.title", locale) || "Sign In | Hive Financial Manager"}</title>
+        </Helmet>
+        <Card className="auth-card auth-card--centered">
+          <div className="auth-shell__brand" aria-hidden>
+            <img src="/favicon.png" alt="" className="auth-shell__mark" />
+            <span>Hive</span>
+          </div>
+          <p className="auth-shell__title">{tr("login.alreadySignedIn", locale)}</p>
+          <Button type="button" onClick={() => navigate(dashboardPath)}>
+            {tr("login.return_to_dashboard", locale)}
+          </Button>
+        </Card>
+      </section>
+    );
   }
 
   async function onValid(values: FormValues): Promise<void> {
     setFormError("");
     try {
       const data = await login(values.username, values.password);
+      const needsOnboarding =
+        isForceOnboardingNextLoginSet() || !getOnboardingProgress().onboarding_completed;
       consumeForceOnboardingNextLogin();
-      const nextPath = safeFromPath;
+      const nextPath = needsOnboarding ? earliestIncompleteOnboardingPath() : safeFromPath;
       setPostLoginPath(nextPath);
       setSession({ access: data.access, refresh: data.refresh });
     } catch (err) {
@@ -104,8 +124,8 @@ export function LoginPage(): ReactNode {
           <span>{tr("login.biometricPlaceholder", locale)}</span>
         </button>
         <AppForm form={form} onSubmit={onValid} className="stack" id="login-form" autoComplete="off">
-          <TextField name="username" label="Username" autoComplete="off" unlockOnFocus />
-          <TextField name="password" label="Password" type="password" autoComplete="off" unlockOnFocus />
+          <TextField name="username" label={tr("form.label.username", locale)} autoComplete="off" unlockOnFocus />
+          <TextField name="password" label={tr("form.label.password", locale)} type="password" autoComplete="off" unlockOnFocus />
           {formError ? (
             <p className="error-text" role="alert">
               {formError}

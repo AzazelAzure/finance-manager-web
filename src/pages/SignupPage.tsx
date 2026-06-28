@@ -16,6 +16,7 @@ import { tr, useLocale } from "../lib/i18n";
 import { setSession } from "../state/auth";
 import {
   clearOnboardingProgress,
+  earliestIncompleteOnboardingPath,
   markForceOnboardingNextLogin,
 } from "../state/onboarding";
 import { useSession } from "../state/SessionContext";
@@ -53,10 +54,7 @@ export function SignupPage(): ReactNode {
   const tosAccepted = form.watch("tos_accepted");
 
   if (isAuthenticated) {
-    // Session updates synchronously via useSyncExternalStore; force flag is set before
-    // setSession during signup success (see onValid).
-    const next = "/app/dashboard";
-    return <Navigate to={next} replace />;
+    return <Navigate to={earliestIncompleteOnboardingPath()} replace />;
   }
 
   async function onValid(values: FormValues): Promise<void> {
@@ -139,12 +137,12 @@ export function SignupPage(): ReactNode {
           <span>{tr("signup.biometricPlaceholder", locale)}</span>
         </button>
         <AppForm form={form} onSubmit={onValid} className="stack" id="signup-form" autoComplete="off">
-          <TextField name="username" label="Username" autoComplete="off" autoFocus unlockOnFocus />
-          <TextField name="user_email" label="Email" type="email" autoComplete="off" unlockOnFocus />
-          <TextField name="password" label="Password" type="password" autoComplete="off" unlockOnFocus />
+          <TextField name="username" label={tr("form.label.username", locale)} autoComplete="off" autoFocus unlockOnFocus />
+          <TextField name="user_email" label={tr("form.label.email", locale)} type="email" autoComplete="off" unlockOnFocus />
+          <TextField name="password" label={tr("form.label.password", locale)} type="password" autoComplete="off" unlockOnFocus />
           <TextField
             name="password_confirm"
-            label="Confirm password"
+            label={tr("form.label.confirmPassword", locale)}
             type="password"
             autoComplete="off"
             unlockOnFocus

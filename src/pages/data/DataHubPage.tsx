@@ -426,7 +426,7 @@ export function DataHubPage(): ReactNode {
           {editor?.entity === "source" && (editor.mode === "create" || editor.mode === "edit") ? (
             <>
               <label className="ui-field">
-                <span className="ui-label">Source name</span>
+                <span className="ui-label">{tr("form.label.sourceName", locale)}</span>
                 <input
                   className="ui-input"
                   value={sourceDraft.source}
@@ -434,7 +434,7 @@ export function DataHubPage(): ReactNode {
                 />
               </label>
               <label className="ui-field">
-                <span className="ui-label">Account type</span>
+                <span className="ui-label">{tr("form.label.accountType", locale)}</span>
                 <select
                   className="ui-select"
                   value={sourceDraft.acc_type}
@@ -448,7 +448,7 @@ export function DataHubPage(): ReactNode {
                 </select>
               </label>
               <label className="ui-field">
-                <span className="ui-label">Amount</span>
+                <span className="ui-label">{tr("common.amount", locale)}</span>
                 <input
                   className="ui-input"
                   value={sourceDraft.amount}
@@ -456,7 +456,7 @@ export function DataHubPage(): ReactNode {
                 />
               </label>
               <label className="ui-field">
-                <span className="ui-label">Currency</span>
+                <span className="ui-label">{tr("form.label.currency", locale)}</span>
                 <input
                   className="ui-input"
                   value={sourceDraft.currency}
@@ -466,7 +466,7 @@ export function DataHubPage(): ReactNode {
             </>
           ) : (
             <label className="ui-field">
-              <span className="ui-label">Name</span>
+              <span className="ui-label">{tr("common.name", locale)}</span>
               <input className="ui-input" value={textDraft} onChange={(e) => setTextDraft(e.target.value)} />
             </label>
           )}

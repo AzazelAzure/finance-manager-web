@@ -106,6 +106,18 @@ export async function updateUpcomingExpense(
   return normalizeUpcomingRow(res.data as UpcomingExpenseRecord);
 }
 
+export async function catchUpUpcomingExpense(
+  name: string,
+  periods?: number,
+): Promise<{ periods_advanced?: number; periods_missed?: number }> {
+  const safeName = encodeURIComponent(name);
+  const res = await api.post<{ periods_advanced?: number; periods_missed?: number }>(
+    `/finance/upcoming_expenses/${safeName}/catch-up/`,
+    periods != null ? { periods } : {},
+  );
+  return res.data;
+}
+
 export async function deleteUpcomingExpense(name: string): Promise<void | OfflineQueuedResult> {
   const safeName = encodeURIComponent(name);
   const res = await api.delete<OfflineQueuedResult | void>(`/finance/upcoming_expenses/${safeName}/`);
