@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- **F-005 dashboard goals widget (T04):** `GoalsWidget` on dashboard shows up to 3 unmet goals with progress and link to `/app/goals`. i18n `goals.manageLink` + `goals.widgetEmpty`.
 - **F-005 goals management page (T03):** `/app/goals` route with full CRUD UI, progress bars, per-cycle pace from API, savings-source dropdown, offline read cache via `listGoals`, and write actions blocked offline. i18n `goals.*` + `profile.payFrequency.*` (en-US + tl-PH). Bugbot follow-up: PWA read bypass after mutations, goals invalidation on profile save, offline seed v4 includes goals, write buttons disabled offline, edit currency read-only.
 - **F-010 export UI (T03):** Data hub Export section with optional date-filtered CSV download and full JSON backup; buttons disabled offline or while outbox has pending writes. i18n `data.export.*` (en-US + tl-PH).
 - **F-010 share UI (T05):** Data hub Share section to generate, copy, and revoke time-limited transaction share links (API URL for beta). i18n `data.share.*` (en-US + tl-PH).
