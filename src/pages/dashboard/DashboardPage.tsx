@@ -11,6 +11,7 @@ import { BalanceHistoryChart } from "../../components/dashboard/BalanceHistoryCh
 import { CategoryPie } from "../../components/dashboard/CategoryPie";
 import { FilterRow } from "../../components/dashboard/FilterRow";
 import { FlowChart } from "../../components/dashboard/FlowChart";
+import { GoalsWidget } from "../../components/dashboard/GoalsWidget";
 import { KPIRow } from "../../components/dashboard/KPIRow";
 import { ProfileOverview } from "../../components/dashboard/ProfileOverview";
 import { QuickActions } from "../../components/dashboard/QuickActions";
@@ -305,6 +306,10 @@ export function DashboardPage(): ReactNode {
             transactionCount={txRows.length}
           />
         </HelpModeWrapper>
+      </section>
+
+      <section className="dashboard-section" aria-label={tr("goals.heading", locale)}>
+        <GoalsWidget />
       </section>
 
       <section className="dashboard-section" aria-label={tr("dashboard.section.filters", locale)}>
