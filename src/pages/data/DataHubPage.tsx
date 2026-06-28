@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Button } from "../../components/ui/Button";
@@ -13,6 +13,9 @@ import {
   deleteCategory,
   deleteSource,
   deleteTag,
+  downloadCsvExport,
+  downloadFullBackup,
+  parseBlobApiError,
   listCategories,
   listSourceNames,
   listTags,
@@ -26,6 +29,8 @@ import type { SourceRow, TransactionRecord } from "../../api/types";
 import { tr, useLocale } from "../../lib/i18n";
 import { HelpModeWrapper } from "../../components/tours/TourProvider";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
+import { preferOfflineCaches } from "../../offline/connectivity";
+import { outboxDepth } from "../../offline/outbox";
 import { SOURCE_ACCOUNT_TYPES, SOURCE_ACCOUNT_TYPE_OPTIONS } from "../../lib/sourceAccountTypes";
 
 type EntityType = "source" | "category" | "tag";
@@ -116,6 +121,31 @@ export function DataHubPage(): ReactNode {
   const [sourceDraft, setSourceDraft] = useState<SourceDraft>(DEFAULT_SOURCE_DRAFT);
   const [editorError, setEditorError] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Record<string, boolean>>({});
+  const [exportDateFrom, setExportDateFrom] = useState("");
+  const [exportDateTo, setExportDateTo] = useState("");
+  const [csvDownloading, setCsvDownloading] = useState(false);
+  const [backupDownloading, setBackupDownloading] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const [exportBlocked, setExportBlocked] = useState(true);
+
+  useEffect(() => {
+    async function refreshExportBlocked() {
+      const depth = await outboxDepth();
+      setExportBlocked(preferOfflineCaches() || depth > 0);
+    }
+    void refreshExportBlocked();
+    const onConnectivityChange = () => void refreshExportBlocked();
+    window.addEventListener("online", onConnectivityChange);
+    window.addEventListener("offline", onConnectivityChange);
+    window.addEventListener("fm-offline-queued", onConnectivityChange);
+    window.addEventListener("fm-api-reachable", onConnectivityChange);
+    return () => {
+      window.removeEventListener("online", onConnectivityChange);
+      window.removeEventListener("offline", onConnectivityChange);
+      window.removeEventListener("fm-offline-queued", onConnectivityChange);
+      window.removeEventListener("fm-api-reachable", onConnectivityChange);
+    };
+  }, []);
 
   const categoriesQuery = useQuery({
     queryKey: ["lookups", "categories"] as const,
@@ -409,6 +439,86 @@ export function DataHubPage(): ReactNode {
             </div>
           </Card>
           </HelpModeWrapper>
+
+          <Card>
+            <div className="stack" style={{ gap: 10 }}>
+              <h3 style={{ margin: 0 }}>{tr("data.export.heading", locale)}</h3>
+              {exportBlocked ? (
+                <p className="muted-text" style={{ margin: 0 }}>
+                  {tr("data.export.offlineDisabled", locale)}
+                </p>
+              ) : null}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                <label className="ui-field" style={{ minWidth: 140 }}>
+                  <span className="ui-label">{tr("data.export.dateFrom", locale)}</span>
+                  <input
+                    className="ui-input"
+                    type="date"
+                    value={exportDateFrom}
+                    onChange={(e) => setExportDateFrom(e.target.value)}
+                    disabled={exportBlocked || csvDownloading || backupDownloading}
+                  />
+                </label>
+                <label className="ui-field" style={{ minWidth: 140 }}>
+                  <span className="ui-label">{tr("data.export.dateTo", locale)}</span>
+                  <input
+                    className="ui-input"
+                    type="date"
+                    value={exportDateTo}
+                    onChange={(e) => setExportDateTo(e.target.value)}
+                    disabled={exportBlocked || csvDownloading || backupDownloading}
+                  />
+                </label>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <Button
+                  variant="secondary"
+                  disabled={exportBlocked || csvDownloading || backupDownloading}
+                  onClick={async () => {
+                    setCsvDownloading(true);
+                    setExportError("");
+                    try {
+                      await downloadCsvExport(exportDateFrom || undefined, exportDateTo || undefined);
+                    } catch (error) {
+                      setExportError(
+                        error instanceof Error && !axios.isAxiosError(error)
+                          ? error.message
+                          : await parseBlobApiError(error),
+                      );
+                    } finally {
+                      setCsvDownloading(false);
+                    }
+                  }}
+                >
+                  {csvDownloading ? tr("data.export.csvDownloading", locale) : tr("data.export.downloadCsv", locale)}
+                </Button>
+                <Button
+                  variant="secondary"
+                  disabled={exportBlocked || csvDownloading || backupDownloading}
+                  onClick={async () => {
+                    setBackupDownloading(true);
+                    setExportError("");
+                    try {
+                      await downloadFullBackup();
+                    } catch (error) {
+                      setExportError(
+                        error instanceof Error && !axios.isAxiosError(error)
+                          ? error.message
+                          : await parseBlobApiError(error),
+                      );
+                    } finally {
+                      setBackupDownloading(false);
+                    }
+                  }}
+                >
+                  {backupDownloading
+                    ? tr("data.export.backupDownloading", locale)
+                    : tr("data.export.downloadBackup", locale)}
+                </Button>
+              </div>
+              {exportError ? <ErrorState title="Export failed" description={exportError} /> : null}
+            </div>
+          </Card>
         </div>
       )}
 
