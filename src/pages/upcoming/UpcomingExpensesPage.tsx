@@ -174,8 +174,7 @@ function currentPayCycleRange(profile: AppProfileResponse): { start: string; end
   if (profile.sts_window_mode !== "pay_cycle" || !profile.pay_cycle_anchor_date || !profile.pay_cycle_frequency) {
     return null;
   }
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = todayInTimezone(profile.timezone);
   let start = parseDateLocal(profile.pay_cycle_anchor_date);
   let end = addPayCycleStep(start, profile.pay_cycle_frequency);
   while (today < start) {
@@ -195,7 +194,21 @@ function parseDateLocal(value: string): Date {
 }
 
 function formatDateLocal(value: Date): string {
-  return value.toISOString().slice(0, 10);
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function todayInTimezone(timezone: string): Date {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone || "UTC",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value);
+  return new Date(get("year"), get("month") - 1, get("day"));
 }
 
 function addPayCycleStep(value: Date, frequency: NonNullable<AppProfileResponse["pay_cycle_frequency"]>): Date {
@@ -203,7 +216,7 @@ function addPayCycleStep(value: Date, frequency: NonNullable<AppProfileResponse[
   if (frequency === "weekly") next.setDate(next.getDate() + 7);
   if (frequency === "biweekly") next.setDate(next.getDate() + 14);
   if (frequency === "semimonthly") next.setDate(next.getDate() + 15);
-  if (frequency === "monthly") next.setMonth(next.getMonth() + 1);
+  if (frequency === "monthly") return addMonthsClamped(value, 1);
   return next;
 }
 
@@ -212,8 +225,15 @@ function subtractPayCycleStep(value: Date, frequency: NonNullable<AppProfileResp
   if (frequency === "weekly") next.setDate(next.getDate() - 7);
   if (frequency === "biweekly") next.setDate(next.getDate() - 14);
   if (frequency === "semimonthly") next.setDate(next.getDate() - 15);
-  if (frequency === "monthly") next.setMonth(next.getMonth() - 1);
+  if (frequency === "monthly") return addMonthsClamped(value, -1);
   return next;
+}
+
+function addMonthsClamped(value: Date, delta: number): Date {
+  const targetYear = value.getFullYear();
+  const targetMonth = value.getMonth() + delta;
+  const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+  return new Date(targetYear, targetMonth, Math.min(value.getDate(), lastDay));
 }
 
 export function UpcomingExpensesPage(): ReactNode {

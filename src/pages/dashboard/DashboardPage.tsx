@@ -135,7 +135,7 @@ export function DashboardPage(): ReactNode {
   const summary = data?.snapshot ?? null;
   const safeToSpend = summary != null ? toNumber(summary.safe_to_spend) : null;
   const remainingExpenses = summary != null ? toNumber(summary.total_remaining_expenses) : null;
-  const usesPayCycleSts = profileQuery.data?.sts_window_mode === "pay_cycle";
+  const usesPayCycleSts = profileQuery.data?.sts_window_mode === "pay_cycle" && !preferOfflineCaches();
   const txRows = useMemo(() => data?.transactions_for_month ?? [], [data]);
   const topTagNames = useMemo(
     () => topTagNamesFromTransactions(data?.transactions_for_month ?? [], 8),
