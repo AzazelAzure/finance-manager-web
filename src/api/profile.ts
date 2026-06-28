@@ -22,6 +22,9 @@ function offlineFallbackProfile(): AppProfileResponse {
     base_currency: "PHP",
     timezone: "Asia/Manila",
     start_of_week: 0,
+    sts_window_mode: "calendar_month",
+    pay_cycle_frequency: null,
+    pay_cycle_anchor_date: null,
   };
 }
 
