@@ -37,6 +37,27 @@ const settingsSchema = z.object({
   timezone: z.string().min(1, "Timezone is required"),
   start_week: z.enum(["0", "1"]),
   theme: z.enum(["light", "dark", "system"]),
+  sts_window_mode: z.enum(["calendar_month", "pay_cycle"]),
+  pay_cycle_frequency: z.enum(["", "weekly", "biweekly", "semimonthly", "monthly"]),
+  pay_cycle_anchor_date: z.string(),
+}).superRefine((values, ctx) => {
+  if (values.sts_window_mode !== "pay_cycle") {
+    return;
+  }
+  if (!values.pay_cycle_frequency) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["pay_cycle_frequency"],
+      message: "Pay-cycle frequency is required",
+    });
+  }
+  if (!values.pay_cycle_anchor_date) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["pay_cycle_anchor_date"],
+      message: "Pay-cycle anchor date is required",
+    });
+  }
 });
 
 const passwordSchema = z
@@ -127,6 +148,9 @@ export function SettingsProfilePage(): ReactNode {
       timezone: "UTC",
       start_week: "1",
       theme: getThemePreference(),
+      sts_window_mode: "calendar_month",
+      pay_cycle_frequency: "",
+      pay_cycle_anchor_date: "",
     },
   });
 
@@ -157,6 +181,9 @@ export function SettingsProfilePage(): ReactNode {
       timezone: profileQuery.data.timezone,
       start_week: String(profileQuery.data.start_of_week) as "0" | "1",
       theme: getThemePreference(),
+      sts_window_mode: profileQuery.data.sts_window_mode ?? "calendar_month",
+      pay_cycle_frequency: profileQuery.data.pay_cycle_frequency ?? "",
+      pay_cycle_anchor_date: profileQuery.data.pay_cycle_anchor_date ?? "",
     });
   }, [profileQuery.data, settingsForm]);
 
@@ -167,6 +194,9 @@ export function SettingsProfilePage(): ReactNode {
         base_currency: values.base_currency.toUpperCase(),
         timezone: values.timezone,
         start_week: Number(values.start_week),
+        sts_window_mode: values.sts_window_mode,
+        pay_cycle_frequency: values.sts_window_mode === "pay_cycle" ? values.pay_cycle_frequency || null : null,
+        pay_cycle_anchor_date: values.sts_window_mode === "pay_cycle" ? values.pay_cycle_anchor_date || null : null,
       });
       setThemePreference(values.theme as ThemePreference);
       return res;
@@ -250,6 +280,7 @@ export function SettingsProfilePage(): ReactNode {
 
   const anyLoading = profileQuery.isLoading || snapshotQuery.isLoading || userEmailQuery.isLoading;
   const spendAccountsCsv = useWatch({ control: settingsForm.control, name: "spend_accounts_csv" }) ?? "";
+  const stsWindowMode = useWatch({ control: settingsForm.control, name: "sts_window_mode" }) ?? "calendar_month";
   const selectedSpendAccounts = parseSpendAccounts(spendAccountsCsv);
   const sourceValues = (sourcesQuery.data ?? []).map((s) => s.source);
   const normalizedSourceValues = sourceValues.map((s) => s.trim().toLowerCase());
@@ -373,6 +404,40 @@ export function SettingsProfilePage(): ReactNode {
                       ]}
                     />
                     <SelectField name="timezone" label={tr("form.label.timezone", locale)} options={timezoneSelect} />
+                    <SelectField
+                      name="sts_window_mode"
+                      label={tr("settings.payCycle.windowMode", locale)}
+                      options={[
+                        { value: "calendar_month", label: tr("settings.payCycle.calendarMonth", locale) },
+                        { value: "pay_cycle", label: tr("settings.payCycle.payCycle", locale) },
+                      ]}
+                    />
+                    {stsWindowMode === "pay_cycle" ? (
+                      <>
+                        <SelectField
+                          name="pay_cycle_frequency"
+                          label={tr("settings.payCycle.frequency", locale)}
+                          options={[
+                            { value: "", label: tr("settings.payCycle.selectFrequency", locale) },
+                            { value: "weekly", label: tr("settings.payCycle.weekly", locale) },
+                            { value: "biweekly", label: tr("settings.payCycle.biweekly", locale) },
+                            { value: "semimonthly", label: tr("settings.payCycle.semimonthly", locale) },
+                            { value: "monthly", label: tr("settings.payCycle.monthly", locale) },
+                          ]}
+                        />
+                        <label className="ui-field">
+                          <span className="ui-label">{tr("settings.payCycle.anchorDate", locale)}</span>
+                          <input
+                            className="ui-input"
+                            type="date"
+                            {...settingsForm.register("pay_cycle_anchor_date")}
+                          />
+                        </label>
+                        <p className="muted-text" style={{ margin: 0 }}>
+                          {tr("settings.payCycle.anchorHelp", locale)}
+                        </p>
+                      </>
+                    ) : null}
                     <SelectField
                       name="theme"
                       label={tr("form.label.theme", locale)}

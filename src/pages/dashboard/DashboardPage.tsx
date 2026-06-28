@@ -135,6 +135,7 @@ export function DashboardPage(): ReactNode {
   const summary = data?.snapshot ?? null;
   const safeToSpend = summary != null ? toNumber(summary.safe_to_spend) : null;
   const remainingExpenses = summary != null ? toNumber(summary.total_remaining_expenses) : null;
+  const usesPayCycleSts = profileQuery.data?.sts_window_mode === "pay_cycle" && !preferOfflineCaches();
   const txRows = useMemo(() => data?.transactions_for_month ?? [], [data]);
   const topTagNames = useMemo(
     () => topTagNamesFromTransactions(data?.transactions_for_month ?? [], 8),
@@ -266,11 +267,13 @@ export function DashboardPage(): ReactNode {
             {safeToSpend == null ? tr("dashboard.na", locale) : formatMoney(safeToSpend, currency)}
           </p>
           <p className="dashboard-hero__description">
-            {tr("dashboard.hero.safeToSpendDescription", locale)}
+            {tr(usesPayCycleSts ? "dashboard.hero.safeToSpendPayCycleDescription" : "dashboard.hero.safeToSpendDescription", locale)}
           </p>
         </div>
         <div>
-          <p className="dashboard-hero__support-label">{tr("dashboard.hero.remainingExpenses", locale)}</p>
+          <p className="dashboard-hero__support-label">
+            {tr(usesPayCycleSts ? "dashboard.hero.remainingPayPeriodExpenses" : "dashboard.hero.remainingExpenses", locale)}
+          </p>
           <p className="dashboard-hero__support-value money-value">
             {remainingExpenses == null ? tr("dashboard.na", locale) : formatMoney(remainingExpenses, currency)}
           </p>
