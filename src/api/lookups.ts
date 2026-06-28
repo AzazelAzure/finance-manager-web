@@ -1,4 +1,6 @@
 import { preferOfflineCaches, preferPwaLocalFirstReads } from "../offline/connectivity";
+import { outboxDepth } from "../offline/outbox";
+import axios from "axios";
 import { readCachePayload, writeCachePayload } from "../offline/cache";
 import { offlineDb } from "../offline/db";
 import { isPwaBackgroundStale, schedulePwaBackgroundWork } from "../offline/pwaLocalFirstBg";
@@ -176,4 +178,97 @@ const TOTALS_TX_FILTERS: Record<string, string> = {
 
 export async function listTransactionsForTotals(): Promise<TransactionRecord[]> {
   return listTransactions(TOTALS_TX_FILTERS as TransactionFilters);
+}
+
+function exportDateStamp(): string {
+  return new Date().toISOString().slice(0, 10).replace(/-/g, "");
+}
+
+function triggerBlobDownload(blob: Blob, filename: string): void {
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+}
+
+export async function parseBlobApiError(error: unknown): Promise<string> {
+  if (!axios.isAxiosError(error) || !(error.response?.data instanceof Blob)) {
+    return parseApiErrorForExport(error);
+  }
+  try {
+    const text = await error.response.data.text();
+    const data = JSON.parse(text) as unknown;
+    if (data && typeof data === "object") {
+      const parts = Object.entries(data as Record<string, unknown>).map(([k, v]) => `${k}: ${String(v)}`);
+      if (parts.length > 0) {
+        return `HTTP ${error.response.status}: ${parts.join(" | ")}`;
+      }
+    }
+    if (typeof data === "string" && data.trim()) {
+      return `HTTP ${error.response.status}: ${data}`;
+    }
+  } catch {
+    // fall through
+  }
+  return `HTTP ${error.response.status}: Request rejected.`;
+}
+
+function parseApiErrorForExport(error: unknown): string {
+  if (!axios.isAxiosError(error)) {
+    return error instanceof Error ? error.message : "Request failed.";
+  }
+  const status = error.response?.status;
+  const data = error.response?.data;
+  if (Array.isArray(data)) {
+    const rendered = data.map((item) => String(item)).join(" | ");
+    return status ? `HTTP ${status}: ${rendered}` : rendered;
+  }
+  if (data && typeof data === "object") {
+    const parts = Object.entries(data as Record<string, unknown>).map(([k, v]) => `${k}: ${String(v)}`);
+    if (parts.length > 0) {
+      return status ? `HTTP ${status}: ${parts.join(" | ")}` : parts.join(" | ");
+    }
+  }
+  if (typeof data === "string" && data.trim()) {
+    return status ? `HTTP ${status}: ${data}` : data;
+  }
+  return status ? `HTTP ${status}: Request rejected.` : error.message;
+}
+
+async function assertExportOnline(): Promise<void> {
+  if (preferOfflineCaches()) {
+    throw new Error("Export not available offline");
+  }
+  const depth = await outboxDepth();
+  if (depth > 0) {
+    throw new Error("Export not available while offline changes are pending sync");
+  }
+}
+
+/** Online-only: downloads uid-scoped transaction CSV (F-010 T03). */
+export async function downloadCsvExport(dateFrom?: string, dateTo?: string): Promise<void> {
+  await assertExportOnline();
+  const params: Record<string, string> = {};
+  if (dateFrom) {
+    params.date_from = dateFrom;
+  }
+  if (dateTo) {
+    params.date_to = dateTo;
+  }
+  const res = await api.get("/finance/export/transactions/csv/", {
+    params,
+    responseType: "blob",
+  });
+  triggerBlobDownload(res.data as Blob, `hfm_transactions_${exportDateStamp()}.csv`);
+}
+
+/** Online-only: downloads full JSON backup (F-010 T03). */
+export async function downloadFullBackup(): Promise<void> {
+  await assertExportOnline();
+  const res = await api.get("/finance/export/full/", { responseType: "blob" });
+  triggerBlobDownload(res.data as Blob, `hfm_backup_${exportDateStamp()}.json`);
 }
