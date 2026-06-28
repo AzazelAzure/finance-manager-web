@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- **F-001 balance history chart (T04):** Dashboard `BalanceHistoryChart` with 7d/30d/90d/all range selector; `fetchBalanceHistory` API client with PWA local-first IndexedDB cache and offline fallback. Offline seed prefetches 30d/90d series.
 - **F-004 web bill editor (T05):** Upcoming expense create/edit now supports bill behavior (`rigid` vs `volatile`) plus optional partial-payment planning fields (`planned_partial_amount`, residual amount, remainder due date). Defaults keep the simple full-bill flow uncluttered; non-default bill plans render a compact list cue. i18n added for en-US and tl-PH.
 - **F-004 pay-period views (T06):** Profile settings can switch STS from calendar month to a configured pay cycle. Dashboard STS copy and upcoming quick filters now reference/use the current pay period when enabled, while calendar-month behavior remains the default.
 - Transaction outbox overlay tests: vitest coverage for transactionRecordMatchesParams and transactionMatchesTxListQuery (current_month/last_month filtering, pending tx passthrough, dimension attribute filtering).

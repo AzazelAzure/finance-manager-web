@@ -9,6 +9,7 @@ import {
   listUnpaidExpenseNames,
 } from "../api/transactions";
 import { listUpcomingExpenses } from "../api/upcomingExpenses";
+import { fetchBalanceHistory } from "../api/balanceHistory";
 import { preferOfflineCaches } from "./connectivity";
 import { offlineDb } from "./db";
 import { syncMinimalExchangeRates } from "./exchangeRates";
@@ -104,6 +105,11 @@ export async function seedOfflineWindow(): Promise<void> {
     await getTransactionsVisualization({ start_date: curStart, end_date: curEnd });
     await getTransactionsVisualization({ start_date: prevStart, end_date: prevEnd });
     await getTransactionsVisualization({ start_date: ytdStart, end_date: today });
+
+    await Promise.all([
+      fetchBalanceHistory({ range: "30d" }),
+      fetchBalanceHistory({ range: "90d" }),
+    ]);
 
     await syncMinimalExchangeRates(true);
     await offlineDb.meta.put({ key: SEED_META_KEY, value: true });
