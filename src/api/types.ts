@@ -194,6 +194,10 @@ export type UpcomingExpenseRecord = {
   due_date: string;
   paid_flag: boolean;
   recurring_flag: boolean;
+  bill_class?: "rigid" | "volatile";
+  planned_partial_amount?: string | null;
+  cycle_residual_amount?: string | null;
+  remainder_due_date?: string | null;
   source?: string;
   start_date?: string;
   end_date?: string;
@@ -207,6 +211,10 @@ export type UpcomingExpenseMutationPayload = {
   paid_flag?: boolean;
   recurring_flag?: boolean;
   is_recurring?: boolean;
+  bill_class?: "rigid" | "volatile";
+  planned_partial_amount?: string | number | null;
+  cycle_residual_amount?: string | number | null;
+  remainder_due_date?: string | null;
   source?: string;
   start_date?: string;
   end_date?: string;

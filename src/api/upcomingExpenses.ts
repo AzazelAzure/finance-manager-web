@@ -24,6 +24,7 @@ export const UPCOMING_LIST_CACHE_ID = "upcoming:list";
 
 export function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpenseRecord {
   const isRecur = (row as { is_recurring?: boolean }).is_recurring;
+  const billClass = row.bill_class === "volatile" ? "volatile" : "rigid";
   return {
     name: String(row.name ?? "").trim(),
     amount: String(row.amount ?? "0"),
@@ -31,6 +32,10 @@ export function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): Upcom
     due_date: String(row.due_date ?? ""),
     paid_flag: Boolean(row.paid_flag),
     recurring_flag: Boolean(row.recurring_flag ?? isRecur),
+    bill_class: billClass,
+    planned_partial_amount: row.planned_partial_amount == null ? null : String(row.planned_partial_amount),
+    cycle_residual_amount: row.cycle_residual_amount == null ? null : String(row.cycle_residual_amount),
+    remainder_due_date: row.remainder_due_date ? String(row.remainder_due_date) : null,
     source: row.source ? String(row.source) : "",
     start_date: row.start_date ? String(row.start_date) : "",
     end_date: row.end_date ? String(row.end_date) : "",
