@@ -8,14 +8,17 @@ import { LoadingState } from "../../components/ui/LoadingState";
 import { Modal } from "../../components/ui/Modal";
 import {
   createCategory,
+  createShareToken,
   createSource,
   createTag,
+  buildShareTokenUrl,
   deleteCategory,
   deleteSource,
   deleteTag,
   downloadCsvExport,
   downloadFullBackup,
   parseBlobApiError,
+  revokeShareToken,
   listCategories,
   listSourceNames,
   listTags,
@@ -127,11 +130,19 @@ export function DataHubPage(): ReactNode {
   const [backupDownloading, setBackupDownloading] = useState(false);
   const [exportError, setExportError] = useState("");
   const [exportBlocked, setExportBlocked] = useState(true);
+  const [networkBlocked, setNetworkBlocked] = useState(true);
+  const [generatedToken, setGeneratedToken] = useState<{ token: string; expires_at: string } | null>(null);
+  const [shareGenerating, setShareGenerating] = useState(false);
+  const [shareRevoking, setShareRevoking] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [shareError, setShareError] = useState("");
 
   useEffect(() => {
     async function refreshExportBlocked() {
       const depth = await outboxDepth();
-      setExportBlocked(preferOfflineCaches() || depth > 0);
+      const offline = preferOfflineCaches();
+      setNetworkBlocked(offline);
+      setExportBlocked(offline || depth > 0);
     }
     void refreshExportBlocked();
     const onConnectivityChange = () => void refreshExportBlocked();
@@ -517,6 +528,102 @@ export function DataHubPage(): ReactNode {
                 </Button>
               </div>
               {exportError ? <ErrorState title="Export failed" description={exportError} /> : null}
+            </div>
+          </Card>
+
+          <Card>
+            <div className="stack" style={{ gap: 10 }}>
+              <h3 style={{ margin: 0 }}>{tr("data.share.heading", locale)}</h3>
+              <p className="muted-text" style={{ margin: 0 }}>
+                {tr("data.share.description", locale)}
+              </p>
+              {exportBlocked ? (
+                <p className="muted-text" style={{ margin: 0 }}>
+                  {tr("data.share.offlineDisabled", locale)}
+                </p>
+              ) : null}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <Button
+                  variant="secondary"
+                  disabled={exportBlocked || shareGenerating || shareRevoking}
+                  onClick={async () => {
+                    if (shareGenerating) {
+                      return;
+                    }
+                    setShareGenerating(true);
+                    setShareError("");
+                    setShareCopied(false);
+                    setGeneratedToken(null);
+                    try {
+                      const created = await createShareToken(7);
+                      setGeneratedToken(created);
+                    } catch (error) {
+                      setShareError(
+                        error instanceof Error && !axios.isAxiosError(error)
+                          ? error.message
+                          : await parseBlobApiError(error),
+                      );
+                    } finally {
+                      setShareGenerating(false);
+                    }
+                  }}
+                >
+                  {shareGenerating ? tr("data.share.generating", locale) : tr("data.share.generate", locale)}
+                </Button>
+              </div>
+              {generatedToken ? (
+                <div className="stack" style={{ gap: 8 }}>
+                  <code style={{ wordBreak: "break-all", fontSize: "0.9rem" }}>
+                    {buildShareTokenUrl(generatedToken.token)}
+                  </code>
+                  <p className="muted-text" style={{ margin: 0 }}>
+                    {tr("data.share.expires", locale)}{" "}
+                    {new Date(generatedToken.expires_at).toLocaleDateString(
+                      locale === "tl-PH" ? "fil-PH" : "en-US",
+                      { month: "short", day: "numeric", year: "numeric" },
+                    )}
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    <Button
+                      variant="secondary"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(buildShareTokenUrl(generatedToken.token));
+                          setShareCopied(true);
+                          window.setTimeout(() => setShareCopied(false), 2000);
+                        } catch {
+                          setShareError("Could not copy link to clipboard.");
+                        }
+                      }}
+                    >
+                      {shareCopied ? tr("data.share.copied", locale) : tr("data.share.copy", locale)}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      disabled={shareRevoking || networkBlocked}
+                      onClick={async () => {
+                        setShareRevoking(true);
+                        setShareError("");
+                        try {
+                          await revokeShareToken(generatedToken.token);
+                          setGeneratedToken(null);
+                        } catch (error) {
+                          setShareError(
+                            error instanceof Error && !axios.isAxiosError(error)
+                              ? error.message
+                              : await parseBlobApiError(error),
+                          );
+                        } finally {
+                          setShareRevoking(false);
+                        }
+                      }}
+                    >
+                      {shareRevoking ? tr("data.share.revoking", locale) : tr("data.share.revoke", locale)}
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+              {shareError ? <ErrorState title="Share failed" description={shareError} /> : null}
             </div>
           </Card>
         </div>
