@@ -112,7 +112,7 @@ function toPayload(draft: UpcomingDraft): UpcomingExpenseMutationPayload {
     bill_class: draft.bill_class,
   };
   if (draft.use_partial_payment) {
-    payload.planned_partial_amount = draft.planned_partial_amount;
+    payload.planned_partial_amount = draft.planned_partial_amount || null;
     payload.cycle_residual_amount = draft.cycle_residual_amount || null;
     payload.remainder_due_date = draft.remainder_due_date || null;
   } else {
@@ -393,12 +393,17 @@ export function UpcomingExpensesPage(): ReactNode {
     draft.use_start_end && draft.start_date && draft.end_date && draft.end_date < draft.start_date,
   );
   const invalidAmount = !draft.amount || Number.isNaN(Number(draft.amount)) || Number(draft.amount) <= 0;
+  const hasAnyPartialField = Boolean(
+    draft.planned_partial_amount || draft.cycle_residual_amount || draft.remainder_due_date,
+  );
+  const plannedPartialValue = Number(draft.planned_partial_amount);
   const invalidPartialAmount = Boolean(
     draft.use_partial_payment &&
-      (!draft.planned_partial_amount ||
-        Number.isNaN(Number(draft.planned_partial_amount)) ||
-        Number(draft.planned_partial_amount) <= 0 ||
-        Number(draft.planned_partial_amount) > Number(draft.amount || 0)),
+      (!hasAnyPartialField ||
+        (draft.planned_partial_amount &&
+          (Number.isNaN(plannedPartialValue) ||
+            plannedPartialValue <= 0 ||
+            plannedPartialValue > Number(draft.amount || 0)))),
   );
   const isSaveDisabled =
     saveMutation.isPending ||
