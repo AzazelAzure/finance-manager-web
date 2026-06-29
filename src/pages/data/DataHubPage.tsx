@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Button } from "../../components/ui/Button";
@@ -29,7 +29,8 @@ import { fetchAppSnapshot } from "../../api/snapshot";
 import type { SourceRow, TransactionRecord } from "../../api/types";
 import { formatMoney } from "../../lib/money";
 import { tr, useLocale } from "../../lib/i18n";
-import { HelpModeWrapper } from "../../components/tours/TourProvider";
+import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
+import { DATA_HUB_TOUR_ID, buildDataHubSteps } from "../../components/tours/DataHubTourSteps";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 import { SOURCE_ACCOUNT_TYPES, SOURCE_ACCOUNT_TYPE_OPTIONS } from "../../lib/sourceAccountTypes";
 
@@ -115,6 +116,7 @@ function toTagFrequency(rows: TransactionRecord[]): Record<string, number> {
 
 export function DataHubPage(): ReactNode {
   const locale = useLocale();
+  const { startTour, isTourCompleted } = useTour();
   const queryClient = useQueryClient();
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [textDraft, setTextDraft] = useState("");
@@ -249,6 +251,17 @@ export function DataHubPage(): ReactNode {
 
   const anyLoading = categoriesQuery.isLoading || tagsQuery.isLoading || sourcesQuery.isLoading;
   const anyError = categoriesQuery.isError || tagsQuery.isError || sourcesQuery.isError;
+  const dataReady = !anyLoading && !anyError && Boolean(categoriesQuery.data || tagsQuery.data || sourcesQuery.data);
+
+  useEffect(() => {
+    if (!dataReady || isTourCompleted(DATA_HUB_TOUR_ID)) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      startTour(DATA_HUB_TOUR_ID, buildDataHubSteps(locale));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [dataReady, isTourCompleted, startTour, locale]);
 
   function openCreate(entity: EntityType): void {
     setEditor({ entity, mode: "create" });
@@ -432,10 +445,17 @@ export function DataHubPage(): ReactNode {
 
   return (
     <div className="stack">
-      <div className="app-surface app-surface--data">
+      <div className="app-surface app-surface--data row-between" style={{ alignItems: "center", gap: 8 }}>
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
           {tr("dataHub.title", locale)}
         </h2>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => startTour(DATA_HUB_TOUR_ID, buildDataHubSteps(locale), true)}
+        >
+          {tr("tour.replayTour", locale)}
+        </Button>
       </div>
       {anyError ? (
         <ErrorState
@@ -453,6 +473,7 @@ export function DataHubPage(): ReactNode {
         <LoadingState label={tr("dataHub.loading", locale)} />
       ) : (
         <Tabs
+          idPrefix="datahub"
           tabs={[
             {
               id: "overview",

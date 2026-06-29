@@ -12,7 +12,7 @@ import { ChartFrame } from "../../components/dashboard/ChartFrame";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { tr, useLocale } from "../../lib/i18n";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
-import { useTour } from "../../components/tours/TourProvider";
+import { useTour, HelpModeWrapper } from "../../components/tours/TourProvider";
 import { CALENDAR_TOUR_ID, buildCalendarSteps } from "../../components/tours/CalendarTourSteps";
 import { Button } from "../../components/ui/Button";
 
@@ -269,7 +269,12 @@ export function CalendarPage(): ReactNode {
         <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
           {tr("txCalendar.title", locale)}
         </h2>
-        <div id="cal-nav-links" style={{ display: "flex", gap: 8 }}>
+        <HelpModeWrapper
+          id="cal-nav-links"
+          title={tr("guide.calendar.navLinks.title", locale)}
+          content={tr("guide.calendar.navLinks.content", locale)}
+        >
+        <div style={{ display: "flex", gap: 8 }}>
           <Link to="/app/transactions" className="ui-btn ui-btn--secondary">
             {tr("txCalendar.ledger", locale)}
           </Link>
@@ -282,9 +287,14 @@ export function CalendarPage(): ReactNode {
             {tr('tour.replayTour', locale)}
           </Button>
         </div>
+        </HelpModeWrapper>
       </div>
 
-      <div id="cal-filters">
+      <HelpModeWrapper
+        id="cal-filters"
+        title={tr("guide.calendar.filters.title", locale)}
+        content={tr("guide.calendar.filters.content", locale)}
+      >
       <Card>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
           <label className="ui-field">
@@ -312,14 +322,18 @@ export function CalendarPage(): ReactNode {
           </label>
         </div>
       </Card>
-      </div>
+      </HelpModeWrapper>
 
       {query.isLoading ? <LoadingState label={tr("txCalendar.loading", locale)} /> : null}
       {query.isError ? <ErrorState title={tr("txCalendar.loadFailed", locale)} onRetry={() => void query.refetch()} /> : null}
 
       {query.data ? (
         <>
-          <div id="cal-daily-chart">
+          <HelpModeWrapper
+            id="cal-daily-chart"
+            title={tr("guide.calendar.dailyChart.title", locale)}
+            content={tr("guide.calendar.dailyChart.content", locale)}
+          >
           <ChartFrame
             title={tr("txCalendar.dailyActivity", locale)}
             ariaLabel={tr("txCalendar.dailyActivityAria", locale)}
@@ -345,9 +359,13 @@ export function CalendarPage(): ReactNode {
               </ResponsiveContainer>
             </div>
           </ChartFrame>
-          </div>
+          </HelpModeWrapper>
 
-          <div id="cal-month-grid">
+          <HelpModeWrapper
+            id="cal-month-grid"
+            title={tr("guide.calendar.monthGrid.title", locale)}
+            content={tr("guide.calendar.monthGrid.content", locale)}
+          >
           <Card>
             <div className="row-between" style={{ marginBottom: "0.75rem" }}>
               <h3 className="muted" style={{ margin: 0 }}>
@@ -423,9 +441,13 @@ export function CalendarPage(): ReactNode {
               })}
             </div>
           </Card>
-          </div>
+          </HelpModeWrapper>
 
-          <div id="cal-day-detail">
+          <HelpModeWrapper
+            id="cal-day-detail"
+            title={tr("guide.calendar.dayDetail.title", locale)}
+            content={tr("guide.calendar.dayDetail.content", locale)}
+          >
           <Card>
             <h3 className="muted" style={{ margin: "0 0 0.5rem" }}>
               Day detail {selectedDayResolved ? `(${selectedDayResolved})` : ""}
@@ -458,9 +480,13 @@ export function CalendarPage(): ReactNode {
               </p>
             )}
           </Card>
-          </div>
+          </HelpModeWrapper>
 
-          <div id="cal-monthly-totals">
+          <HelpModeWrapper
+            id="cal-monthly-totals"
+            title={tr("guide.calendar.monthlyTotals.title", locale)}
+            content={tr("guide.calendar.monthlyTotals.content", locale)}
+          >
           <ChartFrame
             title={tr("txCalendar.monthlyTotals", locale)}
             ariaLabel={tr("txCalendar.monthlyTotalsAria", locale)}
@@ -482,9 +508,13 @@ export function CalendarPage(): ReactNode {
               </ResponsiveContainer>
             </div>
           </ChartFrame>
-          </div>
+          </HelpModeWrapper>
 
-          <div id="cal-due-events">
+          <HelpModeWrapper
+            id="cal-due-events"
+            title={tr("guide.calendar.dueEvents.title", locale)}
+            content={tr("guide.calendar.dueEvents.content", locale)}
+          >
           <Card>
             <h3 className="muted" style={{ margin: "0 0 0.5rem" }}>
               {tr("txCalendar.dueEvents", locale)}
@@ -501,9 +531,13 @@ export function CalendarPage(): ReactNode {
               emptyTitle={tr("txCalendar.noDueEvents", locale)}
             />
           </Card>
-          </div>
+          </HelpModeWrapper>
 
-          <div id="cal-day-drill">
+          <HelpModeWrapper
+            id="cal-day-drill"
+            title={tr("guide.calendar.dayDrill.title", locale)}
+            content={tr("guide.calendar.dayDrill.content", locale)}
+          >
           <Card>
             <h3 className="muted" style={{ margin: "0 0 0.5rem" }}>
               {tr("txCalendar.dayDrill", locale)} {selectedDay ? `(${selectedDay})` : ""}
@@ -521,7 +555,7 @@ export function CalendarPage(): ReactNode {
               emptyTitle={tr("txCalendar.noDayDrill", locale)}
             />
           </Card>
-          </div>
+          </HelpModeWrapper>
         </>
       ) : null}
     </div>

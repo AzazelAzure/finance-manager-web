@@ -262,6 +262,11 @@ export function DashboardPage(): ReactNode {
         </div>
       </div>
 
+      <HelpModeWrapper
+        id="tour-safe-to-spend"
+        title={tr("guide.dashboard.safeToSpend.title", locale)}
+        content={tr("guide.dashboard.safeToSpend.content", locale)}
+      >
       <m.section
         className="dashboard-hero"
         aria-labelledby="dashboard-safe-to-spend-title"
@@ -289,6 +294,7 @@ export function DashboardPage(): ReactNode {
           </p>
         </div>
       </m.section>
+      </HelpModeWrapper>
 
       <div className="dashboard-root__quick">
         <HelpModeWrapper id="tour-quick-actions" title={tr("tour.dashboard.quickActions.title", locale)} content={tr("tour.dashboard.quickActions.content", locale)}>
@@ -310,11 +316,23 @@ export function DashboardPage(): ReactNode {
       </section>
 
       <section className="dashboard-section" aria-label={tr("goals.heading", locale)}>
-        <GoalsWidget />
+        <HelpModeWrapper
+          id="tour-goals-widget"
+          title={tr("guide.dashboard.goalsWidget.title", locale)}
+          content={tr("guide.dashboard.goalsWidget.content", locale)}
+        >
+          <GoalsWidget />
+        </HelpModeWrapper>
       </section>
 
       <section className="dashboard-section" aria-label={tr("bills.cadence.widgetHeading", locale)}>
-        <UpcomingBillsWidget />
+        <HelpModeWrapper
+          id="tour-upcoming-bills"
+          title={tr("guide.dashboard.upcomingBills.title", locale)}
+          content={tr("guide.dashboard.upcomingBills.content", locale)}
+        >
+          <UpcomingBillsWidget />
+        </HelpModeWrapper>
       </section>
 
       <section className="dashboard-section" aria-label={tr("dashboard.section.filters", locale)}>
@@ -379,10 +397,18 @@ export function DashboardPage(): ReactNode {
             </div>
           </HelpModeWrapper>
           <aside className="dashboard-root__side dashboard-col">
-            <div id="tour-source-balances">
+            <HelpModeWrapper
+              id="tour-source-balances"
+              title={tr("guide.dashboard.sourceBalances.title", locale)}
+              content={tr("guide.dashboard.sourceBalances.content", locale)}
+            >
               <SourceBalances rows={data.source_balances} />
-            </div>
-            <div id="tour-balance-history">
+            </HelpModeWrapper>
+            <HelpModeWrapper
+              id="tour-balance-history"
+              title={tr("guide.dashboard.balanceHistory.title", locale)}
+              content={tr("guide.dashboard.balanceHistory.content", locale)}
+            >
               <BalanceHistoryChart
                 series={balanceHistoryQuery.data?.series ?? []}
                 baseCurrency={balanceHistoryQuery.data?.base_currency ?? currency}
@@ -392,15 +418,23 @@ export function DashboardPage(): ReactNode {
                 isError={balanceHistoryQuery.isError}
                 onRetry={() => void balanceHistoryQuery.refetch()}
               />
-            </div>
-            <div id="tour-profile-overview">
+            </HelpModeWrapper>
+            <HelpModeWrapper
+              id="tour-profile-overview"
+              title={tr("guide.dashboard.profileOverview.title", locale)}
+              content={tr("guide.dashboard.profileOverview.content", locale)}
+            >
               <ProfileOverview profile={profileQuery.data} isError={profileQuery.isError} />
-            </div>
+            </HelpModeWrapper>
           </aside>
         </div>
-        <div id="tour-recent-tx">
+        <HelpModeWrapper
+          id="tour-recent-tx"
+          title={tr("guide.dashboard.recentTx.title", locale)}
+          content={tr("guide.dashboard.recentTx.content", locale)}
+        >
           <RecentTransactions rows={txRows} baseCurrency={currency} />
-        </div>
+        </HelpModeWrapper>
       </div>
     </div>
   );
