@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Removed
+- **F-010 share UI (disabled 2026-06-29):** Removed Data Hub Share Data card and share-link client helpers after privacy review. CSV and full JSON backup export unchanged.
+
 ### Fixed
 - **Dashboard polish:** Savings Goals nav entry (desktop sidebar + mobile More drawer); mobile link back to marketing home; spacing between spending-by-tag and recent-transactions widgets; balance trends chart hides internal `unknown` source failsafe from legend and series.
 
