@@ -1,11 +1,13 @@
-import { useMemo, useState, useEffect, type ReactNode } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState, type ReactNode } from "react";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { ErrorState } from "../../components/ui/ErrorState";
+import { KPI } from "../../components/ui/KPI";
 import { LoadingState } from "../../components/ui/LoadingState";
 import { Modal } from "../../components/ui/Modal";
+import { TabPanel, Tabs } from "../../components/ui/Tabs";
 import {
   createCategory,
   createSource,
@@ -13,9 +15,6 @@ import {
   deleteCategory,
   deleteSource,
   deleteTag,
-  downloadCsvExport,
-  downloadFullBackup,
-  parseBlobApiError,
   listCategories,
   listSourceNames,
   listTags,
@@ -25,12 +24,13 @@ import {
   type SourceMutationPayload,
   updateSource,
 } from "../../api/lookups";
+import { getAppProfile } from "../../api/profile";
+import { fetchAppSnapshot } from "../../api/snapshot";
 import type { SourceRow, TransactionRecord } from "../../api/types";
+import { formatMoney } from "../../lib/money";
 import { tr, useLocale } from "../../lib/i18n";
 import { HelpModeWrapper } from "../../components/tours/TourProvider";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
-import { preferOfflineCaches } from "../../offline/connectivity";
-import { outboxDepth } from "../../offline/outbox";
 import { SOURCE_ACCOUNT_TYPES, SOURCE_ACCOUNT_TYPE_OPTIONS } from "../../lib/sourceAccountTypes";
 
 type EntityType = "source" | "category" | "tag";
@@ -121,33 +121,16 @@ export function DataHubPage(): ReactNode {
   const [sourceDraft, setSourceDraft] = useState<SourceDraft>(DEFAULT_SOURCE_DRAFT);
   const [editorError, setEditorError] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Record<string, boolean>>({});
-  const [exportDateFrom, setExportDateFrom] = useState("");
-  const [exportDateTo, setExportDateTo] = useState("");
-  const [csvDownloading, setCsvDownloading] = useState(false);
-  const [backupDownloading, setBackupDownloading] = useState(false);
-  const [exportError, setExportError] = useState("");
-  const [exportBlocked, setExportBlocked] = useState(true);
 
-  useEffect(() => {
-    async function refreshExportBlocked() {
-      const depth = await outboxDepth();
-      const offline = preferOfflineCaches();
-      setExportBlocked(offline || depth > 0);
-    }
-    void refreshExportBlocked();
-    const onConnectivityChange = () => void refreshExportBlocked();
-    window.addEventListener("online", onConnectivityChange);
-    window.addEventListener("offline", onConnectivityChange);
-    window.addEventListener("fm-offline-queued", onConnectivityChange);
-    window.addEventListener("fm-api-reachable", onConnectivityChange);
-    return () => {
-      window.removeEventListener("online", onConnectivityChange);
-      window.removeEventListener("offline", onConnectivityChange);
-      window.removeEventListener("fm-offline-queued", onConnectivityChange);
-      window.removeEventListener("fm-api-reachable", onConnectivityChange);
-    };
-  }, []);
-
+  const profileQuery = useQuery({
+    queryKey: ["profile", "settings"] as const,
+    queryFn: (ctx) => getAppProfile(readOptsFromQuery(ctx)),
+  });
+  const snapshotQuery = useQuery({
+    queryKey: ["profile", "snapshot"] as const,
+    queryFn: (ctx) => fetchAppSnapshot({ current_month: "1" }, readOptsFromQuery(ctx)),
+    placeholderData: keepPreviousData,
+  });
   const categoriesQuery = useQuery({
     queryKey: ["lookups", "categories"] as const,
     queryFn: (ctx) => listCategories(readOptsFromQuery(ctx)),
@@ -167,6 +150,27 @@ export function DataHubPage(): ReactNode {
 
   const categoryTotals = useMemo(() => toCategoryTotals(txForTotalsQuery.data ?? []), [txForTotalsQuery.data]);
   const tagFrequency = useMemo(() => toTagFrequency(txForTotalsQuery.data ?? []), [txForTotalsQuery.data]);
+
+  const overviewKpis = useMemo(() => {
+    const snap = snapshotQuery.data?.snapshot;
+    const currency = profileQuery.data?.base_currency ?? "USD";
+    const val = (field: string): ReactNode => {
+      const raw = snap?.[field];
+      if (raw === null || raw === undefined) return "N/A";
+      return formatMoney(raw, currency);
+    };
+    return [
+      { label: tr("dashboard.kpi.assets", locale), value: val("total_assets") },
+      { label: "Savings", value: val("total_savings") },
+      { label: "Checking", value: val("total_checking") },
+      { label: "Investment", value: val("total_investment") },
+      { label: "Cash", value: val("total_cash") },
+      { label: "E-wallet", value: val("total_ewallet") },
+      { label: "Monthly spending", value: val("total_monthly_spending") },
+      { label: tr("dashboard.kpi.remaining", locale), value: val("total_remaining_expenses") },
+      { label: tr("dashboard.kpi.leaks", locale), value: val("total_leaks") },
+    ];
+  }, [locale, profileQuery.data?.base_currency, snapshotQuery.data?.snapshot]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -297,6 +301,135 @@ export function DataHubPage(): ReactNode {
         )
       : Boolean(textDraft.trim());
 
+  const sourcesPanel = (
+    <TabPanel className="stack">
+      <div style={{ marginTop: 12 }} />
+      <HelpModeWrapper id="datahub-sources" title={tr("guide.dataHub.sources.title", locale)} content={tr("guide.dataHub.sources.content", locale)}>
+        <Card>
+          <div className="stack" style={{ gap: 10 }}>
+            <div className="row-between">
+              <h3 style={{ margin: 0 }}>{tr("common.sources", locale)}</h3>
+              <Button variant="secondary" onClick={() => openCreate("source")}>
+                {tr("common.add", locale)}
+              </Button>
+            </div>
+            {(sourcesQuery.data ?? []).length === 0 ? (
+              <p className="muted-text" style={{ margin: 0 }}>
+                {tr("dataHub.noSources", locale)}
+              </p>
+            ) : (
+              (sourcesQuery.data ?? []).map((row) => (
+                <div key={row.source} className="row-between">
+                  <div style={{ display: "grid", gap: 2 }}>
+                    <strong>{row.source}</strong>
+                    <span className="muted-text">
+                      {row.acc_type} • {row.amount} {row.currency}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Button size="compact" variant="secondary" onClick={() => openSourceEdit(row)}>
+                      Edit
+                    </Button>
+                    <Button size="compact" variant="ghost" onClick={() => requestDelete("source", row.source)}>
+                      {isDeletePending("source", row.source) ? "Confirm delete?" : "Delete"}
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+      </HelpModeWrapper>
+    </TabPanel>
+  );
+
+  const categoriesPanel = (
+    <TabPanel className="stack">
+      <div style={{ marginTop: 12 }} />
+      <HelpModeWrapper id="datahub-categories" title={tr("guide.dataHub.categories.title", locale)} content={tr("guide.dataHub.categories.content", locale)}>
+        <Card>
+          <div className="stack" style={{ gap: 10 }}>
+            <div className="row-between">
+              <h3 style={{ margin: 0 }}>{tr("common.categories", locale)}</h3>
+              <Button variant="secondary" onClick={() => openCreate("category")}>
+                {tr("common.add", locale)}
+              </Button>
+            </div>
+            {(categoriesQuery.data ?? []).length === 0 ? (
+              <p className="muted-text" style={{ margin: 0 }}>
+                {tr("dataHub.noCategories", locale)}
+              </p>
+            ) : (
+              (categoriesQuery.data ?? []).map((name) => {
+                const total = categoryTotals.find((row) => row.category.toLowerCase() === name.toLowerCase())?.total ?? 0;
+                const totalLabel = `${total >= 0 ? "+" : "-"}${Math.abs(total).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`;
+                return (
+                  <div key={name} className="row-between">
+                    <div style={{ display: "grid", gap: 2 }}>
+                      <strong>{name}</strong>
+                      <span className="muted-text">Category total: {totalLabel}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <Button size="compact" variant="secondary" onClick={() => openRename("category", name)}>
+                        Rename
+                      </Button>
+                      <Button size="compact" variant="ghost" onClick={() => requestDelete("category", name)}>
+                        {isDeletePending("category", name) ? "Confirm delete?" : "Delete"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </Card>
+      </HelpModeWrapper>
+    </TabPanel>
+  );
+
+  const tagsPanel = (
+    <TabPanel className="stack">
+      <div style={{ marginTop: 12 }} />
+      <HelpModeWrapper id="datahub-tags" title={tr("guide.dataHub.tags.title", locale)} content={tr("guide.dataHub.tags.content", locale)}>
+        <Card>
+          <div className="stack" style={{ gap: 10 }}>
+            <div className="row-between">
+              <h3 style={{ margin: 0 }}>{tr("common.tags", locale)}</h3>
+              <Button variant="secondary" onClick={() => openCreate("tag")}>
+                {tr("common.add", locale)}
+              </Button>
+            </div>
+            {(tagsQuery.data ?? []).length === 0 ? (
+              <p className="muted-text" style={{ margin: 0 }}>
+                {tr("dataHub.noTags", locale)}
+              </p>
+            ) : (
+              (tagsQuery.data ?? []).map((name) => (
+                <div key={name} className="row-between">
+                  <div style={{ display: "grid", gap: 2 }}>
+                    <strong>{name}</strong>
+                    <span className="muted-text">Used {tagFrequency[name.toLowerCase()] ?? 0}x</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Button size="compact" variant="secondary" onClick={() => openRename("tag", name)}>
+                      Rename
+                    </Button>
+                    <Button size="compact" variant="ghost" onClick={() => requestDelete("tag", name)}>
+                      {isDeletePending("tag", name) ? "Confirm delete?" : "Delete"}
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+      </HelpModeWrapper>
+    </TabPanel>
+  );
+
   return (
     <div className="stack">
       <div className="app-surface app-surface--data">
@@ -313,214 +446,53 @@ export function DataHubPage(): ReactNode {
             void tagsQuery.refetch();
             void sourcesQuery.refetch();
             void txForTotalsQuery.refetch();
+            void snapshotQuery.refetch();
           }}
         />
       ) : anyLoading && !categoriesQuery.data && !tagsQuery.data && !sourcesQuery.data ? (
         <LoadingState label={tr("dataHub.loading", locale)} />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
-          <HelpModeWrapper id="datahub-sources" title={tr("guide.dataHub.sources.title", locale)} content={tr("guide.dataHub.sources.content", locale)}>
-          <Card>
-            <div className="stack" style={{ gap: 10 }}>
-              <div className="row-between">
-                <h3 style={{ margin: 0 }}>{tr("common.sources", locale)}</h3>
-                <Button variant="secondary" onClick={() => openCreate("source")}>
-                  {tr("common.add", locale)}
-                </Button>
-              </div>
-              {(sourcesQuery.data ?? []).length === 0 ? (
-                <p className="muted-text" style={{ margin: 0 }}>
-                  {tr("dataHub.noSources", locale)}
-                </p>
-              ) : (
-                (sourcesQuery.data ?? []).map((row) => (
-                  <div key={row.source} className="row-between">
-                    <div style={{ display: "grid", gap: 2 }}>
-                      <strong>{row.source}</strong>
-                      <span className="muted-text">
-                        {row.acc_type} • {row.amount} {row.currency}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        type="button"
-                        className="ui-btn ui-btn--secondary"
-                        onClick={() => openSourceEdit(row)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="ui-btn ui-btn--ghost"
-                        onClick={() => requestDelete("source", row.source)}
-                      >
-                        {isDeletePending("source", row.source) ? "Confirm delete?" : "Delete"}
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </Card>
-          </HelpModeWrapper>
-
-          <HelpModeWrapper id="datahub-categories" title={tr("guide.dataHub.categories.title", locale)} content={tr("guide.dataHub.categories.content", locale)}>
-          <Card>
-            <div className="stack" style={{ gap: 10 }}>
-              <div className="row-between">
-                <h3 style={{ margin: 0 }}>{tr("common.categories", locale)}</h3>
-                <Button variant="secondary" onClick={() => openCreate("category")}>
-                  {tr("common.add", locale)}
-                </Button>
-              </div>
-              {(categoriesQuery.data ?? []).length === 0 ? (
-                <p className="muted-text" style={{ margin: 0 }}>
-                  {tr("dataHub.noCategories", locale)}
-                </p>
-              ) : (
-                (categoriesQuery.data ?? []).map((name) => {
-                  const total = categoryTotals.find((row) => row.category.toLowerCase() === name.toLowerCase())?.total ?? 0;
-                  const totalLabel = `${total >= 0 ? "+" : "-"}${Math.abs(total).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`;
-                  return (
-                    <div key={name} className="row-between">
-                      <div style={{ display: "grid", gap: 2 }}>
-                        <strong>{name}</strong>
-                        <span className="muted-text">Category total: {totalLabel}</span>
+        <Tabs
+          tabs={[
+            {
+              id: "overview",
+              label: tr("dataHub.tab.overview", locale),
+              content: (
+                <TabPanel className="stack">
+                  <div style={{ marginTop: 12 }} />
+                  {snapshotQuery.isError ? (
+                    <ErrorState title={tr("settings.snapshotUnavailable", locale)} onRetry={() => void snapshotQuery.refetch()} />
+                  ) : snapshotQuery.isLoading && !snapshotQuery.data ? (
+                    <LoadingState label={tr("dataHub.loading", locale)} />
+                  ) : (
+                    <HelpModeWrapper id="datahub-overview-kpis" title={tr("guide.dataHub.overview.title", locale)} content={tr("guide.dataHub.overview.content", locale)}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+                        {overviewKpis.map((kpi) => (
+                          <KPI key={kpi.label} label={kpi.label} value={kpi.value} />
+                        ))}
                       </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button type="button" className="ui-btn ui-btn--secondary" onClick={() => openRename("category", name)}>
-                          Rename
-                        </button>
-                        <button type="button" className="ui-btn ui-btn--ghost" onClick={() => requestDelete("category", name)}>
-                          {isDeletePending("category", name) ? "Confirm delete?" : "Delete"}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </Card>
-          </HelpModeWrapper>
-
-          <HelpModeWrapper id="datahub-tags" title={tr("guide.dataHub.tags.title", locale)} content={tr("guide.dataHub.tags.content", locale)}>
-          <Card>
-            <div className="stack" style={{ gap: 10 }}>
-              <div className="row-between">
-                <h3 style={{ margin: 0 }}>{tr("common.tags", locale)}</h3>
-                <Button variant="secondary" onClick={() => openCreate("tag")}>
-                  {tr("common.add", locale)}
-                </Button>
-              </div>
-              {(tagsQuery.data ?? []).length === 0 ? (
-                <p className="muted-text" style={{ margin: 0 }}>
-                  {tr("dataHub.noTags", locale)}
-                </p>
-              ) : (
-                (tagsQuery.data ?? []).map((name) => (
-                  <div key={name} className="row-between">
-                    <div style={{ display: "grid", gap: 2 }}>
-                      <strong>{name}</strong>
-                      <span className="muted-text">Used {tagFrequency[name.toLowerCase()] ?? 0}x</span>
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button type="button" className="ui-btn ui-btn--secondary" onClick={() => openRename("tag", name)}>
-                        Rename
-                      </button>
-                      <button type="button" className="ui-btn ui-btn--ghost" onClick={() => requestDelete("tag", name)}>
-                        {isDeletePending("tag", name) ? "Confirm delete?" : "Delete"}
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </Card>
-          </HelpModeWrapper>
-
-          <Card>
-            <div className="stack" style={{ gap: 10 }}>
-              <h3 style={{ margin: 0 }}>{tr("data.export.heading", locale)}</h3>
-              {exportBlocked ? (
-                <p className="muted-text" style={{ margin: 0 }}>
-                  {tr("data.export.offlineDisabled", locale)}
-                </p>
-              ) : null}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                <label className="ui-field" style={{ minWidth: 140 }}>
-                  <span className="ui-label">{tr("data.export.dateFrom", locale)}</span>
-                  <input
-                    className="ui-input"
-                    type="date"
-                    value={exportDateFrom}
-                    onChange={(e) => setExportDateFrom(e.target.value)}
-                    disabled={exportBlocked || csvDownloading || backupDownloading}
-                  />
-                </label>
-                <label className="ui-field" style={{ minWidth: 140 }}>
-                  <span className="ui-label">{tr("data.export.dateTo", locale)}</span>
-                  <input
-                    className="ui-input"
-                    type="date"
-                    value={exportDateTo}
-                    onChange={(e) => setExportDateTo(e.target.value)}
-                    disabled={exportBlocked || csvDownloading || backupDownloading}
-                  />
-                </label>
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <Button
-                  variant="secondary"
-                  disabled={exportBlocked || csvDownloading || backupDownloading}
-                  onClick={async () => {
-                    setCsvDownloading(true);
-                    setExportError("");
-                    try {
-                      await downloadCsvExport(exportDateFrom || undefined, exportDateTo || undefined);
-                    } catch (error) {
-                      setExportError(
-                        error instanceof Error && !axios.isAxiosError(error)
-                          ? error.message
-                          : await parseBlobApiError(error),
-                      );
-                    } finally {
-                      setCsvDownloading(false);
-                    }
-                  }}
-                >
-                  {csvDownloading ? tr("data.export.csvDownloading", locale) : tr("data.export.downloadCsv", locale)}
-                </Button>
-                <Button
-                  variant="secondary"
-                  disabled={exportBlocked || csvDownloading || backupDownloading}
-                  onClick={async () => {
-                    setBackupDownloading(true);
-                    setExportError("");
-                    try {
-                      await downloadFullBackup();
-                    } catch (error) {
-                      setExportError(
-                        error instanceof Error && !axios.isAxiosError(error)
-                          ? error.message
-                          : await parseBlobApiError(error),
-                      );
-                    } finally {
-                      setBackupDownloading(false);
-                    }
-                  }}
-                >
-                  {backupDownloading
-                    ? tr("data.export.backupDownloading", locale)
-                    : tr("data.export.downloadBackup", locale)}
-                </Button>
-              </div>
-              {exportError ? <ErrorState title="Export failed" description={exportError} /> : null}
-            </div>
-          </Card>
-        </div>
+                    </HelpModeWrapper>
+                  )}
+                </TabPanel>
+              ),
+            },
+            {
+              id: "sources",
+              label: tr("dataHub.tab.sources", locale),
+              content: sourcesPanel,
+            },
+            {
+              id: "categories",
+              label: tr("dataHub.tab.categories", locale),
+              content: categoriesPanel,
+            },
+            {
+              id: "tags",
+              label: tr("dataHub.tab.tags", locale),
+              content: tagsPanel,
+            },
+          ]}
+        />
       )}
 
       <Modal
