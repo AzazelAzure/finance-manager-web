@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
+import {
+  UPCOMING_TOUR_ID,
+  UPCOMING_FORM_TOUR_ID,
+  buildUpcomingPageSteps,
+  buildUpcomingBillFormSteps,
+} from "../../components/tours/UpcomingTourSteps";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Link } from "react-router-dom";
@@ -25,20 +31,6 @@ import { useBreakpoint } from "../../lib/breakpoints";
 import { tr, trFmt, useLocale } from "../../lib/i18n";
 import { estimateMissedPeriods, isOverdueUnpaid } from "../../lib/billRecurrence";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
-
-const UPCOMING_EXPENSES_TOUR_STEPS = [
-  {
-    target: "#upcoming-list",
-    title: "Upcoming Obligations",
-    content: "Upcoming Obligations — View your upcoming bills and scheduled transfers here.",
-    disableBeacon: true,
-  },
-  {
-    target: "#upcoming-add",
-    title: "Schedule New",
-    content: "Schedule New — Add a future expense or recurring bill.",
-  },
-] as const;
 
 type RecurringFilter = "both" | "yes" | "no";
 type PaidFilter = "both" | "yes" | "no";
@@ -522,14 +514,24 @@ export function UpcomingExpensesPage(): ReactNode {
     if (!upcomingQuery.isSuccess) {
       return;
     }
-    if (isTourCompleted("upcoming_expenses_tour")) {
+    if (isTourCompleted(UPCOMING_TOUR_ID)) {
       return;
     }
     const timer = setTimeout(() => {
-      startTour("upcoming_expenses_tour", [...UPCOMING_EXPENSES_TOUR_STEPS] as any);
+      startTour(UPCOMING_TOUR_ID, buildUpcomingPageSteps(locale));
     }, 500);
     return () => clearTimeout(timer);
-  }, [upcomingQuery.isSuccess, isTourCompleted, startTour]);
+  }, [upcomingQuery.isSuccess, isTourCompleted, startTour, locale]);
+
+  useEffect(() => {
+    if (!editorOpen || isTourCompleted(UPCOMING_FORM_TOUR_ID)) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      startTour(UPCOMING_FORM_TOUR_ID, buildUpcomingBillFormSteps(locale));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [editorOpen, isTourCompleted, startTour, locale]);
 
   return (
     <div className="stack">
@@ -541,7 +543,7 @@ export function UpcomingExpensesPage(): ReactNode {
           <Button
             type="button"
             variant="secondary"
-            onClick={() => startTour("upcoming_expenses_tour", [...UPCOMING_EXPENSES_TOUR_STEPS] as any, true)}
+            onClick={() => startTour(UPCOMING_TOUR_ID, buildUpcomingPageSteps(locale), true)}
           >
             {tr("tour.replayTour", locale)}
           </Button>

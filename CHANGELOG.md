@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Guide mode + walkthrough expansion (Theme 4):** Calendar page sections wrapped with `HelpModeWrapper` (`guide.calendar.*`). Dashboard hero, goals widget, upcoming bills widget, source balances, balance history, profile overview, and recent transactions gain guide coverage (`guide.dashboard.*`). New Joyride tours with auto-start and replay: Data Hub (`DataHubTourSteps`), Profile/Settings including Data export tab (`ProfileTourSteps`), Goals (`GoalsTourSteps`). Upcoming page tour steps localized (`tour.upcoming.*`). Form walkthroughs step into modal fields: Quick Add (`QuickAddTourSteps`), Transactions form (`buildTransactionsFormSteps`), Upcoming bill editor (`buildUpcomingBillFormSteps`). `Tabs` accepts optional `idPrefix` for stable tour targets. i18n en-US + tl-PH for all new keys.
 - **Data Hub + Profile restructure (Theme 3):** Data Hub uses tabbed central-swap layout (Overview, Sources, Categories, Tags) instead of a flat 5-card grid. Overview tab shows snapshot KPIs moved from Profile. Profile gains a **Data** tab with CSV/backup export (offline-gated). Compact `size="compact"` button variant for list row actions. i18n `dataHub.tab.*`, `settings.tab.data`, updated guide keys (en-US + tl-PH).
 
 ### Removed

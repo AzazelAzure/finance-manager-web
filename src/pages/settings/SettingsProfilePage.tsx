@@ -26,7 +26,8 @@ import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offl
 import { preferOfflineCaches } from "../../offline/connectivity";
 import { tr, useLocale } from "../../lib/i18n";
 import { restartOnboardingWizard } from "../../state/onboarding";
-import { HelpModeWrapper } from "../../components/tours/TourProvider";
+import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
+import { PROFILE_TOUR_ID, buildProfileSteps } from "../../components/tours/ProfileTourSteps";
 import { buildTimezoneOptions } from "../../lib/timezones";
 
 const settingsSchema = z.object({
@@ -110,6 +111,7 @@ function parseSpendAccounts(csv: string): string[] {
 
 export function SettingsProfilePage(): ReactNode {
   const locale = useLocale();
+  const { startTour, isTourCompleted } = useTour();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { logout } = useSession();
@@ -307,13 +309,33 @@ export function SettingsProfilePage(): ReactNode {
 
   const timezoneSelect = buildTimezoneOptions({ current: profileQuery.data?.timezone ?? "UTC" });
 
+  useEffect(() => {
+    if (!profileQuery.isSuccess || isTourCompleted(PROFILE_TOUR_ID)) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      startTour(PROFILE_TOUR_ID, buildProfileSteps(locale));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [profileQuery.isSuccess, isTourCompleted, startTour, locale]);
+
   return (
     <div className="stack">
-      <h2 className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
-        {tr("settings.title", locale)}
-      </h2>
+      <div className="row-between" style={{ alignItems: "center", gap: 8 }}>
+        <h2 id="profile-page-title" className="muted" style={{ margin: 0, fontSize: "var(--font-xl)" }}>
+          {tr("settings.title", locale)}
+        </h2>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => startTour(PROFILE_TOUR_ID, buildProfileSteps(locale), true)}
+        >
+          {tr("tour.replayTour", locale)}
+        </Button>
+      </div>
 
       <Tabs
+        idPrefix="profile"
         tabs={[
           {
             id: "settings",

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Button } from "../../components/ui/Button";
@@ -20,6 +20,8 @@ import { formatMoney, toNumber } from "../../lib/money";
 import { tr, trFmt, useLocale } from "../../lib/i18n";
 import { preferOfflineCaches } from "../../offline/connectivity";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
+import { useTour } from "../../components/tours/TourProvider";
+import { GOALS_TOUR_ID, buildGoalsSteps } from "../../components/tours/GoalsTourSteps";
 
 type GoalDraft = SavingsGoalWritePayload;
 
@@ -170,6 +172,7 @@ function GoalFormFields({
 
 export function GoalsPage(): ReactNode {
   const locale = useLocale();
+  const { startTour, isTourCompleted } = useTour();
   const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
   const [addDraft, setAddDraft] = useState<GoalDraft>(() => emptyDraft("USD"));
@@ -264,6 +267,16 @@ export function GoalsPage(): ReactNode {
     setShowAddForm(true);
     setFormError(null);
   }
+
+  useEffect(() => {
+    if (!goalsQuery.isSuccess || isTourCompleted(GOALS_TOUR_ID)) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      startTour(GOALS_TOUR_ID, buildGoalsSteps(locale));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [goalsQuery.isSuccess, isTourCompleted, startTour, locale]);
 
   function startEdit(goal: SavingsGoal): void {
     setEditingId(goal.id);
@@ -405,8 +418,17 @@ export function GoalsPage(): ReactNode {
   return (
     <div className="stack" style={{ gap: "var(--spacing-4)" }}>
       <div className="row-between">
-        <h2 style={{ margin: 0 }}>{tr("goals.heading", locale)}</h2>
-        <Button
+        <h2 id="goals-heading" style={{ margin: 0 }}>{tr("goals.heading", locale)}</h2>
+        <div style={{ display: "flex", gap: "var(--spacing-2)" }}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => startTour(GOALS_TOUR_ID, buildGoalsSteps(locale), true)}
+          >
+            {tr("tour.replayTour", locale)}
+          </Button>
+          <Button
+            id="goals-add-btn"
           type="button"
           title={mutationsBlocked ? tr("goals.offlineDisabled", locale) : undefined}
           onClick={() => {
@@ -420,6 +442,7 @@ export function GoalsPage(): ReactNode {
         >
           {tr("goals.addGoal", locale)}
         </Button>
+        </div>
       </div>
 
       {offlineNotice ? (
@@ -467,9 +490,9 @@ export function GoalsPage(): ReactNode {
       ) : null}
 
       {goals.length === 0 ? (
-        <p className="muted-text">{tr("goals.empty", locale)}</p>
+        <p id="goals-list" className="muted-text">{tr("goals.empty", locale)}</p>
       ) : (
-        <div className="stack" style={{ gap: "var(--spacing-3)" }}>
+        <div id="goals-list" className="stack" style={{ gap: "var(--spacing-3)" }}>
           {goals.map((goal) => renderGoalCard(goal))}
         </div>
       )}

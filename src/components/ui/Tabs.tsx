@@ -7,9 +7,11 @@ type Props = {
   tabs: TabDef[];
   className?: string;
   defaultIndex?: number;
+  /** When set, tab buttons get stable ids `{idPrefix}-tab-{tab.id}` for tours and anchors. */
+  idPrefix?: string;
 };
 
-export function Tabs({ tabs, className, defaultIndex = 0 }: Props): ReactNode {
+export function Tabs({ tabs, className, defaultIndex = 0, idPrefix }: Props): ReactNode {
   const [i, setI] = useState(defaultIndex);
   const base = useId();
   return (
@@ -20,7 +22,7 @@ export function Tabs({ tabs, className, defaultIndex = 0 }: Props): ReactNode {
             <button
               type="button"
               role="tab"
-              id={`${base}-tab-${t.id}`}
+              id={idPrefix ? `${idPrefix}-tab-${t.id}` : `${base}-tab-${t.id}`}
               aria-selected={i === idx}
               aria-controls={`${base}-panel-${t.id}`}
               onClick={() => setI(idx)}
