@@ -20,6 +20,7 @@ import { listSourceNames } from "../../api/lookups";
 import { getAppProfile } from "../../api/profile";
 import { isOfflineQueued, type AppProfileResponse, type UpcomingExpenseMutationPayload, type UpcomingExpenseRecord } from "../../api/types";
 import { formatMoney } from "../../lib/money";
+import { BILL_CADENCES, formatBillCadenceLabel, type BillCadence } from "../../lib/billCadence";
 import { useBreakpoint } from "../../lib/breakpoints";
 import { tr, trFmt, useLocale } from "../../lib/i18n";
 import { estimateMissedPeriods, isOverdueUnpaid } from "../../lib/billRecurrence";
@@ -51,6 +52,8 @@ type UpcomingDraft = {
   source: string;
   paid_flag: boolean;
   recurring_flag: boolean;
+  cadence: BillCadence;
+  custom_interval_days: string;
   bill_class: "rigid" | "volatile";
   use_partial_payment: boolean;
   planned_partial_amount: string;
@@ -72,6 +75,8 @@ function emptyUpcomingDraft(baseCurrency: string): UpcomingDraft {
     source: "",
     paid_flag: false,
     recurring_flag: false,
+    cadence: "monthly",
+    custom_interval_days: "",
     bill_class: "rigid",
     use_partial_payment: false,
     planned_partial_amount: "",
@@ -110,7 +115,11 @@ function toPayload(draft: UpcomingDraft): UpcomingExpenseMutationPayload {
     paid_flag: draft.paid_flag,
     is_recurring: draft.recurring_flag,
     bill_class: draft.bill_class,
+    cadence: draft.cadence,
   };
+  if (draft.cadence === "custom") {
+    payload.custom_interval_days = Number(draft.custom_interval_days);
+  }
   if (draft.use_partial_payment) {
     payload.planned_partial_amount = draft.planned_partial_amount || null;
     payload.cycle_residual_amount = draft.cycle_residual_amount || null;
@@ -143,6 +152,8 @@ function draftFromRow(row: UpcomingExpenseRecord, baseCurrency: string): Upcomin
     source: row.source || "",
     paid_flag: row.paid_flag,
     recurring_flag: row.recurring_flag,
+    cadence: row.cadence ?? "monthly",
+    custom_interval_days: row.custom_interval_days ? String(row.custom_interval_days) : "",
     bill_class: row.bill_class === "volatile" ? "volatile" : "rigid",
     use_partial_payment: hasPartialPlan,
     planned_partial_amount: row.planned_partial_amount ? String(row.planned_partial_amount) : "",
@@ -156,6 +167,17 @@ function draftFromRow(row: UpcomingExpenseRecord, baseCurrency: string): Upcomin
 
 function hasPartialPlan(row: UpcomingExpenseRecord): boolean {
   return Boolean(row.planned_partial_amount || row.cycle_residual_amount || row.remainder_due_date);
+}
+
+function renderCadenceBadge(row: UpcomingExpenseRecord, locale: ReturnType<typeof useLocale>): ReactNode {
+  if (!row.recurring_flag) {
+    return <span className="muted-text">—</span>;
+  }
+  return (
+    <span className="tx-badge">
+      {formatBillCadenceLabel(locale, row.cadence ?? "monthly", row.custom_interval_days)}
+    </span>
+  );
 }
 
 function monthRange(offsetMonths: number): { start: string; end: string } {
@@ -402,6 +424,11 @@ export function UpcomingExpensesPage(): ReactNode {
         cell: (r) => <span className="tx-badge">{r.recurring_flag ? "Recurring" : "One-time"}</span>,
       },
       {
+        id: "cadence",
+        header: tr("bills.cadence.fieldLabel", locale),
+        cell: (r) => renderCadenceBadge(r, locale),
+      },
+      {
         id: "bill-plan",
         header: "Plan",
         cell: (r) =>
@@ -474,6 +501,12 @@ export function UpcomingExpensesPage(): ReactNode {
             plannedPartialValue <= 0 ||
             plannedPartialValue > Number(draft.amount || 0)))),
   );
+  const invalidCustomCadence = Boolean(
+    draft.cadence === "custom" &&
+      (!draft.custom_interval_days ||
+        Number.isNaN(Number(draft.custom_interval_days)) ||
+        Number(draft.custom_interval_days) <= 0),
+  );
   const isSaveDisabled =
     saveMutation.isPending ||
     !draft.name.trim() ||
@@ -482,6 +515,7 @@ export function UpcomingExpensesPage(): ReactNode {
     draft.currency.trim().length !== 3 ||
     invalidAmount ||
     invalidPartialAmount ||
+    invalidCustomCadence ||
     invalidWindow;
 
   useEffect(() => {
@@ -596,6 +630,11 @@ export function UpcomingExpensesPage(): ReactNode {
                         <span className="tx-badge">{row.recurring_flag ? tr("upcoming.recurring", locale) : tr("upcoming.oneTime", locale)}</span>
                         <span className="muted-text">{row.source || tr("upcoming.noSource", locale)}</span>
                       </div>
+                      {row.recurring_flag ? (
+                        <p className="muted-text" style={{ margin: 0 }}>
+                          {formatBillCadenceLabel(locale, row.cadence ?? "monthly", row.custom_interval_days)}
+                        </p>
+                      ) : null}
                       {row.bill_class === "volatile" || hasPartialPlan(row) ? (
                         <p className="muted-text" style={{ margin: 0 }}>
                           {row.bill_class === "volatile" ? tr("upcoming.billClass.volatile", locale) : tr("upcoming.billClass.rigid", locale)}
@@ -657,13 +696,15 @@ export function UpcomingExpensesPage(): ReactNode {
       >
         <div className="stack" style={{ marginTop: 12 }}>
           {editorError ? <ErrorState title={tr("common.saveFailed", locale)} description={editorError} /> : null}
-          {(invalidAmount || invalidWindow || invalidPartialAmount) && !saveMutation.isPending ? (
+          {(invalidAmount || invalidWindow || invalidPartialAmount || invalidCustomCadence) && !saveMutation.isPending ? (
             <div className="ui-state" role="status">
               <p className="muted-text" style={{ margin: 0 }}>
                 {invalidWindow
                   ? tr("upcoming.invalidWindow", locale)
                   : invalidPartialAmount
                     ? tr("upcoming.invalidPartialAmount", locale)
+                    : invalidCustomCadence
+                      ? tr("bills.cadence.invalidCustomDays", locale)
                     : tr("upcoming.invalidAmount", locale)}
               </p>
             </div>
@@ -775,6 +816,39 @@ export function UpcomingExpensesPage(): ReactNode {
               <span className="ui-label">{tr("upcoming.recurring", locale)}</span>
             </label>
           </HelpModeWrapper>
+          <label className="ui-field">
+            <span className="ui-label">{tr("bills.cadence.fieldLabel", locale)}</span>
+            <select
+              className="ui-input"
+              value={draft.cadence}
+              onChange={(e) => {
+                const next = e.target.value as BillCadence;
+                setDraft((d) => ({
+                  ...d,
+                  cadence: next,
+                  custom_interval_days: next === "custom" ? d.custom_interval_days : "",
+                }));
+              }}
+            >
+              {BILL_CADENCES.map((value) => (
+                <option key={value} value={value}>
+                  {tr(`bills.cadence.${value}`, locale)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {draft.cadence === "custom" ? (
+            <label className="ui-field">
+              <span className="ui-label">{tr("bills.cadence.customDaysLabel", locale)}</span>
+              <input
+                className="ui-input"
+                type="number"
+                min={1}
+                value={draft.custom_interval_days}
+                onChange={(e) => setDraft((d) => ({ ...d, custom_interval_days: e.target.value }))}
+              />
+            </label>
+          ) : null}
           <HelpModeWrapper id="bill-form-paid" title={tr("guide.form.paid.title", locale)} content={tr("guide.form.paid.content", locale)}>
             <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <input

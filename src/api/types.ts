@@ -3,6 +3,8 @@ export type LoginResponse = {
   refresh: string;
 };
 
+import type { BillCadence } from "../lib/billCadence";
+
 export type SnapshotTransactionRow = {
   tx_id: string;
   created_on: string;
@@ -214,6 +216,8 @@ export type UpcomingExpenseRecord = {
   due_date: string;
   paid_flag: boolean;
   recurring_flag: boolean;
+  cadence: BillCadence;
+  custom_interval_days: number | null;
   bill_class?: "rigid" | "volatile";
   planned_partial_amount?: string | null;
   cycle_residual_amount?: string | null;
@@ -232,6 +236,8 @@ export type UpcomingExpenseMutationPayload = {
   recurring_flag?: boolean;
   is_recurring?: boolean;
   bill_class?: "rigid" | "volatile";
+  cadence?: BillCadence;
+  custom_interval_days?: number | null;
   planned_partial_amount?: string | number | null;
   cycle_residual_amount?: string | number | null;
   remainder_due_date?: string | null;

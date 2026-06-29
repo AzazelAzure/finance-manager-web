@@ -12,6 +12,7 @@ import { CategoryPie } from "../../components/dashboard/CategoryPie";
 import { FilterRow } from "../../components/dashboard/FilterRow";
 import { FlowChart } from "../../components/dashboard/FlowChart";
 import { GoalsWidget } from "../../components/dashboard/GoalsWidget";
+import { UpcomingBillsWidget } from "../../components/dashboard/UpcomingBillsWidget";
 import { KPIRow } from "../../components/dashboard/KPIRow";
 import { ProfileOverview } from "../../components/dashboard/ProfileOverview";
 import { QuickActions } from "../../components/dashboard/QuickActions";
@@ -310,6 +311,10 @@ export function DashboardPage(): ReactNode {
 
       <section className="dashboard-section" aria-label={tr("goals.heading", locale)}>
         <GoalsWidget />
+      </section>
+
+      <section className="dashboard-section" aria-label={tr("bills.cadence.widgetHeading", locale)}>
+        <UpcomingBillsWidget />
       </section>
 
       <section className="dashboard-section" aria-label={tr("dashboard.section.filters", locale)}>
