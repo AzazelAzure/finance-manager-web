@@ -22,7 +22,7 @@
     "react-dom": "^19.2.5",
     "react-helmet-async": "^3.0.0",
     "react-hook-form": "^7.74.0",
-    "react-is": "^19.2.5",
+    "react-is": "^19.2.7",
     "react-joyride": "^3.1.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.14.2",
