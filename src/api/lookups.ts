@@ -12,7 +12,6 @@ import {
 } from "../offline/lookupsOutboxOverlay";
 import { listTransactions, type TransactionFilters } from "./transactions";
 import { api } from "./client";
-import { resolveApiBaseUrl } from "../lib/apiBaseUrl";
 import {
   isOfflineQueued,
   type CategoryRow,
@@ -276,29 +275,4 @@ export async function downloadFullBackup(): Promise<void> {
   await assertExportOnline();
   const res = await api.get("/finance/export/full/", { responseType: "blob" });
   triggerBlobDownload(res.data as Blob, `hfm_backup_${exportDateStamp()}.json`);
-}
-
-export type ShareTokenResponse = {
-  token: string;
-  expires_at: string;
-};
-
-export function buildShareTokenUrl(token: string): string {
-  const base = resolveApiBaseUrl().replace(/\/$/, "");
-  return `${base}/finance/export/share/${token}/`;
-}
-
-/** Online-only: create a time-limited share token (F-010 T05). */
-export async function createShareToken(expiresInDays = 7): Promise<ShareTokenResponse> {
-  await assertExportOnline();
-  const res = await api.post<ShareTokenResponse>("/finance/export/share/", {
-    expires_in_days: expiresInDays,
-  });
-  return res.data;
-}
-
-/** Online-only: revoke a share token (F-010 T05). */
-export async function revokeShareToken(token: string): Promise<void> {
-  await assertNetworkOnline();
-  await api.delete(`/finance/export/share/${token}/revoke/`);
 }
