@@ -34,7 +34,7 @@ import {
   type TransactionsFilterDraft,
 } from "../../lib/transactionsQueryParams";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
-import { TRANSACTIONS_TOUR_ID, TRANSACTIONS_FORM_TOUR_ID, buildTransactionsSteps, buildTransactionsFormSteps } from "../../components/tours/TransactionsTourSteps";
+import { TRANSACTIONS_TOUR_ID, buildTransactionsSteps } from "../../components/tours/TransactionsTourSteps";
 
 type DeleteState = Record<string, number>;
 type EditorMode = "single" | "transfer";
@@ -169,7 +169,7 @@ export function TransactionsPage(): ReactNode {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { startTour, isTourCompleted } = useTour();
+  const { startTour } = useTour();
   const searchString = searchParams.toString();
   const profileQuery = useQuery({
     queryKey: ["app-profile"] as const,
@@ -505,17 +505,6 @@ export function TransactionsPage(): ReactNode {
     }, 400);
     return () => clearTimeout(timer);
   }, [txQuery.isSuccess, startTour, locale]);
-
-  useEffect(() => {
-    if (!editorOpen || editingTxId || isTourCompleted(TRANSACTIONS_FORM_TOUR_ID)) {
-      return;
-    }
-    const mode = editorMode === "transfer" ? "transfer" : "single";
-    const timer = setTimeout(() => {
-      startTour(TRANSACTIONS_FORM_TOUR_ID, buildTransactionsFormSteps(locale, mode));
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [editorOpen, editingTxId, editorMode, isTourCompleted, startTour, locale]);
 
   return (
     <div className="stack">
