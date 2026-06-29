@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Data Hub + Profile restructure (Theme 3):** Data Hub uses tabbed central-swap layout (Overview, Sources, Categories, Tags) instead of a flat 5-card grid. Overview tab shows snapshot KPIs moved from Profile. Profile gains a **Data** tab with CSV/backup export (offline-gated). Compact `size="compact"` button variant for list row actions. i18n `dataHub.tab.*`, `settings.tab.data`, updated guide keys (en-US + tl-PH).
+
 ### Removed
 - **F-010 share UI (disabled 2026-06-29):** Removed Data Hub Share Data card and share-link client helpers after privacy review. CSV and full JSON backup export unchanged.
 

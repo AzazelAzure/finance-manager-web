@@ -7,18 +7,24 @@ const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
   ghost: "ui-btn ui-btn--ghost",
 };
 
+const sizes: Record<NonNullable<ButtonProps["size"]>, string> = {
+  default: "",
+  compact: "ui-btn--compact",
+};
+
 export type ButtonProps = {
   children: ReactNode;
   className?: string;
   variant?: "primary" | "secondary" | "ghost";
+  size?: "default" | "compact";
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { className, variant = "primary", children, type = "button", ...rest },
+  { className, variant = "primary", size = "default", children, type = "button", ...rest },
   ref,
 ) {
   return (
-    <button ref={ref} type={type} className={clsx(variants[variant], className)} {...rest}>
+    <button ref={ref} type={type} className={clsx(variants[variant], sizes[size], className)} {...rest}>
       {children}
     </button>
   );

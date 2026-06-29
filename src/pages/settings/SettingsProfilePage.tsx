@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -11,21 +11,19 @@ import { TextField } from "../../components/Form/TextField";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { ErrorState } from "../../components/ui/ErrorState";
-import { KPI } from "../../components/ui/KPI";
 import { LoadingState } from "../../components/ui/LoadingState";
 import { Modal } from "../../components/ui/Modal";
 import { SuccessState } from "../../components/ui/SuccessState";
 import { TabPanel, Tabs } from "../../components/ui/Tabs";
-import { listSourceNames } from "../../api/lookups";
+import { listSourceNames, downloadCsvExport, downloadFullBackup, parseBlobApiError } from "../../api/lookups";
 import { getAppProfile, updateAppProfile } from "../../api/profile";
 import { isOfflineQueued } from "../../api/types";
-import { fetchAppSnapshot } from "../../api/snapshot";
 import { deleteCurrentUser, getCurrentUserEmail, patchCurrentUserPassword } from "../../api/user";
-import { formatMoney } from "../../lib/money";
 import { getThemePreference, setThemePreference, type ThemePreference } from "../../lib/theme";
 import { useSession } from "../../state/SessionContext";
-import { clearOutbox } from "../../offline/outbox";
+import { clearOutbox, outboxDepth } from "../../offline/outbox";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
+import { preferOfflineCaches } from "../../offline/connectivity";
 import { tr, useLocale } from "../../lib/i18n";
 import { restartOnboardingWizard } from "../../state/onboarding";
 import { HelpModeWrapper } from "../../components/tours/TourProvider";
@@ -120,6 +118,32 @@ export function SettingsProfilePage(): ReactNode {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [spendAccountsInput, setSpendAccountsInput] = useState("");
+  const [exportDateFrom, setExportDateFrom] = useState("");
+  const [exportDateTo, setExportDateTo] = useState("");
+  const [csvDownloading, setCsvDownloading] = useState(false);
+  const [backupDownloading, setBackupDownloading] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const [exportBlocked, setExportBlocked] = useState(true);
+
+  useEffect(() => {
+    async function refreshExportBlocked() {
+      const depth = await outboxDepth();
+      const offline = preferOfflineCaches();
+      setExportBlocked(offline || depth > 0);
+    }
+    void refreshExportBlocked();
+    const onConnectivityChange = () => void refreshExportBlocked();
+    window.addEventListener("online", onConnectivityChange);
+    window.addEventListener("offline", onConnectivityChange);
+    window.addEventListener("fm-offline-queued", onConnectivityChange);
+    window.addEventListener("fm-api-reachable", onConnectivityChange);
+    return () => {
+      window.removeEventListener("online", onConnectivityChange);
+      window.removeEventListener("offline", onConnectivityChange);
+      window.removeEventListener("fm-offline-queued", onConnectivityChange);
+      window.removeEventListener("fm-api-reachable", onConnectivityChange);
+    };
+  }, []);
 
   const profileQuery = useQuery({
     queryKey: ["profile", "settings"] as const,
@@ -128,11 +152,6 @@ export function SettingsProfilePage(): ReactNode {
   const userEmailQuery = useQuery({
     queryKey: ["profile", "email"] as const,
     queryFn: (ctx) => getCurrentUserEmail(readOptsFromQuery(ctx)),
-  });
-  const snapshotQuery = useQuery({
-    queryKey: ["profile", "snapshot"] as const,
-    queryFn: (ctx) => fetchAppSnapshot({ current_month: "1" }, readOptsFromQuery(ctx)),
-    placeholderData: keepPreviousData,
   });
   const sourcesQuery = useQuery({
     queryKey: ["lookups", "sources"] as const,
@@ -258,28 +277,7 @@ export function SettingsProfilePage(): ReactNode {
     onError: (error) => setDeleteError(parseApiError(error)),
   });
 
-  const overviewKpis = useMemo(() => {
-    const snap = snapshotQuery.data?.snapshot;
-    const currency = profileQuery.data?.base_currency ?? "USD";
-    const val = (field: string): ReactNode => {
-      const raw = snap?.[field];
-      if (raw === null || raw === undefined) return "N/A";
-      return formatMoney(raw, currency);
-    };
-    return [
-      { label: tr("dashboard.kpi.assets", locale), value: val("total_assets") },
-      { label: "Savings", value: val("total_savings") },
-      { label: "Checking", value: val("total_checking") },
-      { label: "Investment", value: val("total_investment") },
-      { label: "Cash", value: val("total_cash") },
-      { label: "E-wallet", value: val("total_ewallet") },
-      { label: "Monthly spending", value: val("total_monthly_spending") },
-      { label: tr("dashboard.kpi.remaining", locale), value: val("total_remaining_expenses") },
-      { label: tr("dashboard.kpi.leaks", locale), value: val("total_leaks") },
-    ];
-  }, [locale, profileQuery.data?.base_currency, snapshotQuery.data?.snapshot]);
-
-  const anyLoading = profileQuery.isLoading || snapshotQuery.isLoading || userEmailQuery.isLoading;
+  const anyLoading = profileQuery.isLoading || userEmailQuery.isLoading;
   const spendAccountsCsv = useWatch({ control: settingsForm.control, name: "spend_accounts_csv" }) ?? "";
   const stsWindowMode = useWatch({ control: settingsForm.control, name: "sts_window_mode" }) ?? "calendar_month";
   const selectedSpendAccounts = parseSpendAccounts(spendAccountsCsv);
@@ -317,26 +315,6 @@ export function SettingsProfilePage(): ReactNode {
 
       <Tabs
         tabs={[
-          {
-            id: "overview",
-            label: tr("settings.tab.overview", locale),
-            content: (
-              <TabPanel className="stack">
-                <div style={{ marginTop: 12 }} />
-                {snapshotQuery.isError ? (
-                  <ErrorState title={tr("settings.snapshotUnavailable", locale)} onRetry={() => void snapshotQuery.refetch()} />
-                ) : (
-                  <HelpModeWrapper id="profile-overview-kpis" title={tr("guide.profile.overview.title", locale)} content={tr("guide.profile.overview.content", locale)}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-                    {overviewKpis.map((kpi) => (
-                      <KPI key={kpi.label} label={kpi.label} value={kpi.value} />
-                    ))}
-                  </div>
-                  </HelpModeWrapper>
-                )}
-              </TabPanel>
-            ),
-          },
           {
             id: "settings",
             label: tr("settings.tab.settings", locale),
@@ -491,6 +469,96 @@ export function SettingsProfilePage(): ReactNode {
                     </Button>
                   </div>
                 </Card>
+              </TabPanel>
+            ),
+          },
+          {
+            id: "data",
+            label: tr("settings.tab.data", locale),
+            content: (
+              <TabPanel className="stack">
+                <div style={{ marginTop: 12 }} />
+                <HelpModeWrapper id="profile-data-export" title={tr("guide.profile.data.title", locale)} content={tr("guide.profile.data.content", locale)}>
+                  <Card>
+                    <div className="stack" style={{ gap: 10 }}>
+                      <h3 style={{ margin: 0 }}>{tr("data.export.heading", locale)}</h3>
+                      {exportBlocked ? (
+                        <p className="muted-text" style={{ margin: 0 }}>
+                          {tr("data.export.offlineDisabled", locale)}
+                        </p>
+                      ) : null}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                        <label className="ui-field" style={{ minWidth: 140 }}>
+                          <span className="ui-label">{tr("data.export.dateFrom", locale)}</span>
+                          <input
+                            className="ui-input"
+                            type="date"
+                            value={exportDateFrom}
+                            onChange={(e) => setExportDateFrom(e.target.value)}
+                            disabled={exportBlocked || csvDownloading || backupDownloading}
+                          />
+                        </label>
+                        <label className="ui-field" style={{ minWidth: 140 }}>
+                          <span className="ui-label">{tr("data.export.dateTo", locale)}</span>
+                          <input
+                            className="ui-input"
+                            type="date"
+                            value={exportDateTo}
+                            onChange={(e) => setExportDateTo(e.target.value)}
+                            disabled={exportBlocked || csvDownloading || backupDownloading}
+                          />
+                        </label>
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        <Button
+                          variant="secondary"
+                          disabled={exportBlocked || csvDownloading || backupDownloading}
+                          onClick={async () => {
+                            setCsvDownloading(true);
+                            setExportError("");
+                            try {
+                              await downloadCsvExport(exportDateFrom || undefined, exportDateTo || undefined);
+                            } catch (error) {
+                              setExportError(
+                                error instanceof Error && !axios.isAxiosError(error)
+                                  ? error.message
+                                  : await parseBlobApiError(error),
+                              );
+                            } finally {
+                              setCsvDownloading(false);
+                            }
+                          }}
+                        >
+                          {csvDownloading ? tr("data.export.csvDownloading", locale) : tr("data.export.downloadCsv", locale)}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          disabled={exportBlocked || csvDownloading || backupDownloading}
+                          onClick={async () => {
+                            setBackupDownloading(true);
+                            setExportError("");
+                            try {
+                              await downloadFullBackup();
+                            } catch (error) {
+                              setExportError(
+                                error instanceof Error && !axios.isAxiosError(error)
+                                  ? error.message
+                                  : await parseBlobApiError(error),
+                              );
+                            } finally {
+                              setBackupDownloading(false);
+                            }
+                          }}
+                        >
+                          {backupDownloading
+                            ? tr("data.export.backupDownloading", locale)
+                            : tr("data.export.downloadBackup", locale)}
+                        </Button>
+                      </div>
+                      {exportError ? <ErrorState title="Export failed" description={exportError} /> : null}
+                    </div>
+                  </Card>
+                </HelpModeWrapper>
               </TabPanel>
             ),
           },

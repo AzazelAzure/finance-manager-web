@@ -82,6 +82,17 @@ html[data-theme="dark"] .ui-btn--secondary {
   box-shadow: none;
 }
 
+.ui-btn--compact {
+  min-height: 1.75rem;
+  padding: 0 var(--space-2);
+  font-size: var(--font-sm);
+  box-shadow: none;
+}
+
+.ui-btn--compact:not(:disabled):hover {
+  box-shadow: var(--shadow-sm);
+}
+
 .ui-icon-btn {
   display: inline-flex;
   align-items: center;
