@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Card } from "../ui/Card";
 import { tr, useLocale } from "../../lib/i18n";
 import { Modal } from "../ui/Modal";
@@ -11,8 +11,7 @@ import { ErrorState } from "../ui/ErrorState";
 import { createCategory, listCategories, listTags } from "../../api/lookups";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 import { isOfflineQueued, type SourceRow } from "../../api/types";
-import { HelpModeWrapper, useTour } from "../tours/TourProvider";
-import { QUICK_ADD_TOUR_ID, buildQuickAddSteps } from "../tours/QuickAddTourSteps";
+import { HelpModeWrapper } from "../tours/TourProvider";
 import { SourceSelect } from "../transactions/SourceSelect";
 
 type QuickActionType = "INCOME" | "EXPENSE" | "XFER" | "BILL";
@@ -33,7 +32,6 @@ type Props = {
 
 export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
   const locale = useLocale();
-  const { startTour, isTourCompleted } = useTour();
   const queryClient = useQueryClient();
   const [activeType, setActiveType] = useState<QuickActionType | null>(null);
   const [error, setError] = useState("");
@@ -196,16 +194,6 @@ export function QuickActions({ baseCurrency, sources }: Props): ReactNode {
     },
     onError: (err) => setError(err instanceof Error ? err.message : "Failed to save."),
   });
-
-  useEffect(() => {
-    if (!activeType || isTourCompleted(QUICK_ADD_TOUR_ID)) {
-      return;
-    }
-    const timer = setTimeout(() => {
-      startTour(QUICK_ADD_TOUR_ID, buildQuickAddSteps(locale, activeType));
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [activeType, isTourCompleted, startTour, locale]);
 
   return (
     <Card>

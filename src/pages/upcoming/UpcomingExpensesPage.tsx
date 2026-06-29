@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
 import {
   UPCOMING_TOUR_ID,
-  UPCOMING_FORM_TOUR_ID,
   buildUpcomingPageSteps,
-  buildUpcomingBillFormSteps,
 } from "../../components/tours/UpcomingTourSteps";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
@@ -522,16 +520,6 @@ export function UpcomingExpensesPage(): ReactNode {
     }, 500);
     return () => clearTimeout(timer);
   }, [upcomingQuery.isSuccess, isTourCompleted, startTour, locale]);
-
-  useEffect(() => {
-    if (!editorOpen || isTourCompleted(UPCOMING_FORM_TOUR_ID)) {
-      return;
-    }
-    const timer = setTimeout(() => {
-      startTour(UPCOMING_FORM_TOUR_ID, buildUpcomingBillFormSteps(locale));
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [editorOpen, isTourCompleted, startTour, locale]);
 
   return (
     <div className="stack">
