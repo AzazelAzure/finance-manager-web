@@ -255,7 +255,7 @@
   box-shadow: var(--shadow-sm);
 }
 
-.dashboard-root > .ui-card:last-child {
+.dashboard-root > #tour-recent-tx {
   margin-top: var(--space-5);
 }
 

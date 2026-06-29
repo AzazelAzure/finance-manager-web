@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **Dashboard polish:** Savings Goals nav entry (desktop sidebar + mobile More drawer); mobile link back to marketing home; spacing between spending-by-tag and recent-transactions widgets; balance trends chart hides internal `unknown` source failsafe from legend and series.
+
 ### Added
 - **Bill recurrence engine (T04):** Cadence selector on upcoming bill create/edit (`weekly` through `custom` + every-N-days input). Upcoming list and new dashboard `UpcomingBillsWidget` show human-readable cadence labels. Shared `billCadence` vocab mirrors API choices; i18n `bills.cadence.*` (en-US + tl-PH).
 - **F-011 landing reflect-shipped + forward roadmap (T03+T04):**** Public landing page updated to reflect June production batch. VersionHistory adds "Money, with Realism" entry (pay cycles, balance history, savings goals, export/sharing). FeatureShowcase adds Goals tab and sharpens dashboard/bills/data-hub blurbs. Hero and value props lead with pay-cycle-aware safe-to-spend (the wedge). Roadmap reworked to honest forward pipeline: pay cycles marked done, recurring automation (now), dashboard widgets (next), predictive budgeting + family ledger (later). i18n en-US + tl-PH for all new/changed keys.
