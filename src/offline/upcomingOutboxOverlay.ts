@@ -5,6 +5,7 @@
 import type { OutboxRow } from "./db";
 import { listOutboxOrdered } from "./outbox";
 import type { UpcomingExpenseRecord, UpcomingExpenseMutationPayload } from "../api/types";
+import { normalizeBillCadence } from "../lib/billCadence";
 
 const UE_LIST = /^\/finance\/upcoming_expenses\/?$/;
 
@@ -33,6 +34,9 @@ function normalizeRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpenseRecor
     planned_partial_amount: row.planned_partial_amount == null ? null : String(row.planned_partial_amount),
     cycle_residual_amount: row.cycle_residual_amount == null ? null : String(row.cycle_residual_amount),
     remainder_due_date: row.remainder_due_date ? String(row.remainder_due_date) : null,
+    cadence: normalizeBillCadence(row.cadence as string | undefined),
+    custom_interval_days:
+      row.custom_interval_days == null ? null : Number(row.custom_interval_days),
     source: row.source ? String(row.source) : "",
     start_date: row.start_date ? String(row.start_date) : "",
     end_date: row.end_date ? String(row.end_date) : "",
@@ -73,6 +77,9 @@ function mergeUeRow(base: UpcomingExpenseRecord, patch: Partial<UpcomingExpenseM
     cycle_residual_amount:
       patch.cycle_residual_amount !== undefined ? nullableString(patch.cycle_residual_amount) : base.cycle_residual_amount,
     remainder_due_date: patch.remainder_due_date !== undefined ? patch.remainder_due_date : base.remainder_due_date,
+    cadence: patch.cadence != null ? normalizeBillCadence(patch.cadence) : base.cadence,
+    custom_interval_days:
+      patch.custom_interval_days !== undefined ? patch.custom_interval_days ?? null : base.custom_interval_days,
     source: patch.source != null ? String(patch.source) : base.source,
     start_date: patch.start_date != null ? String(patch.start_date) : base.start_date,
     end_date: patch.end_date != null ? String(patch.end_date) : base.end_date,
@@ -113,6 +120,8 @@ export function mergeUpcomingOutboxFifo(list: UpcomingExpenseRecord[], rows: Out
         planned_partial_amount: payload.planned_partial_amount == null ? null : String(payload.planned_partial_amount),
         cycle_residual_amount: payload.cycle_residual_amount == null ? null : String(payload.cycle_residual_amount),
         remainder_due_date: payload.remainder_due_date || null,
+        cadence: normalizeBillCadence(payload.cadence),
+        custom_interval_days: payload.custom_interval_days ?? null,
         source: payload.source ? String(payload.source) : "",
         start_date: payload.start_date ? String(payload.start_date) : "",
         end_date: payload.end_date ? String(payload.end_date) : "",

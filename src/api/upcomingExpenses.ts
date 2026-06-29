@@ -4,6 +4,7 @@ import { offlineDb } from "../offline/db";
 import { isPwaBackgroundStale, schedulePwaBackgroundWork } from "../offline/pwaLocalFirstBg";
 import { shouldBypassPwaDataCache, type PwaReadBypassOpts } from "../offline/pwaReadBypass";
 import { applyUpcomingOutboxToList } from "../offline/upcomingOutboxOverlay";
+import { normalizeBillCadence } from "../lib/billCadence";
 import { api } from "./client";
 import {
   isOfflineQueued,
@@ -36,6 +37,9 @@ export function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): Upcom
     planned_partial_amount: row.planned_partial_amount == null ? null : String(row.planned_partial_amount),
     cycle_residual_amount: row.cycle_residual_amount == null ? null : String(row.cycle_residual_amount),
     remainder_due_date: row.remainder_due_date ? String(row.remainder_due_date) : null,
+    cadence: normalizeBillCadence(row.cadence as string | undefined),
+    custom_interval_days:
+      row.custom_interval_days == null ? null : Number(row.custom_interval_days),
     source: row.source ? String(row.source) : "",
     start_date: row.start_date ? String(row.start_date) : "",
     end_date: row.end_date ? String(row.end_date) : "",
