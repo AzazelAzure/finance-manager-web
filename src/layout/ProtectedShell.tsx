@@ -2,11 +2,13 @@ import {
   BookOpen,
   Calendar,
   Database,
+  Home,
   LayoutDashboard,
   LifeBuoy,
   List,
   LogOut,
   MoreHorizontal,
+  Target,
   User,
   Wallet,
   X,
@@ -33,6 +35,7 @@ const PRIMARY_NAV: Array<{
   { to: "/app/transactions", label: "Transactions", icon: List, end: true },
   { to: "/app/transactions/calendar", label: "Calendar", icon: Calendar, end: true },
   { to: "/app/upcoming-expenses", label: "Upcoming", icon: Wallet },
+  { to: "/app/goals", label: "Goals", icon: Target },
   { to: "/app/data", label: "Data", icon: Database },
   { to: "/app/settings/profile", label: "Profile", icon: User },
   { to: "/app/support", label: "Support", icon: LifeBuoy },
@@ -48,6 +51,8 @@ const MOBILE_PRIMARY_NAV: typeof PRIMARY_NAV = [
 
 // Secondary routes that live in the mobile "More" drawer.
 const DRAWER_NAV: typeof PRIMARY_NAV = [
+  { to: "/", label: "Home", icon: Home },
+  { to: "/app/goals", label: "Goals", icon: Target },
   { to: "/app/data", label: "Data", icon: Database },
   { to: "/app/settings/profile", label: "Profile", icon: User },
   { to: "/app/support", label: "Support", icon: LifeBuoy },

@@ -30,10 +30,20 @@ type Props = {
 
 type ChartRow = Record<string, string | number>;
 
+const INTERNAL_BALANCE_SOURCES = new Set(["unknown", "unknown source", "unknown-source"]);
+
+function isUserVisibleBalanceSource(source: string): boolean {
+  const normalized = source.trim().toLowerCase();
+  return normalized.length > 0 && !INTERNAL_BALANCE_SOURCES.has(normalized);
+}
+
 function pivotSeries(series: BalanceHistoryPoint[]): { rows: ChartRow[]; sources: string[] } {
   const byDate = new Map<string, ChartRow>();
   const sources = new Set<string>();
   for (const point of series) {
+    if (!isUserVisibleBalanceSource(point.source)) {
+      continue;
+    }
     sources.add(point.source);
     const row = byDate.get(point.date) ?? { date: point.date };
     const amount = toNumber(point.amount);
