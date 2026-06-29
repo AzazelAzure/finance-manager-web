@@ -6,6 +6,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { LazyMotion, domAnimation } from "motion/react";
 import "./index.css";
 import App from "./App";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { queryClient } from "./lib/queryClient";
 import { initDataThemeFromStorage } from "./lib/theme";
 import { OfflineRoot } from "./offline/OfflineRoot";
@@ -25,7 +26,9 @@ createRoot(document.getElementById("root")!).render(
             <LazyMotion features={domAnimation} strict>
               <SwUpdateBanner />
               <OfflineRoot />
-              <App />
+              <ErrorBoundary>
+                <App />
+              </ErrorBoundary>
             </LazyMotion>
           </BrowserRouter>
         </HelmetProvider>

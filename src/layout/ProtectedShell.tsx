@@ -24,6 +24,7 @@ import { Button } from "../components/ui/Button";
 import { discardOutboxAndClear, drainOutbox } from "../offline/drain";
 import { outboxDepth } from "../offline/outbox";
 import { SyncIndicator } from "../components/SyncIndicator";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 
 const PRIMARY_NAV: Array<{
   to: string;
@@ -243,7 +244,9 @@ export function ProtectedShell(): ReactNode {
         <OfflineHistoryBanner />
         <main className="protected-main-inner" aria-labelledby="app-page-title">
           <HelpModeBanner />
-          <Outlet />
+          <ErrorBoundary resetKeys={[loc.pathname]}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
         <nav className="protected-top-strip" aria-label="Main navigation (mobile)">
           {MOBILE_PRIMARY_NAV.map((n) => (

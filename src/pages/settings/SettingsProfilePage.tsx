@@ -300,15 +300,6 @@ export function SettingsProfilePage(): ReactNode {
     setSpendAccountsInput("");
   }
 
-  if (anyLoading && !profileQuery.data) {
-    return <LoadingState label={tr("settings.loading", locale)} />;
-  }
-  if (profileQuery.isError) {
-    return <ErrorState title={tr("settings.failed", locale)} onRetry={() => void profileQuery.refetch()} />;
-  }
-
-  const timezoneSelect = buildTimezoneOptions({ current: profileQuery.data?.timezone ?? "UTC" });
-
   useEffect(() => {
     if (!profileQuery.isSuccess || isTourCompleted(PROFILE_TOUR_ID)) {
       return;
@@ -318,6 +309,15 @@ export function SettingsProfilePage(): ReactNode {
     }, 400);
     return () => clearTimeout(timer);
   }, [profileQuery.isSuccess, isTourCompleted, startTour, locale]);
+
+  if (anyLoading && !profileQuery.data) {
+    return <LoadingState label={tr("settings.loading", locale)} />;
+  }
+  if (profileQuery.isError) {
+    return <ErrorState title={tr("settings.failed", locale)} onRetry={() => void profileQuery.refetch()} />;
+  }
+
+  const timezoneSelect = buildTimezoneOptions({ current: profileQuery.data?.timezone ?? "UTC" });
 
   return (
     <div className="stack">

@@ -8,6 +8,8 @@ All notable changes to this project are documented in this file.
 - **F-010 share UI (disabled 2026-06-29):** Removed Data Hub Share Data card and share-link client helpers after privacy review. CSV and full JSON backup export unchanged.
 
 ### Fixed
+- **Profile tab black screen:** `SettingsProfilePage` called `useEffect` after loading/error early returns, violating Rules of Hooks and crashing the whole app (blank/black screen in dark mode). Tour auto-start effect moved above conditional returns.
+- **Render error recovery:** `ErrorBoundary` at app root and around authenticated route content shows a recoverable error state (retry, reload, dashboard link) instead of unmounting to a blank screen. Route-level boundary resets when navigation changes.
 - **Modal form Joyride tours disabled (jsdevtesting):** Auto-start walkthroughs on Quick Add, Transactions editor, and Upcoming bill editor removed — Joyride spotlight rendered behind modal foreground. Per-field guide mode (`HelpModeWrapper`) on those forms unchanged. Page-level tours (Transactions, Upcoming, Data Hub, Profile, Goals) still work. Follow-up tracked in parent anomaly `2026-06-29_INACTIVE-POLISH_modal-form-joyride-broken.md`.
 - **Dashboard polish:** Savings Goals nav entry (desktop sidebar + mobile More drawer); mobile link back to marketing home; spacing between spending-by-tag and recent-transactions widgets; balance trends chart hides internal `unknown` source failsafe from legend and series.
 
