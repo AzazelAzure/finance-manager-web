@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **README:** Repointed runtime coordination to parent `governance/Runtime_Signup_Sheet.md` (moved out of public `design_docs` during 2026-06-30 scope cleanup).
+
 ### Removed
 - **F-010 share UI (disabled 2026-06-29):** Removed Data Hub Share Data card and share-link client helpers after privacy review. CSV and full JSON backup export unchanged.
 
