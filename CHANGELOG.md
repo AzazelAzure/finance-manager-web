@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Changed
+- **Dependencies (2026-07 batch):** Bumped `@tanstack/react-query` 5.101.2, `react-dom`/`react-is` 19.2.7, `@vitejs/plugin-react` 6.0.3 (supersedes dependabot PRs #98, #100–#102). **Held:** eslint 10.6.0 (#99) — lint already has 13 pre-existing errors on `main`; eslint bump needs a separate cleanup pass.
 - **README:** Repointed runtime coordination to parent `governance/Runtime_Signup_Sheet.md` (moved out of public `design_docs` during 2026-06-30 scope cleanup).
 
 ### Removed
