@@ -188,3 +188,9 @@ export default defineConfig([
   },
 ])
 ```
+
+## License
+
+This project is licensed under **GNU Affero General Public License v3.0 or later** (`AGPL-3.0-or-later`).
+
+See `LICENSE` for the full legal text. SPDX policy: `../docs/SPDX_COMPLIANCE.md` when checked out in the ecosystem workspace.
