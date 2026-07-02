@@ -11,6 +11,7 @@ import {
 } from "./connectivity";
 import { drainOutbox } from "./drain";
 import { outboxDepth } from "./outbox";
+import { runAutoDeductDueTodayCheck } from "./autoDeduct";
 import { seedOfflineWindow } from "./seed";
 import { syncMinimalExchangeRates } from "./exchangeRates";
 
@@ -44,7 +45,7 @@ export function OfflineRoot(): ReactNode {
         return;
       }
       void syncMinimalExchangeRates();
-      void drainOutbox();
+      void drainOutbox().then(() => runAutoDeductDueTodayCheck());
     };
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
@@ -55,6 +56,7 @@ export function OfflineRoot(): ReactNode {
       if ((await outboxDepth()) > 0) {
         await drainOutbox();
       }
+      await runAutoDeductDueTodayCheck();
     })();
     return () => {
       window.removeEventListener("online", onOnline);
@@ -70,6 +72,13 @@ export function OfflineRoot(): ReactNode {
     if (isPwaStandaloneDisplay()) {
       void seedOfflineWindow();
     }
+  }, [session?.isAuthenticated, allow]);
+
+  useEffect(() => {
+    if (!session?.isAuthenticated || !allow) {
+      return;
+    }
+    void runAutoDeductDueTodayCheck();
   }, [session?.isAuthenticated, allow]);
 
   useEffect(() => {

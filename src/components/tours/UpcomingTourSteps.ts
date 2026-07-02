@@ -60,6 +60,12 @@ export function buildUpcomingBillFormSteps(locale: AppLocale): Step[] {
       skipBeacon: true,
     },
     {
+      target: '#bill-form-auto-deduct',
+      title: tr('tour.upcoming.form.autoDeduct.title', locale),
+      content: tr('tour.upcoming.form.autoDeduct.content', locale),
+      skipBeacon: true,
+    },
+    {
       target: '#bill-form-recurring',
       title: tr('tour.upcoming.form.recurring.title', locale),
       content: tr('tour.upcoming.form.recurring.content', locale),

@@ -281,6 +281,7 @@ function createRequestToRecord(req: TransactionCreateRequest, txId: string): Tra
     tx_type: String(req.tx_type ?? "EXPENSE"),
     category: String(req.category ?? ""),
     bill: req.bill,
+    auto_deducted: Boolean(req.auto_deducted),
   };
 }
 

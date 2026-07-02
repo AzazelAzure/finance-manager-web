@@ -90,6 +90,7 @@ function mergeCreateBodyWithPatch(
     description: patch.description ?? body.description,
     bill: patch.bill ?? body.bill,
     tags: patch.tags ?? body.tags,
+    auto_deducted: patch.auto_deducted ?? body.auto_deducted,
   };
 }
 

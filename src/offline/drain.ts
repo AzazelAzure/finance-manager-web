@@ -15,6 +15,7 @@ import { clearOutbox, listOutboxOrdered, removeOutboxEntry } from "./outbox";
 import { emitSyncState } from "./syncEvents";
 import { syncMinimalExchangeRates } from "./exchangeRates";
 import { requestPwaReadBypassAfterMutation } from "./pwaReadBypass";
+import { runAutoDeductDueTodayCheck } from "./autoDeduct";
 
 let drainInFlight: Promise<void> | null = null;
 
@@ -151,6 +152,7 @@ export async function drainOutbox(): Promise<void> {
     }
     wantsRetryAfterReachableError = false;
     emitSyncState({ phase: "idle" });
+    void runAutoDeductDueTodayCheck();
   })()
     .finally(() => {
       if (authListenerAttached) {
