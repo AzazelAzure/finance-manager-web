@@ -39,6 +39,12 @@ export function buildWelcomeSteps(locale: AppLocale): Step[] {
       skipBeacon: true,
     },
     {
+      target: '#tour-manage-widgets-btn',
+      title: tr('tour.dashboard.manageWidgets.title', locale),
+      content: tr('tour.dashboard.manageWidgets.content', locale),
+      skipBeacon: true,
+    },
+    {
       target: '#tour-filters',
       title: tr('tour.dashboard.filters.title', locale),
       content: tr('tour.dashboard.filters.content', locale),

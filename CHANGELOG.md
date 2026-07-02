@@ -5,6 +5,9 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- **F-006 dashboard widgets custom (T02):** Static widget catalog registry (`widgetCatalog.ts`) with API-aligned widget IDs. `DashboardPage` renders from persisted layout per device class (mobile/desktop breakpoint). Manage-widgets panel for show/hide and add-from-catalog with per-variant persistence via `GET/PATCH /finance/dashboard-layout/`. Balance history fetch gated on widget visibility; goals/upcoming widgets unmount when hidden. PWA Dexie cache for layout reads. i18n + guide/tour coverage for manage-widgets UI (en-US + tl-PH).
+
+### Added
 - **F-009 recurring auto-deduct web (T04):** Edge-case coverage — profile-timezone boundary tests (ahead/behind browser), toggle-off preserves `auto_deducted` history, re-trigger dedup for concurrent due-today checks, partial-pay amount parity via `autoDeductAmountForBill` (mirrors API `_effective_bill_amount`). Plan `runtime_handoff.md` documents failure/reconcile playbook.
 
 ### Changed

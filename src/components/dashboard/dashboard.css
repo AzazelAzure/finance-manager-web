@@ -7,6 +7,31 @@
 }
 
 /* KNOWN_ISSUES #6: quick-add above KPIs/charts on all breakpoints (PH mobile-first wedge) */
+.dashboard-widget-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.dashboard-widget-slot {
+  min-width: 0;
+}
+
+.dashboard-widget-slot--full {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 900px) {
+  .dashboard-widget-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-widget-slot--half {
+    grid-column: span 1;
+  }
+}
+
 .dashboard-root__quick {
   min-width: 0;
 }
