@@ -85,10 +85,23 @@ export function shouldEnqueueAutoDeduct(
   return true;
 }
 
-function buildAutoDeductPayload(bill: UpcomingExpenseRecord, profileToday: string): TransactionCreateRequest {
+/** Mirrors API `Calculator._effective_bill_amount` for the auto-deduct POST payload. */
+export function autoDeductAmountForBill(bill: UpcomingExpenseRecord): string {
+  const partial = bill.planned_partial_amount;
+  if (partial != null && String(partial).trim() !== "") {
+    return String(partial).trim();
+  }
+  const residual = bill.cycle_residual_amount;
+  if (residual != null && String(residual).trim() !== "") {
+    return String(residual).trim();
+  }
+  return bill.amount;
+}
+
+export function buildAutoDeductPayload(bill: UpcomingExpenseRecord, profileToday: string): TransactionCreateRequest {
   return {
     date: profileToday,
-    amount: bill.amount,
+    amount: autoDeductAmountForBill(bill),
     source: String(bill.source ?? "").trim(),
     currency: bill.currency,
     tx_type: "EXPENSE",

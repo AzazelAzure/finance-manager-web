@@ -23,4 +23,15 @@ describe("isDueOnProfileToday", () => {
     expect(isDueOnProfileToday("2026-07-02", "Asia/Manila", instant)).toBe(true);
     expect(isDueOnProfileToday("2026-07-01", "Asia/Manila", instant)).toBe(false);
   });
+
+  it("does not treat due-tomorrow as due-today when profile TZ is ahead of UTC", () => {
+    const instant = new Date("2026-07-01T22:00:00.000Z");
+    expect(isDueOnProfileToday("2026-07-03", "Asia/Manila", instant)).toBe(false);
+  });
+
+  it("does not treat due-tomorrow as due-today when profile TZ is behind UTC", () => {
+    const instant = new Date("2026-07-02T02:00:00.000Z");
+    expect(isDueOnProfileToday("2026-07-02", "America/Los_Angeles", instant)).toBe(false);
+    expect(isDueOnProfileToday("2026-07-01", "America/Los_Angeles", instant)).toBe(true);
+  });
 });
