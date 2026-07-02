@@ -62,6 +62,28 @@ export const DESKTOP_DEFAULT_LAYOUT: LayoutItem[] = [
   layoutItem("RecentTransactions", "full"),
 ];
 
+/**
+ * Survival/upcoming widgets that lead the STS-first mobile default (plan §0).
+ * Canonical order — keep in sync with API `MOBILE_DEFAULT_LAYOUT` in
+ * `finance/logic/dashboard_layout.py`.
+ */
+export const MOBILE_STS_LEADING_WIDGET_IDS: readonly WidgetId[] = [
+  "KPIRow",
+  "UpcomingBillsWidget",
+  "QuickActions",
+  "SourceBalances",
+  "RecentTransactions",
+  "GoalsWidget",
+] as const;
+
+/** Analytics widgets intentionally deprioritized on mobile (half-width at bottom). */
+export const MOBILE_STS_TRAILING_ANALYTICS_IDS: readonly WidgetId[] = [
+  "SpendChart",
+  "FlowChart",
+  "CategoryPie",
+  "TagPie",
+] as const;
+
 /** Mobile default mirrors API `MOBILE_DEFAULT_LAYOUT` (STS-first). */
 export const MOBILE_DEFAULT_LAYOUT: LayoutItem[] = [
   layoutItem("KPIRow", "full"),
@@ -217,4 +239,18 @@ export function visibleWidgetIds(layout: LayoutItem[]): Set<WidgetId> {
 
 export function layoutWidgetIds(layout: LayoutItem[]): Set<WidgetId> {
   return new Set(layout.map((item) => item.widget_id));
+}
+
+/** True when every STS-leading widget appears before every trailing analytics widget. */
+export function isStsFirstMobileLayout(layout: LayoutItem[]): boolean {
+  const positions = new Map(layout.map((item, index) => [item.widget_id, index]));
+  const leadingMax = Math.max(
+    ...MOBILE_STS_LEADING_WIDGET_IDS.map((id) => positions.get(id) ?? -1),
+  );
+  const trailingMin = Math.min(
+    ...MOBILE_STS_TRAILING_ANALYTICS_IDS.map(
+      (id) => positions.get(id) ?? Number.MAX_SAFE_INTEGER,
+    ),
+  );
+  return leadingMax >= 0 && trailingMin < Number.MAX_SAFE_INTEGER && leadingMax < trailingMin;
 }

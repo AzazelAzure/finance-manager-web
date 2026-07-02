@@ -109,16 +109,24 @@ export function useDebouncedDashboardLayoutSave(deviceClass: DashboardDeviceClas
     [flushSave, patchCache],
   );
 
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-      if (retryTimerRef.current) {
-        clearTimeout(retryTimerRef.current);
-      }
-    };
+  const cancelPendingSaves = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    pendingLayoutRef.current = null;
+    setStatus("idle");
   }, []);
 
-  return { scheduleSave, syncCommitted, status };
+  useEffect(() => {
+    return () => {
+      cancelPendingSaves();
+    };
+  }, [cancelPendingSaves]);
+
+  return { scheduleSave, syncCommitted, cancelPendingSaves, status };
 }

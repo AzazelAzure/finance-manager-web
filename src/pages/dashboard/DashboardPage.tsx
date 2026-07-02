@@ -3,7 +3,6 @@ import { m, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { fetchBalanceHistory } from "../../api/balanceHistory";
-import { getDashboardLayout } from "../../api/dashboardLayout";
 import { getAppProfile } from "../../api/profile";
 import { fetchAppSnapshot } from "../../api/snapshot";
 import { listCategories, listSourceNames, listTags } from "../../api/lookups";
@@ -12,8 +11,7 @@ import { DashboardWidgetGrid } from "../../components/dashboard/DashboardWidgetG
 import { FilterRow } from "../../components/dashboard/FilterRow";
 import { ManageWidgetsPanel } from "../../components/dashboard/ManageWidgetsPanel";
 import { topTagNamesFromTransactions } from "../../components/dashboard/tagAggregates";
-import { defaultLayoutFor, visibleWidgetIds } from "../../components/dashboard/widgetCatalog";
-import "../../components/dashboard/dashboard.css";
+import { visibleWidgetIds } from "../../components/dashboard/widgetCatalog";
 import { Button } from "../../components/ui/Button";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { LoadingState } from "../../components/ui/LoadingState";
@@ -26,16 +24,17 @@ import {
   searchParamsToApiParams,
   urlSearchParamsToFilterDraft,
 } from "../../lib/dashboardQueryParams";
-import { getDashboardDeviceClass } from "../../lib/deviceClass";
-import { useBreakpoint } from "../../lib/breakpoints";
 import { firstCurrency } from "./dashboardUtil";
 import { tr, useLocale } from "../../lib/i18n";
 import { preferOfflineCaches } from "../../offline/connectivity";
 import { readOptsFromQuery } from "../../offline/pwaReadBypass";
 import { HelpModeWrapper, useTour } from "../../components/tours/TourProvider";
 import { WelcomeTourModal, buildWelcomeSteps } from "../../components/tours/WelcomeTourModal";
+import { useDashboardDeviceClass } from "../../hooks/useDashboardDeviceClass";
+import { useDashboardLayoutQuery } from "../../hooks/useDashboardLayoutQuery";
 import { useDebouncedDashboardLayoutSave } from "../../hooks/useDebouncedDashboardLayoutSave";
 import type { LayoutItem } from "../../components/dashboard/widgetCatalog";
+import "../../components/dashboard/dashboard.css";
 
 function balanceCurrency(data: SnapshotResponse | undefined, profile: { base_currency: string } | undefined): string {
   if (profile?.base_currency) {
@@ -70,9 +69,17 @@ export function DashboardPage(): ReactNode {
   const [searchParams, setSearchParams] = useSearchParams();
   const nav = useNavigate();
   const { startTour } = useTour();
-  const { atOrAboveMd } = useBreakpoint();
-  const deviceClass = getDashboardDeviceClass(atOrAboveMd);
   const [manageOpen, setManageOpen] = useState(false);
+  const cancelLayoutSaveRef = useRef<(() => void) | null>(null);
+  const layoutServerKeyRef = useRef<string | null>(null);
+
+  const handleDeviceClassTransition = useCallback(() => {
+    setManageOpen(false);
+    cancelLayoutSaveRef.current?.();
+    layoutServerKeyRef.current = null;
+  }, []);
+
+  const deviceClass = useDashboardDeviceClass(handleDeviceClassTransition);
 
   const searchString = searchParams.toString();
   const appliedKey = useMemo(
@@ -89,26 +96,19 @@ export function DashboardPage(): ReactNode {
     [searchString],
   );
 
-  const layoutQuery = useQuery({
-    queryKey: ["dashboard-layout", deviceClass] as const,
-    queryFn: (ctx) => getDashboardLayout(deviceClass, readOptsFromQuery(ctx)),
-    placeholderData: (prev) => prev ?? {
-      device_class: deviceClass,
-      layout: defaultLayoutFor(deviceClass),
-      is_default: true,
-      updated_at: null,
-    },
-  });
+  const { activeLayout, data: layoutData } = useDashboardLayoutQuery(deviceClass);
 
-  const activeLayout = layoutQuery.data?.layout ?? defaultLayoutFor(deviceClass);
   const visibleWidgets = useMemo(() => visibleWidgetIds(activeLayout), [activeLayout]);
-  const { scheduleSave, syncCommitted, status: layoutSaveStatus } =
+  const { scheduleSave, syncCommitted, cancelPendingSaves, status: layoutSaveStatus } =
     useDebouncedDashboardLayoutSave(deviceClass);
-  const layoutServerKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const data = layoutQuery.data;
-    if (!data?.layout) {
+    cancelLayoutSaveRef.current = cancelPendingSaves;
+  }, [cancelPendingSaves]);
+
+  useEffect(() => {
+    const data = layoutData;
+    if (!data?.layout || data.device_class !== deviceClass) {
       return;
     }
     const serverKey = `${data.device_class}:${data.updated_at ?? "default"}:${data.is_default}`;
@@ -117,7 +117,7 @@ export function DashboardPage(): ReactNode {
     }
     layoutServerKeyRef.current = serverKey;
     syncCommitted(data.layout);
-  }, [layoutQuery.data, syncCommitted]);
+  }, [layoutData, deviceClass, syncCommitted]);
 
   const handleLayoutChange = useCallback(
     (nextLayout: LayoutItem[]) => {
@@ -416,6 +416,7 @@ export function DashboardPage(): ReactNode {
       </section>
 
       <DashboardWidgetGrid
+        key={deviceClass}
         layout={activeLayout}
         ctx={widgetCtx}
         onLayoutChange={handleLayoutChange}
