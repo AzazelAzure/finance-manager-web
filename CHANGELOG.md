@@ -5,6 +5,9 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- **F-006 dashboard widgets custom (T04):** Breakpoint-aware layout loading without cross-variant flicker (`useDashboardLayoutQuery` + device-class-scoped placeholders). Mid-session resize across the 900px threshold swaps mobile/desktop variants without full page reload; opposite variant prefetched for smooth transition. STS-first mobile default content defined canonically in `widgetCatalog.ts` (`MOBILE_STS_LEADING_WIDGET_IDS` / trailing analytics) aligned with API defaults. Manage-widgets panel closes and pending layout saves cancel on device-class transition; grid remounts per variant to prevent DnD state bleed. Vitest coverage for variant isolation, placeholder safety, and STS-first mobile ordering.
+
+### Added
 - **F-006 dashboard widgets custom (T03):** Drag-to-reorder and full/half-width resize on the dashboard grid via `@dnd-kit` (pointer + keyboard sensors, labeled drag handles). Layout edits persist per device class with debounced `PATCH` (500ms), one automatic retry, and revert to last server snapshot on failure. Reorder/resize blocked offline; cached layout still renders. Guide-mode coverage for drag handle and resize control (en-US + tl-PH). Drag overlay z-index verified below Joyride/help-mode (10050).
 
 ### Added
