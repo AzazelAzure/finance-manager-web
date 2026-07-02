@@ -38,6 +38,7 @@ function normalizeRow(row: Partial<UpcomingExpenseRecord>): UpcomingExpenseRecor
     custom_interval_days:
       row.custom_interval_days == null ? null : Number(row.custom_interval_days),
     source: row.source ? String(row.source) : "",
+    auto_deduct: Boolean(row.auto_deduct),
     start_date: row.start_date ? String(row.start_date) : "",
     end_date: row.end_date ? String(row.end_date) : "",
   };
@@ -81,6 +82,7 @@ function mergeUeRow(base: UpcomingExpenseRecord, patch: Partial<UpcomingExpenseM
     custom_interval_days:
       patch.custom_interval_days !== undefined ? patch.custom_interval_days ?? null : base.custom_interval_days,
     source: patch.source != null ? String(patch.source) : base.source,
+    auto_deduct: patch.auto_deduct != null ? Boolean(patch.auto_deduct) : base.auto_deduct,
     start_date: patch.start_date != null ? String(patch.start_date) : base.start_date,
     end_date: patch.end_date != null ? String(patch.end_date) : base.end_date,
   });
@@ -123,6 +125,7 @@ export function mergeUpcomingOutboxFifo(list: UpcomingExpenseRecord[], rows: Out
         cadence: normalizeBillCadence(payload.cadence),
         custom_interval_days: payload.custom_interval_days ?? null,
         source: payload.source ? String(payload.source) : "",
+        auto_deduct: Boolean(payload.auto_deduct),
         start_date: payload.start_date ? String(payload.start_date) : "",
         end_date: payload.end_date ? String(payload.end_date) : "",
       });

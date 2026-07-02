@@ -25,10 +25,17 @@ import { getAppProfile } from "../../api/profile";
 import { isOfflineQueued, type AppProfileResponse, type UpcomingExpenseMutationPayload, type UpcomingExpenseRecord } from "../../api/types";
 import { formatMoney } from "../../lib/money";
 import { BILL_CADENCES, formatBillCadenceLabel, type BillCadence } from "../../lib/billCadence";
+import {
+  billCadenceFromDraft,
+  estimateMissedPeriods,
+  isOverdueUnpaidInTimezone,
+  nextBillDueDateAfterCurrent,
+  profileTodayIso,
+} from "../../lib/billRecurrence";
 import { useBreakpoint } from "../../lib/breakpoints";
 import { tr, trFmt, useLocale } from "../../lib/i18n";
-import { estimateMissedPeriods, isOverdueUnpaid } from "../../lib/billRecurrence";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
+import { SourceSelect } from "../../components/transactions/SourceSelect";
 
 type RecurringFilter = "both" | "yes" | "no";
 type PaidFilter = "both" | "yes" | "no";
@@ -52,6 +59,7 @@ type UpcomingDraft = {
   use_start_end: boolean;
   start_date: string;
   end_date: string;
+  auto_deduct: boolean;
 };
 
 /** New bills default to profile base currency; options match transaction editor (source currencies + base). */
@@ -75,6 +83,7 @@ function emptyUpcomingDraft(baseCurrency: string): UpcomingDraft {
     use_start_end: false,
     start_date: "",
     end_date: "",
+    auto_deduct: false,
   };
 }
 
@@ -122,6 +131,7 @@ function toPayload(draft: UpcomingDraft): UpcomingExpenseMutationPayload {
   if (draft.source.trim()) {
     payload.source = draft.source.trim();
   }
+  payload.auto_deduct = draft.auto_deduct;
   if (draft.use_start_end) {
     if (draft.start_date) payload.start_date = draft.start_date;
     if (draft.end_date) payload.end_date = draft.end_date;
@@ -152,6 +162,7 @@ function draftFromRow(row: UpcomingExpenseRecord, baseCurrency: string): Upcomin
     use_start_end: Boolean(row.start_date || row.end_date),
     start_date: row.start_date || "",
     end_date: row.end_date || "",
+    auto_deduct: Boolean(row.auto_deduct),
   };
 }
 
@@ -277,6 +288,8 @@ export function UpcomingExpensesPage(): ReactNode {
     queryFn: (ctx) => listSourceNames(readOptsFromQuery(ctx)),
   });
   const baseCurrency = (profileQuery.data?.base_currency ?? "USD").trim().toUpperCase() || "USD";
+  const profileTimezone = profileQuery.data?.timezone ?? "UTC";
+  const profileToday = profileTodayIso(profileTimezone);
   const sourceCurrencyOptions = useMemo(() => {
     const set = new Set<string>();
     for (const row of sourcesQuery.data ?? []) {
@@ -347,10 +360,10 @@ export function UpcomingExpensesPage(): ReactNode {
   });
 
   function renderOverdueActions(row: UpcomingExpenseRecord): ReactNode {
-    if (!isOverdueUnpaid(row)) {
+    if (!isOverdueUnpaidInTimezone(row, profileTimezone)) {
       return null;
     }
-    const missed = estimateMissedPeriods(row);
+    const missed = estimateMissedPeriods(row, profileToday);
     return (
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <Button
@@ -376,7 +389,6 @@ export function UpcomingExpensesPage(): ReactNode {
   }
 
   const filteredRows = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
     const thisMonth = monthRange(0);
     const nextMonth = monthRange(1);
     const currentRange = payCycleRange ?? thisMonth;
@@ -392,11 +404,11 @@ export function UpcomingExpensesPage(): ReactNode {
         return row.due_date >= nextMonth.start && row.due_date <= nextMonth.end;
       }
       if (dateQuick === "overdue") {
-        return row.due_date < today && !row.paid_flag;
+        return row.due_date < profileToday && !row.paid_flag;
       }
       return true;
     });
-  }, [dateQuick, paid, payCycleRange, recurring, upcomingQuery.data]);
+  }, [dateQuick, paid, payCycleRange, profileToday, recurring, upcomingQuery.data]);
 
   const columns = useMemo<Array<ColumnDef<UpcomingExpenseRecord>>>(
     () => [
@@ -497,6 +509,7 @@ export function UpcomingExpensesPage(): ReactNode {
         Number.isNaN(Number(draft.custom_interval_days)) ||
         Number(draft.custom_interval_days) <= 0),
   );
+  const invalidAutoDeductWithoutSource = Boolean(draft.auto_deduct && !draft.source.trim());
   const isSaveDisabled =
     saveMutation.isPending ||
     !draft.name.trim() ||
@@ -506,7 +519,8 @@ export function UpcomingExpensesPage(): ReactNode {
     invalidAmount ||
     invalidPartialAmount ||
     invalidCustomCadence ||
-    invalidWindow;
+    invalidWindow ||
+    invalidAutoDeductWithoutSource;
 
   useEffect(() => {
     if (!upcomingQuery.isSuccess) {
@@ -633,7 +647,7 @@ export function UpcomingExpensesPage(): ReactNode {
                             : ""}
                         </p>
                       ) : null}
-                      {isOverdueUnpaid(row) ? (
+                      {isOverdueUnpaidInTimezone(row, profileTimezone) ? (
                         <p className="muted-text" style={{ margin: 0 }}>
                           {tr("upcoming.overdueLabel", locale)}
                         </p>
@@ -686,7 +700,8 @@ export function UpcomingExpensesPage(): ReactNode {
       >
         <div className="stack" style={{ marginTop: 12 }}>
           {editorError ? <ErrorState title={tr("common.saveFailed", locale)} description={editorError} /> : null}
-          {(invalidAmount || invalidWindow || invalidPartialAmount || invalidCustomCadence) && !saveMutation.isPending ? (
+          {(invalidAmount || invalidWindow || invalidPartialAmount || invalidCustomCadence || invalidAutoDeductWithoutSource) &&
+          !saveMutation.isPending ? (
             <div className="ui-state" role="status">
               <p className="muted-text" style={{ margin: 0 }}>
                 {invalidWindow
@@ -695,6 +710,8 @@ export function UpcomingExpensesPage(): ReactNode {
                     ? tr("upcoming.invalidPartialAmount", locale)
                     : invalidCustomCadence
                       ? tr("bills.cadence.invalidCustomDays", locale)
+                      : invalidAutoDeductWithoutSource
+                        ? tr("bills.autoDeduct.sourceRequired", locale)
                     : tr("upcoming.invalidAmount", locale)}
               </p>
             </div>
@@ -793,8 +810,71 @@ export function UpcomingExpensesPage(): ReactNode {
           <HelpModeWrapper id="bill-form-source" title={tr("guide.form.source.title", locale)} content={tr("guide.form.source.content", locale)}>
             <label className="ui-field">
               <span className="ui-label">{tr("form.label.sourceOptional", locale)}</span>
-              <input className="ui-input" value={draft.source} onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))} />
+              <SourceSelect
+                value={draft.source}
+                sources={sourcesQuery.data ?? []}
+                allowEmpty
+                emptyLabel={tr("form.label.sourceOptional", locale)}
+                onSourceChange={(source) =>
+                  setDraft((d) => ({
+                    ...d,
+                    source,
+                    auto_deduct: source.trim() ? d.auto_deduct : false,
+                  }))
+                }
+              />
             </label>
+          </HelpModeWrapper>
+          <HelpModeWrapper
+            id="bill-form-auto-deduct"
+            title={tr("guide.form.autoDeduct.title", locale)}
+            content={tr("guide.form.autoDeduct.content", locale)}
+          >
+            <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={draft.auto_deduct}
+                disabled={!draft.source.trim()}
+                onChange={(e) => {
+                  if (e.target.checked && !draft.source.trim()) {
+                    return;
+                  }
+                  setDraft((d) => ({ ...d, auto_deduct: e.target.checked }));
+                }}
+              />
+              <span className="ui-label">{tr("bills.autoDeduct.toggle", locale)}</span>
+            </label>
+            <p className="muted-text" style={{ margin: "4px 0 0", fontSize: "var(--font-xs)" }}>
+              {tr("bills.autoDeduct.explanation", locale)}
+            </p>
+            {!draft.source.trim() ? (
+              <p className="muted-text" style={{ margin: "4px 0 0", fontSize: "var(--font-xs)" }}>
+                {tr("bills.autoDeduct.sourceRequired", locale)}
+              </p>
+            ) : null}
+            {draft.auto_deduct && draft.source.trim() ? (
+              <div className="ui-state" role="status" style={{ marginTop: 8 }}>
+                <p className="muted-text" style={{ margin: 0, fontSize: "var(--font-sm)" }}>
+                  {draft.due_date < profileToday
+                    ? tr("bills.autoDeduct.overdueHint", locale)
+                    : trFmt("bills.autoDeduct.preview", locale, {
+                        date: draft.due_date,
+                        amount: formatMoney(draft.amount || "0", draft.currency || baseCurrency),
+                        source: draft.source.trim(),
+                      })}
+                </p>
+                {draft.recurring_flag && draft.due_date >= profileToday ? (
+                  <p className="muted-text" style={{ margin: "4px 0 0", fontSize: "var(--font-xs)" }}>
+                    {trFmt("bills.autoDeduct.previewFollowing", locale, {
+                      date: nextBillDueDateAfterCurrent(
+                        draft.due_date,
+                        billCadenceFromDraft(draft.cadence, draft.custom_interval_days),
+                      ),
+                    })}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </HelpModeWrapper>
           <HelpModeWrapper id="bill-form-recurring" title={tr("guide.form.recurring.title", locale)} content={tr("guide.form.recurring.content", locale)}>
             <label className="ui-field" style={{ display: "flex", alignItems: "center", gap: 8 }}>

@@ -438,7 +438,12 @@ export function TransactionsPage(): ReactNode {
   const columns = useMemo<Array<ColumnDef<TransactionRecord>>>(
     () => [
       { id: "date", header: "Date", cell: (r) => r.date, sortValue: (r) => r.date },
-      { id: "type", header: "Type", cell: (r) => <span className="tx-badge">{typeBadge(r.tx_type)}</span> },
+      { id: "type", header: "Type", cell: (r) => (
+        <span style={{ display: "inline-flex", gap: 6, flexWrap: "wrap" }}>
+          <span className="tx-badge">{typeBadge(r.tx_type)}</span>
+          {r.auto_deducted ? <span className="tx-badge">{tr("bills.autoDeduct.historyBadge", locale)}</span> : null}
+        </span>
+      ) },
       { id: "desc", header: "Description", cell: (r) => r.description || "—" },
       {
         id: "amt",

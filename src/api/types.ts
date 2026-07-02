@@ -17,6 +17,7 @@ export type SnapshotTransactionRow = {
   tx_type: string;
   category?: string;
   bill?: string | null;
+  auto_deducted?: boolean;
 };
 
 export type FinancialSnapshotFields = {
@@ -121,6 +122,7 @@ export type TransactionRecord = {
   tx_type: TxType;
   category: string;
   bill?: string;
+  auto_deducted?: boolean;
 };
 
 export type TransactionsListResponse = {
@@ -151,6 +153,7 @@ export type TransactionCreateRequest = {
   tx_type: TxType;
   category?: string;
   bill?: string;
+  auto_deducted?: boolean;
 };
 
 export type TransactionPatchRequest = {
@@ -163,6 +166,7 @@ export type TransactionPatchRequest = {
   tx_type?: TxType;
   category?: string;
   bill?: string;
+  auto_deducted?: boolean;
 };
 
 export type CalendarDailyRow = {
@@ -223,6 +227,7 @@ export type UpcomingExpenseRecord = {
   cycle_residual_amount?: string | null;
   remainder_due_date?: string | null;
   source?: string;
+  auto_deduct?: boolean;
   start_date?: string;
   end_date?: string;
 };
@@ -242,6 +247,7 @@ export type UpcomingExpenseMutationPayload = {
   cycle_residual_amount?: string | number | null;
   remainder_due_date?: string | null;
   source?: string;
+  auto_deduct?: boolean;
   start_date?: string;
   end_date?: string;
 };

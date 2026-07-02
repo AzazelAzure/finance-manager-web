@@ -41,6 +41,7 @@ export function normalizeUpcomingRow(row: Partial<UpcomingExpenseRecord>): Upcom
     custom_interval_days:
       row.custom_interval_days == null ? null : Number(row.custom_interval_days),
     source: row.source ? String(row.source) : "",
+    auto_deduct: Boolean(row.auto_deduct),
     start_date: row.start_date ? String(row.start_date) : "",
     end_date: row.end_date ? String(row.end_date) : "",
   };
