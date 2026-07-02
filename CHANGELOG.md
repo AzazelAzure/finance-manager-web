@@ -5,6 +5,9 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- **F-006 dashboard widgets custom (T03):** Drag-to-reorder and full/half-width resize on the dashboard grid via `@dnd-kit` (pointer + keyboard sensors, labeled drag handles). Layout edits persist per device class with debounced `PATCH` (500ms), one automatic retry, and revert to last server snapshot on failure. Reorder/resize blocked offline; cached layout still renders. Guide-mode coverage for drag handle and resize control (en-US + tl-PH). Drag overlay z-index verified below Joyride/help-mode (10050).
+
+### Added
 - **F-006 dashboard widgets custom (T02):** Static widget catalog registry (`widgetCatalog.ts`) with API-aligned widget IDs. `DashboardPage` renders from persisted layout per device class (mobile/desktop breakpoint). Manage-widgets panel for show/hide and add-from-catalog with per-variant persistence via `GET/PATCH /finance/dashboard-layout/`. Balance history fetch gated on widget visibility; goals/upcoming widgets unmount when hidden. PWA Dexie cache for layout reads. i18n + guide/tour coverage for manage-widgets UI (en-US + tl-PH).
 
 ### Added

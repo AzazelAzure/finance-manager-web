@@ -14,6 +14,95 @@
   min-width: 0;
 }
 
+.dashboard-widget-grid-host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.dashboard-widget-grid__offline,
+.dashboard-widget-grid__error {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.dashboard-widget-grid__error {
+  color: var(--danger);
+}
+
+.dashboard-widget-slot-wrap {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.dashboard-widget-slot-wrap--full {
+  grid-column: 1 / -1;
+}
+
+.dashboard-widget-slot-wrap--dragging {
+  opacity: 0.45;
+}
+
+.dashboard-widget-slot-wrap--overlay {
+  opacity: 1;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.dashboard-widget-slot__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.dashboard-widget-slot__drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface) 92%, var(--surface-2));
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+.dashboard-widget-slot__drag-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dashboard-widget-slot__drag-handle:active {
+  cursor: grabbing;
+}
+
+.dashboard-widget-slot__resize-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dashboard-widget-slot__resize-label {
+  font-size: var(--text-sm);
+}
+
+/* Drag overlay sits above dashboard content but below Joyride/help-mode (10050). */
+.dashboard-widget-drag-overlay {
+  z-index: 1000;
+}
+
+@media (min-width: 900px) {
+  .dashboard-widget-slot-wrap--half {
+    grid-column: span 1;
+  }
+}
+
 .dashboard-widget-slot {
   min-width: 0;
 }
