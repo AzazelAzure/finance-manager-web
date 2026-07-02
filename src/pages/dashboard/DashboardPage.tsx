@@ -3,24 +3,16 @@ import { m, useReducedMotion } from "motion/react";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { fetchBalanceHistory } from "../../api/balanceHistory";
+import { getDashboardLayout } from "../../api/dashboardLayout";
 import { getAppProfile } from "../../api/profile";
 import { fetchAppSnapshot } from "../../api/snapshot";
 import { listCategories, listSourceNames, listTags } from "../../api/lookups";
 import type { BalanceHistoryRange, SnapshotResponse } from "../../api/types";
-import { BalanceHistoryChart } from "../../components/dashboard/BalanceHistoryChart";
-import { CategoryPie } from "../../components/dashboard/CategoryPie";
+import { DashboardWidgetSlot } from "../../components/dashboard/DashboardWidgetSlots";
 import { FilterRow } from "../../components/dashboard/FilterRow";
-import { FlowChart } from "../../components/dashboard/FlowChart";
-import { GoalsWidget } from "../../components/dashboard/GoalsWidget";
-import { UpcomingBillsWidget } from "../../components/dashboard/UpcomingBillsWidget";
-import { KPIRow } from "../../components/dashboard/KPIRow";
-import { ProfileOverview } from "../../components/dashboard/ProfileOverview";
-import { QuickActions } from "../../components/dashboard/QuickActions";
-import { RecentTransactions } from "../../components/dashboard/RecentTransactions";
-import { SourceBalances } from "../../components/dashboard/SourceBalances";
-import { SpendChart } from "../../components/dashboard/SpendChart";
-import { TagPie } from "../../components/dashboard/TagPie";
+import { ManageWidgetsPanel } from "../../components/dashboard/ManageWidgetsPanel";
 import { topTagNamesFromTransactions } from "../../components/dashboard/tagAggregates";
+import { defaultLayoutFor, visibleWidgetIds } from "../../components/dashboard/widgetCatalog";
 import "../../components/dashboard/dashboard.css";
 import { Button } from "../../components/ui/Button";
 import { ErrorState } from "../../components/ui/ErrorState";
@@ -34,6 +26,8 @@ import {
   searchParamsToApiParams,
   urlSearchParamsToFilterDraft,
 } from "../../lib/dashboardQueryParams";
+import { getDashboardDeviceClass } from "../../lib/deviceClass";
+import { useBreakpoint } from "../../lib/breakpoints";
 import { firstCurrency } from "./dashboardUtil";
 import { tr, useLocale } from "../../lib/i18n";
 import { preferOfflineCaches } from "../../offline/connectivity";
@@ -74,6 +68,10 @@ export function DashboardPage(): ReactNode {
   const [searchParams, setSearchParams] = useSearchParams();
   const nav = useNavigate();
   const { startTour } = useTour();
+  const { atOrAboveMd } = useBreakpoint();
+  const deviceClass = getDashboardDeviceClass(atOrAboveMd);
+  const [manageOpen, setManageOpen] = useState(false);
+
   const searchString = searchParams.toString();
   const appliedKey = useMemo(
     () => appliedSnapshotKey(new URLSearchParams(searchString)),
@@ -88,6 +86,20 @@ export function DashboardPage(): ReactNode {
     () => searchParamsToApiParams(new URLSearchParams(searchString)),
     [searchString],
   );
+
+  const layoutQuery = useQuery({
+    queryKey: ["dashboard-layout", deviceClass] as const,
+    queryFn: (ctx) => getDashboardLayout(deviceClass, readOptsFromQuery(ctx)),
+    placeholderData: (prev) => prev ?? {
+      device_class: deviceClass,
+      layout: defaultLayoutFor(deviceClass),
+      is_default: true,
+      updated_at: null,
+    },
+  });
+
+  const activeLayout = layoutQuery.data?.layout ?? defaultLayoutFor(deviceClass);
+  const visibleWidgets = useMemo(() => visibleWidgetIds(activeLayout), [activeLayout]);
 
   const loadSnapshot = useCallback(
     ({ meta }: QueryFunctionContext<readonly ["snapshot", string]>) =>
@@ -115,6 +127,8 @@ export function DashboardPage(): ReactNode {
     [queryClient, appliedKey, snapshotParams],
   );
 
+  const needsBalanceHistory = visibleWidgets.has("BalanceHistoryChart");
+
   const profileQuery = useQuery({
     queryKey: ["app-profile"] as const,
     queryFn: (ctx) => getAppProfile(readOptsFromQuery(ctx)),
@@ -139,6 +153,7 @@ export function DashboardPage(): ReactNode {
   const balanceHistoryQuery = useQuery({
     queryKey: ["balance-history", balanceRange] as const,
     queryFn: (ctx) => fetchBalanceHistory({ range: balanceRange }, readOptsFromQuery(ctx)),
+    enabled: needsBalanceHistory,
   });
 
   const currency = balanceCurrency(data, profileQuery.data);
@@ -201,6 +216,49 @@ export function DashboardPage(): ReactNode {
   const chartLoading = isLoading && !data;
   const errMsg = error instanceof Error ? error.message : "Unknown error";
 
+  const widgetCtx = useMemo(
+    () =>
+      data
+        ? {
+            locale,
+            currency,
+            summary,
+            data,
+            txRows,
+            chartLoading,
+            isError,
+            onRetry: () => void refetchSnapshotForced(),
+            onDrillCategory,
+            onDrillTag,
+            profileQuery,
+            sourceRows: sourceQuery.data ?? [],
+            balanceHistorySeries: balanceHistoryQuery.data?.series ?? [],
+            balanceHistoryCurrency: balanceHistoryQuery.data?.base_currency ?? currency,
+            balanceRange,
+            onBalanceRangeChange: setBalanceRange,
+            balanceHistoryLoading: balanceHistoryQuery.isLoading,
+            balanceHistoryError: balanceHistoryQuery.isError,
+            onBalanceHistoryRetry: () => void balanceHistoryQuery.refetch(),
+          }
+        : null,
+    [
+      locale,
+      currency,
+      summary,
+      data,
+      txRows,
+      chartLoading,
+      isError,
+      refetchSnapshotForced,
+      onDrillCategory,
+      onDrillTag,
+      profileQuery,
+      sourceQuery.data,
+      balanceHistoryQuery,
+      balanceRange,
+    ],
+  );
+
   if (isError && !data) {
     return (
       <div className="stack dashboard-page">
@@ -221,7 +279,7 @@ export function DashboardPage(): ReactNode {
     );
   }
 
-  if (!data) {
+  if (!data || !widgetCtx) {
     return (
       <ErrorState
         title={tr("dashboard.noData.title", locale)}
@@ -231,11 +289,15 @@ export function DashboardPage(): ReactNode {
     );
   }
 
-  // Welcome tour is now handled by WelcomeTourModal (modal gate + Joyride)
-
   return (
     <div className="stack dashboard-page">
       <WelcomeTourModal dataReady={!!data} />
+      <ManageWidgetsPanel
+        open={manageOpen}
+        onClose={() => setManageOpen(false)}
+        deviceClass={deviceClass}
+        layout={activeLayout}
+      />
       <div className="dashboard-header">
         <div>
           <h2 className="muted dashboard-title">
@@ -246,6 +308,20 @@ export function DashboardPage(): ReactNode {
           </h2>
         </div>
         <div className="dashboard-header__actions" style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+          <HelpModeWrapper
+            id="tour-manage-widgets"
+            title={tr("guide.dashboard.manageWidgets.title", locale)}
+            content={tr("guide.dashboard.manageWidgets.content", locale)}
+          >
+            <Button
+              id="tour-manage-widgets-btn"
+              type="button"
+              variant="secondary"
+              onClick={() => setManageOpen(true)}
+            >
+              {tr("dashboard.widgets.manage", locale)}
+            </Button>
+          </HelpModeWrapper>
           <Button
             id="tour-replay-btn"
             type="button"
@@ -296,45 +372,6 @@ export function DashboardPage(): ReactNode {
       </m.section>
       </HelpModeWrapper>
 
-      <div className="dashboard-root__quick">
-        <HelpModeWrapper id="tour-quick-actions" title={tr("tour.dashboard.quickActions.title", locale)} content={tr("tour.dashboard.quickActions.content", locale)}>
-          <QuickActions baseCurrency={currency} sources={sourceQuery.data ?? []} />
-        </HelpModeWrapper>
-      </div>
-
-      <section className="dashboard-section" aria-label={tr("dashboard.section.kpis", locale)}>
-        <HelpModeWrapper id="tour-kpis" title={tr("tour.dashboard.kpis.title", locale)} content={tr("tour.dashboard.kpis.content", locale)}>
-          <KPIRow
-            currency={currency}
-            summary={summary}
-            totalIncome={data.total_income_for_month}
-            totalExpenses={data.total_expenses_for_month}
-            totalLeaks={data.total_leaks_for_month}
-            transactionCount={txRows.length}
-          />
-        </HelpModeWrapper>
-      </section>
-
-      <section className="dashboard-section" aria-label={tr("goals.heading", locale)}>
-        <HelpModeWrapper
-          id="tour-goals-widget"
-          title={tr("guide.dashboard.goalsWidget.title", locale)}
-          content={tr("guide.dashboard.goalsWidget.content", locale)}
-        >
-          <GoalsWidget />
-        </HelpModeWrapper>
-      </section>
-
-      <section className="dashboard-section" aria-label={tr("bills.cadence.widgetHeading", locale)}>
-        <HelpModeWrapper
-          id="tour-upcoming-bills"
-          title={tr("guide.dashboard.upcomingBills.title", locale)}
-          content={tr("guide.dashboard.upcomingBills.content", locale)}
-        >
-          <UpcomingBillsWidget />
-        </HelpModeWrapper>
-      </section>
-
       <section className="dashboard-section" aria-label={tr("dashboard.section.filters", locale)}>
         <HelpModeWrapper id="tour-filters" title={tr("tour.dashboard.filters.title", locale)} content={tr("tour.dashboard.filters.content", locale)}>
           <FilterRow
@@ -353,88 +390,10 @@ export function DashboardPage(): ReactNode {
         </HelpModeWrapper>
       </section>
 
-      <div className="dashboard-root">
-        <div className="dashboard-root__row">
-          <HelpModeWrapper id="tour-charts" className="dashboard-root__main dashboard-col" title={tr("tour.dashboard.flowChart.title", locale)} content={tr("tour.dashboard.flowChart.content", locale)}>
-            <div id="tour-flow-chart">
-              <FlowChart
-                data={data.flow_series}
-                baseCurrency={currency}
-                isLoading={chartLoading}
-                isError={isError}
-                onRetry={() => void refetchSnapshotForced()}
-              />
-            </div>
-            <div id="tour-spend-chart">
-              <SpendChart
-                dailySpend={data.daily_spend}
-                dailyIncome={data.daily_income}
-                baseCurrency={currency}
-                isLoading={chartLoading}
-                isError={isError}
-                onRetry={() => void refetchSnapshotForced()}
-              />
-            </div>
-            <div id="tour-category-pie">
-              <CategoryPie
-                expenseByCategory={data.expense_by_category}
-                baseCurrency={currency}
-                isLoading={chartLoading}
-                isError={isError}
-                onRetry={() => void refetchSnapshotForced()}
-                onSelectCategory={onDrillCategory}
-              />
-            </div>
-            <div id="tour-tag-pie">
-              <TagPie
-                transactions={txRows}
-                baseCurrency={currency}
-                isLoading={chartLoading}
-                isError={isError}
-                onRetry={() => void refetchSnapshotForced()}
-                onSelectTag={onDrillTag}
-              />
-            </div>
-          </HelpModeWrapper>
-          <aside className="dashboard-root__side dashboard-col">
-            <HelpModeWrapper
-              id="tour-source-balances"
-              title={tr("guide.dashboard.sourceBalances.title", locale)}
-              content={tr("guide.dashboard.sourceBalances.content", locale)}
-            >
-              <SourceBalances rows={data.source_balances} />
-            </HelpModeWrapper>
-            <HelpModeWrapper
-              id="tour-balance-history"
-              title={tr("guide.dashboard.balanceHistory.title", locale)}
-              content={tr("guide.dashboard.balanceHistory.content", locale)}
-            >
-              <BalanceHistoryChart
-                series={balanceHistoryQuery.data?.series ?? []}
-                baseCurrency={balanceHistoryQuery.data?.base_currency ?? currency}
-                range={balanceRange}
-                onRangeChange={setBalanceRange}
-                isLoading={balanceHistoryQuery.isLoading}
-                isError={balanceHistoryQuery.isError}
-                onRetry={() => void balanceHistoryQuery.refetch()}
-              />
-            </HelpModeWrapper>
-            <HelpModeWrapper
-              id="tour-profile-overview"
-              title={tr("guide.dashboard.profileOverview.title", locale)}
-              content={tr("guide.dashboard.profileOverview.content", locale)}
-            >
-              <ProfileOverview profile={profileQuery.data} isError={profileQuery.isError} />
-            </HelpModeWrapper>
-          </aside>
-        </div>
-        <HelpModeWrapper
-          id="tour-recent-tx"
-          title={tr("guide.dashboard.recentTx.title", locale)}
-          content={tr("guide.dashboard.recentTx.content", locale)}
-        >
-          <RecentTransactions rows={txRows} baseCurrency={currency} />
-        </HelpModeWrapper>
+      <div className="dashboard-widget-grid">
+        {activeLayout.map((item) => (
+          <DashboardWidgetSlot key={item.widget_id} item={item} ctx={widgetCtx} />
+        ))}
       </div>
     </div>
   );
