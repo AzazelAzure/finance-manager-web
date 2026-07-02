@@ -74,6 +74,8 @@ export async function saveDashboardLayout(
   deviceClass: DashboardDeviceClass,
   layout: LayoutItem[],
 ): Promise<DashboardLayoutResponse> {
+  // Callers that need debounced reorder/resize persistence should use
+  // `useDebouncedDashboardLayoutSave` (500ms debounce, single retry, revert on failure).
   const { data } = await api.patch<DashboardLayoutResponse>("/finance/dashboard-layout/", {
     device_class: deviceClass,
     layout,

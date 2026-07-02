@@ -1,4 +1,3 @@
-import { clsx } from "clsx";
 import type { ReactNode } from "react";
 import type {
   AppProfileResponse,
@@ -207,10 +206,7 @@ export function DashboardWidgetSlot({ item, ctx }: SlotProps): ReactNode {
 
   return (
     <section
-      className={clsx(
-        "dashboard-widget-slot",
-        item.size === "full" ? "dashboard-widget-slot--full" : "dashboard-widget-slot--half",
-      )}
+      className="dashboard-widget-slot"
       aria-label={sectionLabel}
     >
       {content}
