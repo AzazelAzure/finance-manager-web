@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 
 const ROAD: Array<{ titleKey: string; bodyKey: string; status: "done" | "now" | "next" | "later" }> = [
   { titleKey: "roadmap.paycycles.title", bodyKey: "roadmap.paycycles.body", status: "done" },
+  { titleKey: "roadmap.widgets.title", bodyKey: "roadmap.widgets.body", status: "done" },
   { titleKey: "roadmap.recurring.title", bodyKey: "roadmap.recurring.body", status: "now" },
-  { titleKey: "roadmap.widgets.title", bodyKey: "roadmap.widgets.body", status: "next" },
   { titleKey: "roadmap.predictive.title", bodyKey: "roadmap.predictive.body", status: "later" },
   { titleKey: "roadmap.family.title", bodyKey: "roadmap.family.body", status: "later" },
 ];

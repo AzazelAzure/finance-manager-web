@@ -7,6 +7,11 @@ export function VersionHistory(): ReactNode {
   
   const history = [
     {
+      date: tr("history.v1_4.date", locale),
+      title: tr("history.v1_4.title", locale),
+      desc: tr("history.v1_4.desc", locale),
+    },
+    {
       date: tr("history.v1_3.date", locale),
       title: tr("history.v1_3.title", locale),
       desc: tr("history.v1_3.desc", locale),
