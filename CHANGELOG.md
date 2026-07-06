@@ -19,7 +19,7 @@ All notable changes to this project are documented in this file.
 ### Changed
 - **Dependencies (security audit 2026-07-02, T03):** Resolved 13 npm advisories (1 critical, 7 high, 3 moderate, 2 low) via `npm audit fix` lockfile refresh plus direct pins `react-router-dom` ^7.18.1 (DoS/CSRF GHSA-8x6r-g9mw-2r78, GHSA-84g9-w2xq-vcv6) and `vitest` ^3.2.6 (arbitrary file read GHSA-5xrq-8626-4rwp). Transitive bumps include `@babel/core` 7.29.7, `serialize-javascript`, `fast-uri`, `form-data`, `brace-expansion`, nested `vite`/`esbuild` in vitest toolchain. Fresh `npm audit` reports 0 vulnerabilities. No breaking major bumps required.
 - **Dependencies (2026-07 batch):** Bumped `@tanstack/react-query` 5.101.2, `react-dom`/`react-is` 19.2.7, `@vitejs/plugin-react` 6.0.3 (supersedes dependabot PRs #98, #100–#102). **Held:** eslint 10.6.0 (#99) — lint already has 13 pre-existing errors on `main`; eslint bump needs a separate cleanup pass.
-- **README:** Repointed runtime coordination to parent `governance/Runtime_Signup_Sheet.md` (moved out of public `design_docs` during 2026-06-30 scope cleanup).
+- **README:** Repointed runtime coordination to parent `governance/deployment/Runtime_Signup_Sheet.md` (moved out of public `design_docs` during 2026-06-30 scope cleanup).
 
 ### Removed
 - **F-010 share UI (disabled 2026-06-29):** Removed Data Hub Share Data card and share-link client helpers after privacy review. CSV and full JSON backup export unchanged.
