@@ -92,6 +92,36 @@
   font-size: var(--text-sm);
 }
 
+.dashboard-widget-slot__size-controls {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0.2rem;
+}
+
+.dashboard-widget-slot__size-btn {
+  min-width: 2.75rem;
+  padding-inline: 0.45rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.72rem;
+  letter-spacing: -0.04em;
+}
+
+.dashboard-widget-slot__size-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.dashboard-widget-grid--edit-mode .dashboard-widget-slot-wrap--editing {
+  padding: var(--spacing-2);
+  border: 1px dashed color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface) 96%, var(--accent));
+}
+
+.dashboard-widget-grid--edit-mode[data-drag-active="true"] .dashboard-widget-slot-wrap--editing:not(.dashboard-widget-slot-wrap--dragging) {
+  transition: transform 200ms ease;
+}
+
 /* Drag overlay sits above dashboard content but below Joyride/help-mode (10050). */
 .dashboard-widget-drag-overlay {
   z-index: 1000;

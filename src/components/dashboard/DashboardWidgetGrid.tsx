@@ -25,12 +25,15 @@ import {
 import { shouldTreatAsDisconnectedForMutations } from "../../offline/connectivity";
 import { DashboardWidgetSlot, type DashboardWidgetContext } from "./DashboardWidgetSlots";
 import { SortableDashboardWidgetSlot } from "./SortableDashboardWidgetSlot";
-import type { LayoutItem, WidgetId, WidgetSize } from "./widgetCatalog";
+import { dashboardWidgetSlotWrapClass } from "./dashboardWidgetSlotWrap";
+import type { DashboardDeviceClass, LayoutItem, WidgetId, WidgetSize } from "./widgetCatalog";
 import { getWidgetCatalogEntry } from "./widgetCatalog";
 
 type Props = {
   layout: LayoutItem[];
   ctx: DashboardWidgetContext;
+  deviceClass: DashboardDeviceClass;
+  editMode: boolean;
   onLayoutChange: (layout: LayoutItem[]) => void;
   saveStatus: LayoutSaveStatus;
 };
@@ -38,11 +41,14 @@ type Props = {
 export function DashboardWidgetGrid({
   layout,
   ctx,
+  deviceClass,
+  editMode,
   onLayoutChange,
   saveStatus,
 }: Props): ReactNode {
   const editsBlocked = shouldTreatAsDisconnectedForMutations();
-  const editsEnabled = !editsBlocked;
+  const editsEnabled = editMode && !editsBlocked;
+  const sizeControlsEnabled = deviceClass === "desktop";
   const visibleItems = useMemo(() => visibleLayoutItems(layout), [layout]);
   const sortableIds = useMemo(
     () => visibleItems.map((item) => item.widget_id),
@@ -101,9 +107,9 @@ export function DashboardWidgetGrid({
       })()
     : "";
 
-  return (
-    <div className="dashboard-widget-grid-host">
-      {editsBlocked ? (
+  const statusMessages = (
+    <>
+      {editMode && editsBlocked ? (
         <p className="dashboard-widget-grid__offline muted" role="status">
           {tr("dashboard.widgets.layout.offline", ctx.locale)}
         </p>
@@ -113,6 +119,30 @@ export function DashboardWidgetGrid({
           {tr("dashboard.widgets.layout.saveError", ctx.locale)}
         </p>
       ) : null}
+    </>
+  );
+
+  if (!editsEnabled) {
+    return (
+      <div className="dashboard-widget-grid-host">
+        {statusMessages}
+        <div className="dashboard-widget-grid">
+          {visibleItems.map((item) => (
+            <div
+              key={item.widget_id}
+              className={dashboardWidgetSlotWrapClass(item)}
+            >
+              <DashboardWidgetSlot item={item} ctx={ctx} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dashboard-widget-grid-host">
+      {statusMessages}
 
       <DndContext
         sensors={sensors}
@@ -123,7 +153,7 @@ export function DashboardWidgetGrid({
       >
         <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
           <div
-            className="dashboard-widget-grid"
+            className="dashboard-widget-grid dashboard-widget-grid--edit-mode"
             data-drag-active={activeId != null ? "true" : undefined}
           >
             {visibleItems.map((item) => (
@@ -131,7 +161,7 @@ export function DashboardWidgetGrid({
                 key={item.widget_id}
                 item={item}
                 ctx={ctx}
-                editsEnabled={editsEnabled}
+                sizeControlsEnabled={sizeControlsEnabled}
                 onResize={handleResize}
               />
             ))}
@@ -141,7 +171,7 @@ export function DashboardWidgetGrid({
         <DragOverlay className="dashboard-widget-drag-overlay" zIndex={1000}>
           {activeItem ? (
             <div
-              className="dashboard-widget-slot-wrap dashboard-widget-slot-wrap--overlay"
+              className={dashboardWidgetSlotWrapClass(activeItem, { overlay: true })}
               aria-label={trFmt("dashboard.widgets.dragging", ctx.locale, {
                 widget: activeLabel,
               })}

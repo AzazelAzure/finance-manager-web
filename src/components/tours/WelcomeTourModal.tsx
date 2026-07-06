@@ -45,6 +45,12 @@ export function buildWelcomeSteps(locale: AppLocale): Step[] {
       skipBeacon: true,
     },
     {
+      target: '#tour-layout-edit-btn',
+      title: tr('tour.dashboard.layoutEdit.title', locale),
+      content: tr('tour.dashboard.layoutEdit.content', locale),
+      skipBeacon: true,
+    },
+    {
       target: '#tour-filters',
       title: tr('tour.dashboard.filters.title', locale),
       content: tr('tour.dashboard.filters.content', locale),
