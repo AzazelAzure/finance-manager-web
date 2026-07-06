@@ -4,6 +4,8 @@
   gap: var(--spacing-4);
   max-width: 1920px;
   margin: 0 auto;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 /* KNOWN_ISSUES #6: quick-add above KPIs/charts on all breakpoints (PH mobile-first wedge) */
@@ -166,6 +168,48 @@
   border-radius: var(--radius-lg);
   background: var(--gradient-surface);
   box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+
+.dashboard-header > :first-child {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.dashboard-header__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.dashboard-header__actions .ui-btn {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 0.45rem;
+  font-size: clamp(0.68rem, 2.9vw, 0.875rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 640px) {
+  .dashboard-header__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    width: auto;
+    flex: 1 1 auto;
+  }
+
+  .dashboard-header__actions .ui-btn {
+    width: auto;
+    flex: 0 1 auto;
+    font-size: inherit;
+    padding-inline: var(--btn-padding-x, 0.85rem);
+  }
 }
 
 .dashboard-hero {

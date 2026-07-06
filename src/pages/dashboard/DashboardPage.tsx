@@ -334,7 +334,7 @@ export function DashboardPage(): ReactNode {
             {tr("dashboard.subtitle", locale)}
           </h2>
         </div>
-        <div className="dashboard-header__actions" style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+        <div className="dashboard-header__actions">
           <HelpModeWrapper
             id="tour-layout-edit"
             title={tr("guide.dashboard.layoutEdit.title", locale)}
@@ -344,12 +344,23 @@ export function DashboardPage(): ReactNode {
               id="tour-layout-edit-btn"
               type="button"
               variant={layoutEditMode ? "primary" : "secondary"}
+              size="compact"
               aria-pressed={layoutEditMode}
               onClick={() => setLayoutEditMode((on) => !on)}
             >
               {layoutEditMode
-                ? tr("dashboard.widgets.layoutEdit.on", locale)
-                : tr("dashboard.widgets.layoutEdit.off", locale)}
+                ? tr(
+                    deviceClass === "mobile"
+                      ? "dashboard.widgets.layoutEdit.on.mobile"
+                      : "dashboard.widgets.layoutEdit.on",
+                    locale,
+                  )
+                : tr(
+                    deviceClass === "mobile"
+                      ? "dashboard.widgets.layoutEdit.off.mobile"
+                      : "dashboard.widgets.layoutEdit.off",
+                    locale,
+                  )}
             </Button>
           </HelpModeWrapper>
           <HelpModeWrapper
@@ -361,22 +372,33 @@ export function DashboardPage(): ReactNode {
               id="tour-manage-widgets-btn"
               type="button"
               variant="secondary"
+              size="compact"
               onClick={() => setManageOpen(true)}
             >
-              {tr("dashboard.widgets.manage", locale)}
+              {tr(
+                deviceClass === "mobile" ? "dashboard.widgets.manage.mobile" : "dashboard.widgets.manage",
+                locale,
+              )}
             </Button>
           </HelpModeWrapper>
           <Button
             id="tour-replay-btn"
             type="button"
             variant="secondary"
+            size="compact"
             onClick={() => {
               startTour(`welcome_replay_${Date.now()}`, buildWelcomeSteps(locale));
             }}
           >
-            {tr("tour.replayTour", locale)}
+            {tr(deviceClass === "mobile" ? "tour.replayTour.mobile" : "tour.replayTour", locale)}
           </Button>
-          <Button id="tour-refresh-btn" type="button" variant="secondary" onClick={() => void refetchSnapshotForced()}>
+          <Button
+            id="tour-refresh-btn"
+            type="button"
+            variant="secondary"
+            size="compact"
+            onClick={() => void refetchSnapshotForced()}
+          >
             {tr("dashboard.refresh", locale)}
           </Button>
         </div>

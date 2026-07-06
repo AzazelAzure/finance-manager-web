@@ -25,7 +25,8 @@ All notable changes to this project are documented in this file.
 - **F-010 share UI (disabled 2026-06-29):** Removed Data Hub Share Data card and share-link client helpers after privacy review. CSV and full JSON backup export unchanged.
 
 ### Fixed
-- **Dashboard layout edit mode:** Reorder/resize controls are off by default — use the **Edit layout** header toggle to enter edit mode. Half/full toggle replaced with separate **<-->** (expand) and **-><-** (compress) buttons that grey out at width limits. Desktop only for width controls; mobile keeps drag reorder when editing.
+- **Dashboard header on mobile:** Header action buttons use a 2×2 compact grid with scaled labels (no horizontal page scroll). Short mobile labels for layout/widgets/tour actions.
+- **Landing page freshness:** Roadmap marks F-006 dashboard widgets as shipped; recurring/auto-deduct as in progress; July 2026 version history entry; removed retired share-link copy from data hub blurb and v1.3 history.
 - **jsdevtesting blank screen (React #527):** Align `react` with `react-dom` at `^19.2.7` after partial dependabot bump left `react@19.2.5` paired with `react-dom@19.2.7`, which prevented the SPA from mounting on inactive staging.
 - **Render error recovery:** `ErrorBoundary` at app root and around authenticated route content shows a recoverable error state (retry, reload, dashboard link) instead of unmounting to a blank screen. Route-level boundary resets when navigation changes.
 - **Modal form Joyride tours disabled (jsdevtesting):** Auto-start walkthroughs on Quick Add, Transactions editor, and Upcoming bill editor removed — Joyride spotlight rendered behind modal foreground. Per-field guide mode (`HelpModeWrapper`) on those forms unchanged. Page-level tours (Transactions, Upcoming, Data Hub, Profile, Goals) still work. Follow-up tracked in parent anomaly `2026-06-29_INACTIVE-POLISH_modal-form-joyride-broken.md`.
