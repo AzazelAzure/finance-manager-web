@@ -70,11 +70,13 @@ export function DashboardPage(): ReactNode {
   const nav = useNavigate();
   const { startTour } = useTour();
   const [manageOpen, setManageOpen] = useState(false);
+  const [layoutEditMode, setLayoutEditMode] = useState(false);
   const cancelLayoutSaveRef = useRef<(() => void) | null>(null);
   const layoutServerKeyRef = useRef<string | null>(null);
 
   const handleDeviceClassTransition = useCallback(() => {
     setManageOpen(false);
+    setLayoutEditMode(false);
     cancelLayoutSaveRef.current?.();
     layoutServerKeyRef.current = null;
   }, []);
@@ -334,6 +336,23 @@ export function DashboardPage(): ReactNode {
         </div>
         <div className="dashboard-header__actions" style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           <HelpModeWrapper
+            id="tour-layout-edit"
+            title={tr("guide.dashboard.layoutEdit.title", locale)}
+            content={tr("guide.dashboard.layoutEdit.content", locale)}
+          >
+            <Button
+              id="tour-layout-edit-btn"
+              type="button"
+              variant={layoutEditMode ? "primary" : "secondary"}
+              aria-pressed={layoutEditMode}
+              onClick={() => setLayoutEditMode((on) => !on)}
+            >
+              {layoutEditMode
+                ? tr("dashboard.widgets.layoutEdit.on", locale)
+                : tr("dashboard.widgets.layoutEdit.off", locale)}
+            </Button>
+          </HelpModeWrapper>
+          <HelpModeWrapper
             id="tour-manage-widgets"
             title={tr("guide.dashboard.manageWidgets.title", locale)}
             content={tr("guide.dashboard.manageWidgets.content", locale)}
@@ -419,6 +438,8 @@ export function DashboardPage(): ReactNode {
         key={deviceClass}
         layout={activeLayout}
         ctx={widgetCtx}
+        deviceClass={deviceClass}
+        editMode={layoutEditMode}
         onLayoutChange={handleLayoutChange}
         saveStatus={layoutSaveStatus}
       />
