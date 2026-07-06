@@ -24,7 +24,7 @@ The parent **finance_manager** monorepo wires this app into `docker-compose.yml`
 
 - **Build-time API URL:** set `VITE_API_BASE_URL` in the parent `.env` or pass a compose `build.args` value (default `https://api.thehivemanager.com`).
 - **Build:** from the monorepo root, e.g. `podman compose build web` (or `web-blue` / `web-green` in blue/green). Do not rely on `npm run dev` / Vite for this path — the image serves `dist/` with nginx.
-- For smoke checks on the host, `scripts/fm_server_beta.sh` `deploy` / `smoke` include the `web-$color` service.
+- For smoke checks on the host, `scripts/ops/fm_server_beta.sh` `deploy` / `smoke` include the `web-$color` service.
 
 ## Lane A — local API (SQLite) + Vite (optional)
 
@@ -57,7 +57,7 @@ npm run dev
 
 Open `http://localhost:5173` and sign in. Default API `CORS_ALLOWED_ORIGINS` includes that Origin; if you still see CORS or network errors, confirm the API process is bound to `8000` and that `VITE_API_BASE_URL` has no trailing slash.
 
-**Runtime:** If another agent needs the same local ports, coordinate via `../governance/Runtime_Signup_Sheet.md` in the parent ecosystem workspace (when cloned alongside this repo).
+**Runtime:** If another agent needs the same local ports, coordinate via `../governance/deployment/Runtime_Signup_Sheet.md` in the parent ecosystem workspace (when cloned alongside this repo).
 
 ## Lane B — `jsdevtesting.thehivemanager.com` via Cloudflare Tunnel (local)
 
@@ -111,7 +111,7 @@ The beta host can otherwise run **Vite on the VPS** (no Docker) so tunnel privat
 3. **Install + build:** `npm ci && npm run build`.
 4. **Run (background):** `./scripts/vps-serve.sh start` — dev on `127.0.0.1:5173`, preview on `127.0.0.1:4173`. `stop` / `status` are supported. Logs under `logs/vite-*.log`.
 
-If the full ecosystem is cloned, coordinate with `../governance/Runtime_Signup_Sheet.md` when another agent owns `fm_docker.sh` on the same host.
+If the full ecosystem is cloned, coordinate with `../governance/deployment/Runtime_Signup_Sheet.md` when another agent owns `fm_docker.sh` on the same host.
 
 ---
 
