@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **Transactions custom period filter:** Inline start/end date controls on Transactions page when Custom range is selected; Apply disabled until both dates are set. Period preset labels use existing dashboard i18n keys. Guided-tour step for custom date controls (en-US + tl-PH).
+
 ### Added
 - **F-006 dashboard widgets custom (T04):** Breakpoint-aware layout loading without cross-variant flicker (`useDashboardLayoutQuery` + device-class-scoped placeholders). Mid-session resize across the 900px threshold swaps mobile/desktop variants without full page reload; opposite variant prefetched for smooth transition. STS-first mobile default content defined canonically in `widgetCatalog.ts` (`MOBILE_STS_LEADING_WIDGET_IDS` / trailing analytics) aligned with API defaults. Manage-widgets panel closes and pending layout saves cancel on device-class transition; grid remounts per variant to prevent DnD state bleed. Vitest coverage for variant isolation, placeholder safety, and STS-first mobile ordering.
 

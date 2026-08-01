@@ -658,6 +658,9 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "tour.tx.filterPeriod.title": "Period Filter",
     "tour.tx.filterPeriod.content":
       "Choose current month, last month, previous week, or a custom date range. Custom lets you specify exact start and end dates.",
+    "tour.tx.filterCustomDates.title": "Custom Date Range",
+    "tour.tx.filterCustomDates.content":
+      "When Custom range is selected, pick a start and end date here, then click Apply. Both dates are required before the filter takes effect.",
     "tour.tx.filterType.title": "Type Filter",
     "tour.tx.filterType.content":
       "Filter by Expense, Income, Transfer Out, or Transfer In to isolate specific transaction types.",
@@ -1558,6 +1561,9 @@ const MESSAGES: Record<AppLocale, Record<string, string>> = {
     "tour.tx.filterPeriod.title": "Filter ng Period",
     "tour.tx.filterPeriod.content":
       "Piliin ang kasalukuyang buwan, nakaraang buwan, nakaraang linggo, o custom na date range. Sa custom maaari mong tukuyin ang eksaktong start at end dates.",
+    "tour.tx.filterCustomDates.title": "Custom na Date Range",
+    "tour.tx.filterCustomDates.content":
+      "Kapag pinili ang Custom range, pumili ng start at end date dito, tapos i-click ang Apply. Kailangan pareho ang dates bago mag-effect ang filter.",
     "tour.tx.filterType.title": "Filter ng Uri",
     "tour.tx.filterType.content":
       "Mag-filter ayon sa Expense, Income, Transfer Out, o Transfer In para ihiwalay ang specific na transaction types.",
