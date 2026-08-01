@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState, useEffect, type ReactNode } from "react";
+import { useCallback, useMemo, useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import {
@@ -169,7 +169,7 @@ export function TransactionsPage(): ReactNode {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { startTour } = useTour();
+  const { startTour, isTourCompleted } = useTour();
   const searchString = searchParams.toString();
   const profileQuery = useQuery({
     queryKey: ["app-profile"] as const,
@@ -497,19 +497,37 @@ export function TransactionsPage(): ReactNode {
   );
 
   const fromDashboard = searchParams.get("fromDashboard") === "1";
+  const customPeriodValid =
+    localDraft.period !== "custom" || (Boolean(localDraft.startDate) && Boolean(localDraft.endDate));
   const onApply = (): void => {
     setSearchParams(transactionsDraftToSearchParams(localDraft), { replace: true });
   };
 
+  const stageCustomPeriodForTour = useCallback(() => {
+    setLocalDraft((d) => (d.period === "custom" ? d : { ...d, period: "custom" }));
+  }, []);
+
+  const startTransactionsTour = useCallback(
+    (options?: { force?: boolean }) => {
+      const force = options?.force ?? false;
+      if (!force && isTourCompleted(TRANSACTIONS_TOUR_ID)) {
+        return;
+      }
+      stageCustomPeriodForTour();
+      startTour(TRANSACTIONS_TOUR_ID, buildTransactionsSteps(locale), force);
+    },
+    [startTour, isTourCompleted, locale, stageCustomPeriodForTour],
+  );
+
   useEffect(() => {
-    if (!txQuery.isSuccess) {
+    if (!txQuery.isSuccess || isTourCompleted(TRANSACTIONS_TOUR_ID)) {
       return;
     }
     const timer = setTimeout(() => {
-      startTour(TRANSACTIONS_TOUR_ID, buildTransactionsSteps(locale));
+      startTransactionsTour();
     }, 400);
     return () => clearTimeout(timer);
-  }, [txQuery.isSuccess, startTour, locale]);
+  }, [txQuery.isSuccess, isTourCompleted, startTransactionsTour]);
 
   return (
     <div className="stack">
@@ -534,9 +552,7 @@ export function TransactionsPage(): ReactNode {
               </Button>
             </div>
           </HelpModeWrapper>
-          <Button variant="secondary" onClick={() => {
-            startTour(`tx_replay_${Date.now()}`, buildTransactionsSteps(locale));
-          }}>
+          <Button variant="secondary" onClick={() => startTransactionsTour({ force: true })}>
             {tr('tour.replayTour', locale)}
           </Button>
         </div>
@@ -571,12 +587,40 @@ export function TransactionsPage(): ReactNode {
               value={localDraft.period}
               onChange={(e) => setLocalDraft((d) => ({ ...d, period: e.target.value as TransactionsFilterDraft["period"] }))}
             >
-              <option value="current">Current month</option>
-              <option value="last">Last month</option>
-              <option value="week">Previous week</option>
-              <option value="custom">Custom</option>
+              <option value="current">{tr("dashboard.filters.period.current", locale)}</option>
+              <option value="last">{tr("dashboard.filters.period.last", locale)}</option>
+              <option value="week">{tr("dashboard.filters.period.week", locale)}</option>
+              <option value="custom">{tr("dashboard.filters.period.custom", locale)}</option>
             </select>
           </label>
+          <div
+            id="tx-filter-custom-dates"
+            style={{
+              display: localDraft.period === "custom" ? "flex" : "none",
+              gap: 8,
+              flexWrap: "wrap",
+              gridColumn: "1 / -1",
+            }}
+          >
+            <label className="ui-field">
+              <span className="ui-label">{tr("dashboard.filters.start", locale)}</span>
+              <input
+                className="ui-input"
+                type="date"
+                value={localDraft.startDate}
+                onChange={(e) => setLocalDraft((d) => ({ ...d, startDate: e.target.value }))}
+              />
+            </label>
+            <label className="ui-field">
+              <span className="ui-label">{tr("dashboard.filters.end", locale)}</span>
+              <input
+                className="ui-input"
+                type="date"
+                value={localDraft.endDate}
+                onChange={(e) => setLocalDraft((d) => ({ ...d, endDate: e.target.value }))}
+              />
+            </label>
+          </div>
           <label id="tx-filter-type" className="ui-field">
             <span className="ui-label">{tr("common.type", locale)}</span>
             <select className="ui-input" value={localDraft.txType} onChange={(e) => setLocalDraft((d) => ({ ...d, txType: e.target.value }))}>
@@ -624,7 +668,7 @@ export function TransactionsPage(): ReactNode {
           ))}
         </datalist>
         <div id="tx-filter-actions" style={{ display: "flex", gap: 8, marginTop: 10 }}>
-          <Button variant="secondary" onClick={onApply}>
+          <Button variant="secondary" onClick={onApply} disabled={!customPeriodValid}>
             Apply
           </Button>
           <Button

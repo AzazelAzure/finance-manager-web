@@ -41,6 +41,12 @@ export function buildTransactionsSteps(locale: AppLocale): Step[] {
       skipBeacon: true,
     },
     {
+      target: '#tx-filter-custom-dates',
+      title: tr('tour.tx.filterCustomDates.title', locale),
+      content: tr('tour.tx.filterCustomDates.content', locale),
+      skipBeacon: true,
+    },
+    {
       target: '#tx-filter-type',
       title: tr('tour.tx.filterType.title', locale),
       content: tr('tour.tx.filterType.content', locale),
