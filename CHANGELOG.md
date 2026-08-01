@@ -5,6 +5,8 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- **PWA sync failure repair (S1b):** Outbox drain persists `echo.syncFailure` metadata (no Dexie schema bump) — 4xx classified `action_required`, network/5xx `retryable`; entries are never auto-deleted. API error bodies render as plain text. **`SyncStatusBar`** keeps action-required repair state across reachability changes with **Edit / Discard / Sync now**, `role="alert"` + `aria-live="assertive"`, and a focus-trapped discard confirmation that removes one queued transaction then refetches. **Edit** opens `/app/transactions?repairPending=<pending id>`; **TransactionsPage** consumes the param and opens the pending editor. Other entity failures show parsed detail + retry only. i18n en-US + tl-PH.
+
 - **Transactions custom period filter:** Inline start/end date controls on Transactions page when Custom range is selected; Apply disabled until both dates are set. Period preset labels use existing dashboard i18n keys. Guided-tour step for custom date controls (en-US + tl-PH).
 
 ### Added

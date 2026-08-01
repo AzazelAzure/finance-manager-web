@@ -11,7 +11,17 @@ import {
   isApiMarkedUnreachable,
   probeApiReachability,
 } from "./connectivity";
-import { clearOutbox, listOutboxOrdered, removeOutboxEntry } from "./outbox";
+import {
+  clearOutbox,
+  classifyOutboxFailure,
+  isTransactionPostOutboxRow,
+  listOutboxOrdered,
+  parseApiDetailAsText,
+  pendingTxIdForOutboxRow,
+  persistOutboxSyncFailure,
+  removeOutboxEntry,
+  type OutboxSyncFailure,
+} from "./outbox";
 import { emitSyncState } from "./syncEvents";
 import { syncMinimalExchangeRates } from "./exchangeRates";
 import { requestPwaReadBypassAfterMutation } from "./pwaReadBypass";
@@ -40,6 +50,20 @@ function ensureDrainRetryOnReachableListener(): void {
 }
 
 ensureDrainRetryOnReachableListener();
+
+export async function invalidateOutboxMutationCaches(): Promise<void> {
+  requestPwaReadBypassAfterMutation();
+  await queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+  await queryClient.invalidateQueries({ queryKey: ["transactions"] });
+  await queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
+  await queryClient.invalidateQueries({ queryKey: ["app-profile"] });
+  await queryClient.invalidateQueries({ queryKey: ["tags", "all"] });
+  await queryClient.invalidateQueries({ queryKey: ["categories", "all"] });
+  await queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"] });
+  await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"] });
+  await queryClient.invalidateQueries({ queryKey: ["transactions-viz"] });
+  await queryClient.refetchQueries({ type: "active" });
+}
 
 export async function drainOutbox(): Promise<void> {
   if (drainInFlight) {
@@ -118,34 +142,52 @@ export async function drainOutbox(): Promise<void> {
           if (data && typeof data === "object" && data.code === "CLIENT_BUILD_UNSUPPORTED") {
             dispatchClientBuildUnsupported(data as Parameters<typeof dispatchClientBuildUnsupported>[0]);
           }
-          emitSyncState({ phase: "error", detail: "Upgrade required — sync paused." });
+          const detail = parseApiDetailAsText(err.response.data, 409);
+          const syncFailure: OutboxSyncFailure = {
+            kind: "action_required",
+            status: 409,
+            detail,
+            failedAt: Date.now(),
+          };
+          await persistOutboxSyncFailure(row.id, row.echo, syncFailure);
+          emitSyncState({ phase: "error", detail: detail || "Upgrade required — sync paused." });
           return;
         }
-        if (isAxiosError(err) && err.response && err.response.status >= 400 && err.response.status < 500) {
-          emitSyncState({ phase: "error", detail: "Transaction failed. Please fix it." });
-          return;
+        const status = isAxiosError(err) ? err.response?.status : undefined;
+        const isNetworkError = !isAxiosError(err) || !err.response;
+        const detail = parseApiDetailAsText(isAxiosError(err) ? err.response?.data : undefined, status);
+        const kind = classifyOutboxFailure(status, isNetworkError);
+        const pendingTxId = isTransactionPostOutboxRow(row) ? pendingTxIdForOutboxRow(row) : undefined;
+        const syncFailure: OutboxSyncFailure = {
+          kind,
+          ...(status !== undefined ? { status } : {}),
+          detail,
+          failedAt: Date.now(),
+          ...(pendingTxId ? { pendingTxId } : {}),
+        };
+        await persistOutboxSyncFailure(row.id, row.echo, syncFailure);
+        if (kind === "retryable") {
+          wantsRetryAfterReachableError = true;
         }
-        wantsRetryAfterReachableError = true;
-        emitSyncState({
-          phase: "error",
-          detail: "Sync hit a network or server error; will retry when online.",
-        });
+        if (kind === "action_required" && pendingTxId) {
+          emitSyncState({ phase: "action_required", detail, pendingTxId });
+        } else {
+          emitSyncState({
+            phase: "error",
+            detail:
+              detail ||
+              (kind === "retryable"
+                ? tr("sync.status.retryable", "en-US")
+                : tr("sync.status.error", "en-US")),
+            retryable: kind === "retryable",
+          });
+        }
         return;
       }
     }
     emitSyncState({ phase: "syncing", detail: "Refreshing data from the server…" });
     try {
-      requestPwaReadBypassAfterMutation();
-      await queryClient.invalidateQueries({ queryKey: ["snapshot"] });
-      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      await queryClient.invalidateQueries({ queryKey: ["sources", "all"] });
-      await queryClient.invalidateQueries({ queryKey: ["app-profile"] });
-      await queryClient.invalidateQueries({ queryKey: ["tags", "all"] });
-      await queryClient.invalidateQueries({ queryKey: ["categories", "all"] });
-      await queryClient.invalidateQueries({ queryKey: ["upcoming-expenses"] });
-      await queryClient.invalidateQueries({ queryKey: ["transactions-calendar"] });
-      await queryClient.invalidateQueries({ queryKey: ["transactions-viz"] });
-      await queryClient.refetchQueries({ type: "active" });
+      await invalidateOutboxMutationCaches();
       void syncMinimalExchangeRates(true);
     } catch {
       /* ignore refetch failures after successful upload */
