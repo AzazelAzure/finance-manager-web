@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useState, useEffect, type ReactNode } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import {
@@ -24,6 +24,7 @@ import { SuccessState } from "../../components/ui/SuccessState";
 import { formatMoney } from "../../lib/money";
 import { categoryInitialValueForEditor } from "../../lib/transactionCategoryEdit";
 import { tr, useLocale } from "../../lib/i18n";
+import { drainOutbox } from "../../offline/drain";
 import { readOptsFromQuery, requestPwaReadBypassAfterMutation } from "../../offline/pwaReadBypass";
 import { SourceSelect } from "../../components/transactions/SourceSelect";
 import {
@@ -200,6 +201,7 @@ export function TransactionsPage(): ReactNode {
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [isLoadingEditor, setIsLoadingEditor] = useState(false);
   const [editorError, setEditorError] = useState("");
+  const repairPendingHandled = useRef(false);
 
   const txQuery = useQuery({
     queryKey: ["transactions", signature] as const,
@@ -238,8 +240,9 @@ export function TransactionsPage(): ReactNode {
   const currencyOptions = sourceCurrencyOptions.length > 0 ? sourceCurrencyOptions : [baseCurrency];
 
   const saveMutation = useMutation({
-    mutationFn: async (): Promise<void> => {
+    mutationFn: async (): Promise<{ drainAfterPendingRepair: boolean }> => {
       if (editingTxId) {
+        const drainAfterPendingRepair = editingTxId.startsWith("pending:");
         const txType = singleDraft.tx_type;
         const category = normalizedCategory(singleDraft.category);
         const updated = await updateTransaction(editingTxId, {
@@ -254,9 +257,9 @@ export function TransactionsPage(): ReactNode {
           tags: selectedTags,
         });
         if (isOfflineQueued(updated)) {
-          return;
+          return { drainAfterPendingRepair: false };
         }
-        return;
+        return { drainAfterPendingRepair };
       }
       if (editorMode === "single") {
         const txType = singleDraft.tx_type;
@@ -275,13 +278,13 @@ export function TransactionsPage(): ReactNode {
           },
         ]);
         if (isOfflineQueued(result)) {
-          return;
+          return { drainAfterPendingRepair: false };
         }
         const accepted = (result.accepted?.length ?? 0) + (result.updated?.length ?? 0);
         if (accepted < 1) {
           throw new Error(mutationFailureMessage(result));
         }
-        return;
+        return { drainAfterPendingRepair: false };
       }
       const transferCategory = normalizedCategory(transferDraft.category);
       const result = await createTransactions([
@@ -309,17 +312,21 @@ export function TransactionsPage(): ReactNode {
         },
       ]);
       if (isOfflineQueued(result)) {
-        return;
+        return { drainAfterPendingRepair: false };
       }
       const accepted = (result.accepted?.length ?? 0) + (result.updated?.length ?? 0);
       if (accepted < 2) {
         throw new Error(mutationFailureMessage(result));
       }
+      return { drainAfterPendingRepair: false };
     },
     onMutate: () => {
       setEditorError("");
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (result.drainAfterPendingRepair) {
+        void drainOutbox();
+      }
       void (async () => {
         requestPwaReadBypassAfterMutation();
         await queryClient.invalidateQueries({ queryKey: ["snapshot"], refetchType: "all" });
@@ -399,7 +406,7 @@ export function TransactionsPage(): ReactNode {
     );
   }, [editingTxId, editorMode, isLoadingEditor, saveMutation.isPending, singleDraft, transferDraft]);
 
-  async function openEditorForEdit(txId: string): Promise<void> {
+  const openEditorForEdit = useCallback(async (txId: string): Promise<void> => {
     setIsLoadingEditor(true);
     setEditorError("");
     try {
@@ -422,7 +429,7 @@ export function TransactionsPage(): ReactNode {
     } finally {
       setIsLoadingEditor(false);
     }
-  }
+  }, [categoriesQuery.data]);
 
   function openEditorForCreate(mode: EditorMode): void {
     setEditingTxId(null);
@@ -493,7 +500,7 @@ export function TransactionsPage(): ReactNode {
         },
       },
     ],
-    [pendingDelete, deleteMutation, locale],
+    [pendingDelete, deleteMutation, locale, openEditorForEdit],
   );
 
   const fromDashboard = searchParams.get("fromDashboard") === "1";
@@ -528,6 +535,29 @@ export function TransactionsPage(): ReactNode {
     }, 400);
     return () => clearTimeout(timer);
   }, [txQuery.isSuccess, isTourCompleted, startTransactionsTour]);
+
+  useEffect(() => {
+    const repairPending = searchParams.get("repairPending");
+    if (!repairPending || repairPendingHandled.current) {
+      return;
+    }
+    if (!repairPending.startsWith("pending:")) {
+      const p = new URLSearchParams(searchParams.toString());
+      p.delete("repairPending");
+      setSearchParams(p, { replace: true });
+      return;
+    }
+    repairPendingHandled.current = true;
+    void (async () => {
+      try {
+        await openEditorForEdit(repairPending);
+      } finally {
+        const p = new URLSearchParams(searchParams.toString());
+        p.delete("repairPending");
+        setSearchParams(p, { replace: true });
+      }
+    })();
+  }, [searchParams, setSearchParams, openEditorForEdit]);
 
   return (
     <div className="stack">

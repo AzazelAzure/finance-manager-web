@@ -1,8 +1,19 @@
 import type { TransactionCreateRequest, TransactionPatchRequest } from "../api/types";
 import type { OutboxRow } from "./db";
 import { offlineDb } from "./db";
+import { emitSyncState } from "./syncEvents";
 
 const TX_LIST_PATH = /^\/finance\/transactions\/?$/;
+
+export type SyncFailureKind = "action_required" | "retryable";
+
+export type OutboxSyncFailure = {
+  kind: SyncFailureKind;
+  status?: number;
+  detail: string;
+  failedAt: number;
+  pendingTxId?: string;
+};
 
 function normPathForOutbox(url: string): string {
   const p = url.split("?")[0];
@@ -60,6 +71,172 @@ export async function clearOutbox(): Promise<void> {
 
 export async function outboxDepth(): Promise<number> {
   return offlineDb.outbox.count();
+}
+
+/** Render API error bodies as plain text for sync status and repair UI. */
+export function parseApiDetailAsText(data: unknown, status?: number): string {
+  if (Array.isArray(data)) {
+    const message = data
+      .map((item, idx) => {
+        if (item && typeof item === "object") {
+          return Object.entries(item as Record<string, unknown>)
+            .map(([k, v]) => {
+              if (Array.isArray(v)) {
+                return `${k}: ${v.map((x) => String(x)).join(", ")}`;
+              }
+              return `${k}: ${String(v)}`;
+            })
+            .join(" | ");
+        }
+        return `${idx}: ${String(item)}`;
+      })
+      .filter((part) => Boolean(part))
+      .join(" || ");
+    if (message) {
+      return status ? `HTTP ${status}: ${message}` : message;
+    }
+  }
+  if (data && typeof data === "object") {
+    const message = Object.entries(data as Record<string, unknown>)
+      .map(([k, v]) => {
+        if (Array.isArray(v)) {
+          return `${k}: ${v.map((x) => String(x)).join(", ")}`;
+        }
+        return `${k}: ${String(v)}`;
+      })
+      .join(" | ");
+    if (message) {
+      return status ? `HTTP ${status}: ${message}` : message;
+    }
+  }
+  if (typeof data === "string" && data.trim()) {
+    return status ? `HTTP ${status}: ${data}` : data;
+  }
+  if (status) {
+    return `HTTP ${status}: Request rejected by API.`;
+  }
+  return "";
+}
+
+export function classifyOutboxFailure(status: number | undefined, isNetworkError: boolean): SyncFailureKind {
+  if (isNetworkError || status === undefined || status >= 500) {
+    return "retryable";
+  }
+  if (status >= 400 && status < 500) {
+    return "action_required";
+  }
+  return "retryable";
+}
+
+export function isTransactionPostOutboxRow(row: OutboxRow): boolean {
+  return row.method.toUpperCase() === "POST" && TX_LIST_PATH.test(normPathForOutbox(row.url));
+}
+
+export function pendingTxIdForOutboxRow(row: OutboxRow, bodyIndex = 0): string | undefined {
+  if (!isTransactionPostOutboxRow(row)) {
+    return undefined;
+  }
+  const body = parseOutboxBody(row.body);
+  const bodies = Array.isArray(body)
+    ? body.filter((b) => Boolean(b) && typeof b === "object")
+    : body && typeof body === "object"
+      ? [body]
+      : [];
+  if (bodies.length === 0) {
+    return undefined;
+  }
+  const keyBase = `pending:${row.idempotencyKey}`;
+  return bodies.length === 1 ? keyBase : `${keyBase}:${bodyIndex}`;
+}
+
+function readEchoObject(echo: unknown): Record<string, unknown> {
+  if (echo && typeof echo === "object" && !Array.isArray(echo)) {
+    return { ...(echo as Record<string, unknown>) };
+  }
+  return {};
+}
+
+export function getOutboxSyncFailure(echo: unknown): OutboxSyncFailure | undefined {
+  const sf = readEchoObject(echo).syncFailure;
+  if (!sf || typeof sf !== "object") {
+    return undefined;
+  }
+  const candidate = sf as OutboxSyncFailure;
+  if (candidate.kind !== "action_required" && candidate.kind !== "retryable") {
+    return undefined;
+  }
+  if (typeof candidate.detail !== "string") {
+    return undefined;
+  }
+  return candidate;
+}
+
+export function mergeEchoWithSyncFailure(echo: unknown, syncFailure: OutboxSyncFailure): Record<string, unknown> {
+  return { ...readEchoObject(echo), syncFailure };
+}
+
+export async function persistOutboxSyncFailure(
+  rowId: number,
+  echo: unknown,
+  syncFailure: OutboxSyncFailure,
+): Promise<void> {
+  await offlineDb.outbox.update(rowId, { echo: mergeEchoWithSyncFailure(echo, syncFailure) });
+}
+
+export async function clearOutboxSyncFailure(rowId: number): Promise<void> {
+  const row = await offlineDb.outbox.get(rowId);
+  if (!row) {
+    return;
+  }
+  const next = readEchoObject(row.echo);
+  delete next.syncFailure;
+  await offlineDb.outbox.update(rowId, { echo: Object.keys(next).length > 0 ? next : undefined });
+}
+
+export async function findFirstActionRequiredTransactionFailure(): Promise<{
+  row: OutboxRow;
+  pendingTxId: string;
+  syncFailure: OutboxSyncFailure;
+} | null> {
+  const rows = await listOutboxOrdered();
+  for (const row of rows) {
+    const syncFailure = getOutboxSyncFailure(row.echo);
+    if (
+      syncFailure?.kind === "action_required" &&
+      syncFailure.pendingTxId &&
+      isTransactionPostOutboxRow(row)
+    ) {
+      return { row, pendingTxId: syncFailure.pendingTxId, syncFailure };
+    }
+  }
+  return null;
+}
+
+/** Re-emit sync UI state from persisted outbox failure metadata (e.g. after reload or reachability). */
+export async function emitSyncStateForOutboxFailures(): Promise<boolean> {
+  const repair = await findFirstActionRequiredTransactionFailure();
+  if (repair) {
+    emitSyncState({
+      phase: "action_required",
+      detail: repair.syncFailure.detail,
+      pendingTxId: repair.pendingTxId,
+    });
+    return true;
+  }
+  const rows = await listOutboxOrdered();
+  for (const row of rows) {
+    const syncFailure = getOutboxSyncFailure(row.echo);
+    if (!syncFailure) {
+      continue;
+    }
+    emitSyncState({
+      phase: "error",
+      ...(syncFailure.detail ? { detail: syncFailure.detail } : {}),
+      retryable: syncFailure.kind === "retryable",
+    });
+    return true;
+  }
+  return false;
 }
 
 /** Parse `pending:<idempotencyKey>` or `pending:<idempotencyKey>:<index>` (multi-body POST). */
@@ -129,12 +306,14 @@ export async function updateQueuedTransactionPostBody(
     const next = [...body];
     next[bi] = mergeCreateBodyWithPatch(cur as TransactionCreateRequest, patch);
     await offlineDb.outbox.update(row.id, { body: next });
+    await clearOutboxSyncFailure(row.id);
     return true;
   }
   if (body && typeof body === "object") {
     await offlineDb.outbox.update(row.id, {
       body: mergeCreateBodyWithPatch(body as TransactionCreateRequest, patch),
     });
+    await clearOutboxSyncFailure(row.id);
     return true;
   }
   return false;
