@@ -106,6 +106,10 @@ describe("parseApiDetailAsText", () => {
   it("renders string bodies with status", () => {
     expect(parseApiDetailAsText("Bad request", 422)).toBe("HTTP 422: Bad request");
   });
+
+  it("returns empty string for no-response bodies without status", () => {
+    expect(parseApiDetailAsText(undefined, undefined)).toBe("");
+  });
 });
 
 describe("classifyOutboxFailure", () => {
@@ -235,6 +239,33 @@ describe("echo.syncFailure helpers", () => {
       detail: "HTTP 400: duplicate",
       retryable: false,
     });
+  });
+
+  it("emits retryable without misleading detail when persisted detail is empty", async () => {
+    outboxTable.set(1, {
+      id: 1,
+      method: "POST",
+      url: "/finance/categories/",
+      body: { name: "Food" },
+      idempotencyKey: "cat-key",
+      createdAt: Date.now(),
+      echo: {
+        syncFailure: {
+          kind: "retryable",
+          detail: "",
+          failedAt: 1,
+        },
+      },
+    });
+    const emitted = await emitSyncStateForOutboxFailures();
+    expect(emitted).toBe(true);
+    expect(mockedEmitSyncState).toHaveBeenCalledWith({
+      phase: "error",
+      retryable: true,
+    });
+    expect(mockedEmitSyncState).not.toHaveBeenCalledWith(
+      expect.objectContaining({ detail: expect.stringContaining("Request rejected by API") }),
+    );
   });
 });
 

@@ -155,7 +155,9 @@ export async function drainOutbox(): Promise<void> {
         }
         const status = isAxiosError(err) ? err.response?.status : undefined;
         const isNetworkError = !isAxiosError(err) || !err.response;
-        const detail = parseApiDetailAsText(isAxiosError(err) ? err.response?.data : undefined, status);
+        const detail = isNetworkError
+          ? ""
+          : parseApiDetailAsText(isAxiosError(err) ? err.response?.data : undefined, status);
         const kind = classifyOutboxFailure(status, isNetworkError);
         const pendingTxId = isTransactionPostOutboxRow(row) ? pendingTxIdForOutboxRow(row) : undefined;
         const syncFailure: OutboxSyncFailure = {
@@ -174,11 +176,7 @@ export async function drainOutbox(): Promise<void> {
         } else {
           emitSyncState({
             phase: "error",
-            detail:
-              detail ||
-              (kind === "retryable"
-                ? tr("sync.status.retryable", "en-US")
-                : tr("sync.status.error", "en-US")),
+            ...(detail ? { detail } : kind === "retryable" ? {} : { detail: tr("sync.status.error", "en-US") }),
             retryable: kind === "retryable",
           });
         }

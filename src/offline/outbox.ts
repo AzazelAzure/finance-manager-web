@@ -115,7 +115,7 @@ export function parseApiDetailAsText(data: unknown, status?: number): string {
   if (status) {
     return `HTTP ${status}: Request rejected by API.`;
   }
-  return "Request rejected by API.";
+  return "";
 }
 
 export function classifyOutboxFailure(status: number | undefined, isNetworkError: boolean): SyncFailureKind {
@@ -231,7 +231,7 @@ export async function emitSyncStateForOutboxFailures(): Promise<boolean> {
     }
     emitSyncState({
       phase: "error",
-      detail: syncFailure.detail,
+      ...(syncFailure.detail ? { detail: syncFailure.detail } : {}),
       retryable: syncFailure.kind === "retryable",
     });
     return true;

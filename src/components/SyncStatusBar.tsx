@@ -17,6 +17,7 @@ export function SyncStatusBar(): ReactNode {
   const navigate = useNavigate();
   const [sync, setSync] = useState<SyncStatePayload["phase"]>("idle");
   const [syncDetail, setSyncDetail] = useState<string | undefined>();
+  const [syncRetryable, setSyncRetryable] = useState(false);
   const [pendingTxId, setPendingTxId] = useState<string | undefined>();
   const [sessionDismissed, setSessionDismissed] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
@@ -46,7 +47,11 @@ export function SyncStatusBar(): ReactNode {
             if (prev === "action_required") {
               return prev;
             }
-            return prev === "error" ? "idle" : prev;
+            if (prev === "error") {
+              setSyncRetryable(false);
+              return "idle";
+            }
+            return prev;
           });
         })();
       }
@@ -57,6 +62,7 @@ export function SyncStatusBar(): ReactNode {
       const phase = detail?.phase ?? "idle";
       setSync(phase);
       setSyncDetail(phase === "idle" ? undefined : detail?.detail);
+      setSyncRetryable(phase === "error" && detail?.retryable === true);
       setPendingTxId(phase === "idle" ? undefined : detail?.pendingTxId);
       if (phase === "error" || phase === "auth_blocked") {
         setSessionDismissed(false);
@@ -124,7 +130,9 @@ export function SyncStatusBar(): ReactNode {
   const label =
     sync === "auth_blocked"
       ? (syncDetail ?? tr("sync.status.authBlocked", locale))
-      : (syncDetail ?? tr("sync.status.error", locale));
+      : syncRetryable
+        ? (syncDetail || tr("sync.status.retryable", locale))
+        : (syncDetail ?? tr("sync.status.error", locale));
 
   async function confirmDiscard(): Promise<void> {
     if (!pendingTxId || discarding) {
@@ -142,6 +150,7 @@ export function SyncStatusBar(): ReactNode {
       if (!hasFailure) {
         setSync("idle");
         setSyncDetail(undefined);
+        setSyncRetryable(false);
         setPendingTxId(undefined);
       }
     } finally {

@@ -174,11 +174,16 @@ describe("drainOutbox failure boundary", () => {
     expect(offlineDb.outbox.delete).not.toHaveBeenCalled();
     const persisted = getOutboxSyncFailure(outboxTable.get(1)?.echo);
     expect(persisted?.kind).toBe("retryable");
+    expect(persisted?.detail).toBe("");
+    expect(persisted?.detail).not.toContain("Request rejected by API");
     expect(mockedEmitSyncState).toHaveBeenCalledWith(
       expect.objectContaining({
         phase: "error",
         retryable: true,
       }),
+    );
+    expect(mockedEmitSyncState).not.toHaveBeenCalledWith(
+      expect.objectContaining({ detail: expect.stringContaining("Request rejected by API") }),
     );
   });
 
@@ -193,9 +198,11 @@ describe("drainOutbox failure boundary", () => {
     const persisted = getOutboxSyncFailure(outboxTable.get(1)?.echo);
     expect(persisted?.kind).toBe("retryable");
     expect(persisted?.status).toBe(503);
+    expect(persisted?.detail).toContain("Service unavailable");
     expect(mockedEmitSyncState).toHaveBeenCalledWith(
       expect.objectContaining({
         phase: "error",
+        detail: persisted?.detail,
         retryable: true,
       }),
     );
